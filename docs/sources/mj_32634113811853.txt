@@ -1,0 +1,12 @@
+Gain more control over your images with Raw. 
+For more information about V8.2, see our Version article. 
+What is Raw? In Standard mode, Midjourney automatically adds its own creative touch to your images, which can transform simple prompts into a wide range of artistic styles.
+When you switch to Raw, you’re essentially turning off this “auto-pilot.” With simple prompts, you’ll often get more realistic, photo-like images. If you provide more stylistically detailed prompts with Raw, you can really dial in and control the final look of your images.
+Raw is compatible with Midjourney versions 5.1 and later. 
+Using Raw
+Add --raw to the end of your prompt in the Imagine bar.You can also turn on Raw for all your images in the settings panel. To do this, click the settings  button in the Imagine bar and select Raw in the Model section. Once you set it, this will apply to all your future prompts.
+
+Add --raw to the end of your prompt in Discord.You can also turn on Raw for all your images using the settings command and clicking 🔧 RAW Mode.
+
+ 
+

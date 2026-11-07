@@ -1,0 +1,88 @@
+{
+  "skill_name": "midjourney-prompt-writing",
+  "skill_path": "skills/midjourney-prompt-writing",
+  "createdAt": "2026-11-03",
+  "note": "冒烟样例：教程模板 ×2 + 漂移策略改写版 ×3 + 普通摄影需求 ×1。断言只覆盖可机器判定的项（flag 合法性、输出结构、关键参数）；提示词写得好不好由人评。",
+  "evals": [
+    {
+      "id": 1,
+      "eval_name": "写实人像-老渔夫",
+      "prompt": "帮我写一条 Midjourney 提示词：一位六十多岁的老渔夫，凌晨在雾气弥漫的港口拉网，纪实摄影风格，要竖版发朋友圈。",
+      "expected_output": "一条可直接粘贴的英文提示词 + 参数理由 + 变体",
+      "files": [],
+      "assertions": [
+        { "text": "输出一条完整的英文提示词正文（不是中文、不是只有思路）" },
+        { "text": "提示词末尾包含 --v 8.2" },
+        { "text": "提示词末尾包含 --ar 且为竖版比例（4:5 / 9:16 / 2:3 / 3:4 之一）" },
+        { "text": "不出现 --cref、--style raw、--q、:: 权重、--v 8 这些 V8.2 非法写法" },
+        { "text": "输出包含参数选择的理由说明" }
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "产品静物-香水电商主图",
+      "prompt": "我要给一款香水做电商主图，磨砂玻璃瓶身放在黑大理石上，冷调、高级感、竖版。",
+      "expected_output": "一条可直接粘贴的英文提示词 + 参数理由 + 变体",
+      "files": [],
+      "assertions": [
+        { "text": "输出一条完整的英文提示词正文" },
+        { "text": "提示词末尾包含 --raw" },
+        { "text": "提示词末尾包含 --v 8.2" },
+        { "text": "不出现 --cref、--style raw、--q、:: 权重" }
+      ]
+    },
+    {
+      "id": 3,
+      "eval_name": "短剧主线镜头-雨夜小巷",
+      "prompt": "短剧女主撑着伞在雨夜小巷走，回头看一眼。我有角色设定图（https://example.com/char_front.png）和情绪板 m123456，帮我出一条 9:16 的提示词。",
+      "expected_output": "一条可直接粘贴的英文提示词，锁住角色长相与情绪板氛围",
+      "files": [],
+      "assertions": [
+        { "text": "用 --edit 传角色图，而不是 --cref" },
+        { "text": "提示词包含 --ar 9:16" },
+        { "text": "调用情绪板档案（--profile 或 --p）" },
+        { "text": "不出现 --sw 与 --sv（官方不允许与情绪板同现）" },
+        { "text": "不出现 --cref、--style raw" }
+      ]
+    },
+    {
+      "id": 4,
+      "eval_name": "特殊质感镜头-回忆",
+      "prompt": "同一场戏要加一条回忆镜头：她闭着眼，朦胧、浅景深。角色图还是 https://example.com/char_front.png，情绪板 m123456。",
+      "expected_output": "一条可直接粘贴的英文提示词，且参数组合合法",
+      "files": [],
+      "assertions": [
+        { "text": "提示词里出现 --sref" },
+        { "text": "--sw / --sv 不与 --profile / --p 同时出现（若两者都用了，要给出二选一的说明）" },
+        { "text": "用 --edit 而不是 --cref 传角色图" },
+        { "text": "提示词末尾包含 --v 8.2" }
+      ]
+    },
+    {
+      "id": 5,
+      "eval_name": "风格对标测试-试质感",
+      "prompt": "我想试一下这张参考图的质感 https://example.com/style.jpg，人物就是窗边逆光的剪影。先纯测试一下，别上我那套长期画风。",
+      "expected_output": "一条可直接粘贴的英文提示词，纯测试组合",
+      "files": [],
+      "assertions": [
+        { "text": "提示词里出现 --sref" },
+        { "text": "提示词里出现 --sw" },
+        { "text": "不带 --profile / --p（用户明确说先不上长期画风）" },
+        { "text": "用 --edit 而不是 --cref" }
+      ]
+    },
+    {
+      "id": 6,
+      "eval_name": "普通摄影需求-城市夜景街拍",
+      "prompt": "城市夜景街拍，霓虹灯下有雨，新建一条提示词。",
+      "expected_output": "按技能约定的固定结构交付：最终提示词 / 为什么这么写 / 变体 / 下一步",
+      "files": [],
+      "assertions": [
+        { "text": "输出包含「最终提示词」「为什么这么写」「变体」这几个板块" },
+        { "text": "输出一条完整的英文提示词正文" },
+        { "text": "提示词末尾包含 --v 8.2 与 --ar" },
+        { "text": "不出现 --cref、--style raw、--q、:: 权重、8k / masterpiece / best quality 这类 V6 后失效的堆料词" }
+      ]
+    }
+  ]
+}

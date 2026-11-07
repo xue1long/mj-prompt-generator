@@ -1,0 +1,151 @@
+<template>
+  <div
+    class="prompt-tag"
+    :class="{
+      selected: isSelected,
+      [`color-${colorIndex}`]: true
+    }"
+    @click="handleClick"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+  >
+    <div class="tag-content">
+      <span v-if="prompt.prompt_zh" class="tag-text-cn">{{ prompt.prompt_zh }}</span>
+      <span class="tag-text-en">{{ prompt.prompt_en }}</span>
+    </div>
+    <span v-if="isSelected" class="selected-icon">✓</span>
+  </div>
+</template>
+
+<script setup lang="ts">
+import type { PromptItem } from '@/types'
+
+interface Props {
+  prompt: PromptItem
+  categoryId: string
+  subCategoryId?: string  // 新增：可选的子分类ID
+  isSelected?: boolean
+  colorIndex?: number
+}
+
+interface Emits {
+  (e: 'click', data: { categoryId: string, promptId: string, subCategoryId?: string }): void
+  (e: 'preview', prompt: PromptItem, show: boolean): void
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  isSelected: false,
+  colorIndex: 0
+})
+
+const emit = defineEmits<Emits>()
+
+const handleClick = () => {
+  emit('click', {
+    categoryId: props.categoryId,
+    promptId: props.prompt.id,
+    subCategoryId: props.subCategoryId
+  })
+}
+
+const handleMouseEnter = () => {
+  emit('preview', props.prompt, true)
+}
+
+const handleMouseLeave = () => {
+  emit('preview', props.prompt, false)
+}
+</script>
+
+<style scoped>
+.prompt-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1.5px solid transparent;
+  user-select: none;
+  position: relative;
+}
+
+.prompt-tag:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow-hover);
+}
+
+.tag-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.3;
+}
+
+.tag-text-cn {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.tag-text-en {
+  font-size: 11px;
+  opacity: 0.8;
+  font-family: monospace;
+}
+
+.selected-icon {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* 选中状态 */
+.prompt-tag.selected {
+  border-color: currentColor;
+  font-weight: 600;
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+/* 四种颜色循环 */
+.prompt-tag.color-0 {
+  background: var(--color-blue);
+  color: var(--text-blue);
+}
+
+.prompt-tag.color-1 {
+  background: var(--color-green);
+  color: var(--text-green);
+}
+
+.prompt-tag.color-2 {
+  background: var(--color-yellow);
+  color: var(--text-yellow);
+}
+
+.prompt-tag.color-3 {
+  background: var(--color-pink);
+  color: var(--text-pink);
+}
+
+/* 暗色主题 */
+:global(.dark) .prompt-tag.color-0 {
+  background: var(--color-blue);
+  color: var(--text-blue);
+}
+
+:global(.dark) .prompt-tag.color-1 {
+  background: var(--color-green);
+  color: var(--text-green);
+}
+
+:global(.dark) .prompt-tag.color-2 {
+  background: var(--color-yellow);
+  color: var(--text-yellow);
+}
+
+:global(.dark) .prompt-tag.color-3 {
+  background: var(--color-pink);
+  color: var(--text-pink);
+}
+</style>

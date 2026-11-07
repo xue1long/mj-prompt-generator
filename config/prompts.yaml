@@ -1,0 +1,1065 @@
+# Midjourney 摄影提示词配置文件
+# 支持一级、二级分类结构
+
+# 主体环境示例（用于快速填充）
+subjectEnvironmentExamples:
+  - id: portrait-outdoor
+    title: 户外人像
+    subject: a woman with long hair
+    environment: in a beautiful garden with blooming flowers
+    fullText: a woman with long hair, in a beautiful garden with blooming flowers
+
+  - id: landscape-mountain
+    title: 山景
+    subject: snow-capped mountains
+    environment: under golden hour sky, misty valley below
+    fullText: snow-capped mountains, under golden hour sky, misty valley below
+
+  - id: urban-street
+    title: 城市街景
+    subject: modern city street
+    environment: at night with neon lights and rain reflections
+    fullText: modern city street, at night with neon lights and rain reflections
+
+# 提示词分类
+categories:
+  # 快门速度
+  - id: shutter-speed
+    name: 快门速度
+    icon: timer-outline
+    special:
+      positionTag: camera
+    subCategories:
+      - id: high-speed
+        name: 高速摄影
+        prompts:
+          - id: highspeed-photography
+            prompt_zh: 高速摄影
+            prompt_en: highspeed photography
+            preview: shutter-speed/highspeed-photography.webp
+            generationPrompt: "photography, highspeed photography, a red bell pepper falls into the clear water and splashes, product map --v 7 --ar 16:9"
+
+          - id: slow-movement
+            prompt_zh: 慢动作
+            prompt_en: slow movement
+            preview: shutter-speed/slow-movement.webp
+            generationPrompt: "photography by Henri Cartier-Bresson, slow movement, A vintage black and white street photography shot of a man in mid-air jumping over a large puddle on a rainy Parisian street, 1950s style, water splashing everywhere, reflections on the wet ground, classic vintage cars parked in the background  --v 7 --ar 16:9"
+
+          - id: bullet-time
+            prompt_zh: 子弹时间
+            prompt_en: Bullet time
+            preview: shutter-speed/bullet-time.webp
+            generationPrompt: "photography, bullet time, a soccer player kicking ball in mid-air, stadium background --v 7 --ar 16:9"
+
+          - id: slow-motion
+            prompt_zh: 慢镜头
+            prompt_en: slow motion
+            preview: shutter-speed/slow-motion.webp
+            generationPrompt: "photography, slow motion, water balloon bursting with colorful paint explosion, black background, dramatic lighting --v 7 --ar 16:9"
+
+      - id: time-lapse
+        name: 延时摄影
+        prompts:
+          - id: time-lapse-photography
+            prompt_zh: 延时摄影
+            prompt_en: Time-lapse photography
+            preview: shutter-speed/time-lapse-photography.webp
+            generationPrompt: "photography, time-lapse photography, city skyline from day to night transition, moving clouds and traffic light trails, urban landscape --v 7 --ar 16:9"
+
+          - id: long-exposure
+            prompt_zh: 长曝光
+            prompt_en: long exposure
+            preview: shutter-speed/long-exposure.webp
+            generationPrompt: "photography, long exposure, waterfall with silky smooth flowing water, misty effect, rocks and green forest, soft natural light --v 7 --ar 16:9"
+
+      - id: time-interval
+        name: 定时摄影
+        prompts:
+          - id: chrono-photography
+            prompt_zh: 连续摄影
+            prompt_en: Chrono photography
+            preview: shutter-speed/chrono-photography.webp
+            generationPrompt: "photography, chrono photography, multiple frames showing golf swing sequence in one image, clean white background, professional studio lighting --v 7 --ar 16:9"
+
+          - id: stroboscopic
+            prompt_zh: 频闪效应
+            prompt_en: Stroboscopic
+            preview: shutter-speed/stroboscopic.webp
+            generationPrompt: "photography, stroboscopic, dancer moving across frame with multiple exposures creating motion trail, dark stage, strobe flash lighting --v 7 --ar 16:9"
+
+      - id: light-painting
+        name: 光涂鸦
+        prompts:
+          - id: light-painting
+            prompt_zh: 光绘
+            prompt_en: Light painting
+            preview: shutter-speed/light-painting.webp
+            generationPrompt: "photography, light painting, glowing light trails drawing spiral patterns in darkness, long exposure night photography, vibrant neon colors --v 7 --ar 16:9"
+
+          - id: light-graffiti
+            prompt_zh: 光涂鸦
+            prompt_en: Light graffiti
+            preview: shutter-speed/light-graffiti.webp
+            generationPrompt: "photography, light graffiti, urban street art created with colored light painting, abandoned warehouse wall, long exposure night shot --v 7 --ar 16:9"
+
+          - id: light-drawing
+            prompt_zh: 光绘画
+            prompt_en: Light drawing
+            preview: shutter-speed/light-drawing.webp
+            generationPrompt: "photography, light drawing, silhouette of person drawing heart shape with sparkler in air, night beach scene, long exposure --v 7 --ar 16:9"
+
+  # 景深和光圈（一级分类，无二级）
+  - id: depth-aperture
+    name: 景深和光圈
+    icon: aperture-outline
+    special:
+      positionTag: camera
+    prompts:
+      - id: dof
+        prompt_zh: 景深
+        prompt_en: DOF
+        preview: depth-aperture/dof.webp
+        generationPrompt: "photography, DOF, portrait shot, a woman's face in sharp focus with blurred autumn forest background, natural light, warm tones --v 7 --ar 16:9"
+
+      - id: depth-of-field
+        prompt_zh: 景深
+        prompt_en: Depth of field
+        preview: depth-aperture/depth-of-field.webp
+        generationPrompt: "photography, depth of field, close-up of red rose in focus with garden blurred in background, soft morning light --v 7 --ar 16:9"
+
+      - id: bokeh
+        prompt_zh: 散景
+        prompt_en: bokeh
+        preview: depth-aperture/bokeh.webp
+        generationPrompt: "photography, bokeh, portrait with beautiful circular bokeh lights in background, city night scene, warm golden lights --v 7 --ar 16:9"
+
+      - id: bokehlicious
+        prompt_zh: 梦幻散景
+        prompt_en: Bokehlicious
+        preview: depth-aperture/bokehlicious.webp
+        generationPrompt: "photography, bokehlicious, dreamy portrait with creamy smooth bokeh, sparkling fairy lights background, magical atmosphere, soft focus --v 7 --ar 16:9"
+
+      - id: tilt-shift
+        prompt_zh: 移轴摄影
+        prompt_en: Tilt-shift photography
+        preview: depth-aperture/tilt-shift.webp
+        generationPrompt: "photography, tilt-shift photography, aerial view of race track with racing cars, miniature effect, selective focus, toy-like appearance --v 7 --ar 16:9"
+
+  # 镜头的长短和位置
+  - id: lens-position
+    name: 镜头的长短和位置
+    icon: camera-outline
+    special:
+      positionTag: camera
+    subCategories:
+      - id: lens-position-sub
+        name: 镜头位置
+        prompts:
+          - id: astrography
+            prompt_zh: 天文摄影
+            prompt_en: Astrography
+            preview: lens-position/astrography.webp
+            generationPrompt: "photography, astrography, milky way galaxy over mountain landscape, stars and nebulae, long exposure night sky --v 7 --ar 16:9"
+
+          - id: astro-photography
+            prompt_zh: 天体摄影
+            prompt_en: Astro photography
+            preview: lens-position/astro-photography.webp
+            generationPrompt: "photography, astro photography, spiral galaxy with colorful nebula, deep space, telescope view --v 7 --ar 16:9"
+
+          - id: shot-by-nasa
+            prompt_zh: NASA拍摄
+            prompt_en: Shot by NASA
+            preview: lens-position/shot-by-nasa.webp
+            generationPrompt: "photography, shot by NASA, Earth from space with clouds and continents, blue marble, satellite view --v 7 --ar 16:9"
+
+          - id: shot-by-hubble
+            prompt_zh: 哈勃望远镜拍摄
+            prompt_en: Shot by hubble space telescope
+            preview: lens-position/shot-by-hubble.webp
+            generationPrompt: "photography, shot by hubble space telescope, colorful cosmic nebula with stars, pillars of creation style, deep space --v 7 --ar 16:9"
+
+          - id: near-orbit-shot
+            prompt_zh: 近轨道拍摄
+            prompt_en: near orbit shot
+            preview: lens-position/near-orbit-shot.webp
+            generationPrompt: "photography, near orbit shot, space station orbiting Earth, curvature of planet, atmospheric glow --v 7 --ar 16:9"
+
+          - id: macrography
+            prompt_zh: 微距摄影
+            prompt_en: Macrography
+            preview: lens-position/macrography.webp
+            generationPrompt: "photography, macrography, extreme close-up of butterfly wing showing detailed scales and patterns, vibrant colors --v 7 --ar 16:9"
+
+          - id: micro-photography
+            prompt_zh: 显微摄影
+            prompt_en: Micro photography
+            preview: lens-position/micro-photography.webp
+            generationPrompt: "photography, micro photography, microscopic view of colorful crystals, scientific, detailed structure --v 7 --ar 16:9"
+
+          - id: macroview
+            prompt_zh: 微距视角
+            prompt_en: Macroview
+            preview: lens-position/macroview.webp
+            generationPrompt: "photography, macroview, water droplets on spider web with morning dew, bokeh background, soft light --v 7 --ar 16:9"
+
+      - id: shot-size
+        name: 景别
+        prompts:
+          - id: extreme-long-shot
+            prompt_zh: 极远景镜头
+            prompt_en: extreme long shot
+            preview: lens-position/extreme-long-shot.webp
+            generationPrompt: "photography, extreme long shot, tiny person in vast desert landscape, endless sand dunes, dramatic sky --v 7 --ar 16:9"
+
+          - id: telephoto-shots
+            prompt_zh: 远景镜头
+            prompt_en: Telephoto shots
+            preview: lens-position/telephoto-shots.webp
+            generationPrompt: "photography, telephoto shots, compressed perspective of mountain peaks, distant landscape, atmospheric haze --v 7 --ar 16:9"
+
+          - id: long-shot
+            prompt_zh: 远景镜头
+            prompt_en: long shot
+            preview: lens-position/long-shot.webp
+            generationPrompt: "photography, long shot, person walking on beach from distance, coastline and ocean, golden hour --v 7 --ar 16:9"
+
+          - id: medium-shot
+            prompt_zh: 中景镜头
+            prompt_en: medium shot
+            preview: lens-position/medium-shot.webp
+            generationPrompt: "photography, medium shot, person sitting at cafe table, upper body visible, urban street background --v 7 --ar 16:9"
+
+          - id: close-up
+            prompt_zh: 特写镜头
+            prompt_en: close-up
+            preview: lens-position/close-up.webp
+            generationPrompt: "photography, close-up, human eye with detailed iris, reflections, sharp focus, natural light --v 7 --ar 16:9"
+
+          - id: extreme-close-up
+            prompt_zh: 极特写镜头
+            prompt_en: extreme close-up
+            preview: lens-position/extreme-close-up.webp
+            generationPrompt: "photography, extreme close-up, human lips texture, skin pores visible, dramatic lighting --v 7 --ar 16:9"
+
+      - id: shot-angle
+        name: 景别-角度
+        prompts:
+          - id: topview
+            prompt_zh: 顶视图
+            prompt_en: topview
+            preview: lens-position/topview.webp
+            generationPrompt: "photography, topview, breakfast table from directly above, coffee and food arrangement, flat lay --v 7 --ar 16:9"
+
+          - id: high-angle-shot
+            prompt_zh: 高角度镜头
+            prompt_en: high angle shot
+            preview: lens-position/high-angle-shot.webp
+            generationPrompt: "photography, high angle shot, person reading book in library, looking down from above, warm lighting --v 7 --ar 16:9"
+
+          - id: low-angle-shot
+            prompt_zh: 低角度镜头
+            prompt_en: low angle shot
+            preview: lens-position/low-angle-shot.webp
+            generationPrompt: "photography, low angle shot, skyscraper looking up, dramatic perspective, blue sky background --v 7 --ar 16:9"
+
+          - id: bottom-up-view
+            prompt_zh: 仰视角度
+            prompt_en: bottom-up view
+            preview: lens-position/bottom-up-view.webp
+            generationPrompt: "photography, bottom up view, tree canopy from ground level, branches against sky, sunlight filtering through --v 7 --ar 16:9"
+            
+          - id: eye-level-shot
+            prompt_zh: 平视角度
+            prompt_en: eye level shot
+            preview: lens-position/eye-level-shot.webp
+            generationPrompt: "Photography, eye level shot, a woman facing a sea of red maple leaves, with her back to the camera, the maple forest lush and green, showcasing the essence of autumn --ar 16:9 --v 7 --q 1 --s 250"
+
+      - id: shot-portrait
+        name: 景别-人物
+        prompts:
+          - id: full-body-shot
+            prompt_zh: 全身照
+            prompt_en: Full-body shot
+            preview: lens-position/full-body-shot.webp
+            generationPrompt: "photography, full-body shot, fashion model standing, entire body visible head to toe, studio background --v 7 --ar 16:9"
+
+          - id: half-body-shot
+            prompt_zh: 半身照
+            prompt_en: Half-body shot
+            preview: lens-position/half-body-shot.webp
+            generationPrompt: "photography, half-body shot, business person from waist up, professional attire, office environment --v 7 --ar 16:9"
+
+          - id: waistup-shot
+            prompt_zh: 腰部特写
+            prompt_en: waistup shot
+            preview: lens-position/waistup-shot.webp
+            generationPrompt: "photography, waistup shot, chef cooking in kitchen, from waist to head, culinary action --v 7 --ar 16:9"
+
+          - id: side-shot
+            prompt_zh: 侧面照
+            prompt_en: side shot
+            preview: lens-position/side-shot.webp
+            generationPrompt: "photography, side shot, person's profile silhouette, side view, dramatic rim lighting --v 7 --ar 16:9"
+
+          - id: portrait
+            prompt_zh: 肖像照
+            prompt_en: Portrait
+            preview: lens-position/portrait.webp
+            generationPrompt: "photography, portrait, headshot of smiling person, shoulders and face, natural expression, soft lighting --v 7 --ar 16:9"
+
+          - id: back-shot
+            prompt_zh: 背影照
+            prompt_en: Back shot
+            preview: lens-position/back-shot.webp
+            generationPrompt: "photography, back shot, person walking away towards sunset, rear view, silhouette --v 7 --ar 16:9"
+
+          - id: back-neck-shot
+            prompt_zh: 颈部特写
+            prompt_en: Back neck shot
+            preview: lens-position/back-neck-shot.webp
+            generationPrompt: "photography, back neck shot, close-up of neck and hairline from behind, elegant, soft light --v 7 --ar 16:9"
+
+          - id: collarbone-shot
+            prompt_zh: 锁骨特写
+            prompt_en: Collarbone shot
+            preview: lens-position/collarbone-shot.webp
+            generationPrompt: "photography, collarbone shot, close-up of collarbone and neck area, jewelry detail, elegant lighting --v 7 --ar 16:9"
+
+          - id: hand-shot
+            prompt_zh: 手部特写
+            prompt_en: Hand shot
+            preview: lens-position/hand-shot.webp
+            generationPrompt: "photography, hand shot, close-up of hands holding coffee cup, detailed texture, warm light --v 7 --ar 16:9"
+
+      - id: shot-special
+        name: 景别-特殊
+        prompts:
+          - id: wide-angle
+            prompt_zh: 广角
+            prompt_en: Wide angle
+            preview: lens-position/wide-angle.webp
+            generationPrompt: "photography, wide angle, spacious interior of modern home, expansive view, natural light --v 7 --ar 16:9"
+
+          - id: ultra-wide-angle
+            prompt_zh: 超广角
+            prompt_en: Ultra-wide angle
+            preview: lens-position/ultra-wide-angle.webp
+            generationPrompt: "photography, ultra-wide angle, dramatic perspective of city street, distorted edges, dynamic composition --v 7 --ar 16:9"
+
+          - id: panorama
+            prompt_zh: 全景
+            prompt_en: Panorama
+            preview: lens-position/panorama.webp
+            generationPrompt: "photography, panorama, sweeping mountain range landscape, wide horizontal view, epic scale --v 7 --ar 16:9"
+
+          - id: 360-panorama
+            prompt_zh: 360全景
+            prompt_en: 360 panorama
+            preview: lens-position/360-panorama.webp
+            generationPrompt: "photography, 360 panorama, complete circular view of valley, surrounding landscape, immersive --v 7 --ar 16:9"
+
+          - id: fish-eye-lens
+            prompt_zh: 鱼眼镜头
+            prompt_en: Fish eye lens
+            preview: lens-position/fish-eye-lens.webp
+            generationPrompt: "photography, fish eye lens, circular distorted view of skateboarder, extreme wide angle, curved horizon --v 7 --ar 16:9"
+
+          - id: aerial-view
+            prompt_zh: 俯瞰视角
+            prompt_en: Aerial view
+            preview: lens-position/aerial-view.webp
+            generationPrompt: "photography, aerial view, bird's eye view of coastal town, buildings and beach, drone perspective --v 7 --ar 16:9"
+
+          - id: over-shoulder-shot
+            prompt_zh: 过肩镜头
+            prompt_en: over shoulder shot
+            preview: lens-position/over-shoulder-shot.webp
+            generationPrompt: "photography, over shoulder shot, view from behind person's shoulder, conversation scene, natural framing --v 7 --ar 16:9"
+
+          - id: first-person-view
+            prompt_zh: 第一人称视角
+            prompt_en: First-person view
+            preview: lens-position/first-person-view.webp
+            generationPrompt: "photography, first-person view, hands visible in frame holding hiking poles, trail ahead, POV perspective --v 7 --ar 16:9"
+
+          - id: third-person-view
+            prompt_zh: 第三人称视角
+            prompt_en: Third-person view
+            preview: lens-position/third-person-view.webp
+            generationPrompt: "photography, third-person view, photographer in landscape taking photo, external perspective, storytelling --v 7 --ar 16:9"
+
+      - id: equipment-film
+        name: 景别-设备、胶片
+        prompts:
+          - id: dslr
+            prompt_zh: 数码单反
+            prompt_en: DSLR
+            preview: lens-position/dslr.webp
+            generationPrompt: "photography, DSLR, sharp professional photo of landscape, high detail, crisp focus --v 7 --ar 16:9"
+
+          - id: nikon-z7
+            prompt_zh: 尼康Z7
+            prompt_en: NikonZ7/Z7II
+            preview: lens-position/nikon-z7.webp
+            generationPrompt: "photography, NikonZ7, high-resolution portrait with excellent color, professional quality --v 7 --ar 16:9"
+
+          - id: canon-eos-r5
+            prompt_zh: 佳能EOS R5
+            prompt_en: CanonEOSR5
+            preview: lens-position/canon-eos-r5.webp
+            generationPrompt: "photography, CanonEOSR5, wildlife action shot with fast autofocus, sharp details --v 7 --ar 16:9"
+
+          - id: fujifilm-xt4
+            prompt_zh: 富士X-T4
+            prompt_en: FujifilmX-T4-APS-C
+            preview: lens-position/fujifilm-xt4.webp
+            generationPrompt: "photography, FujifilmX-T4, street photography with film simulation colors, vintage tones --v 7 --ar 16:9"
+
+          - id: sony-alpha1
+            prompt_zh: 索尼Alpha 1
+            prompt_en: SonyAlpha1
+            preview: lens-position/sony-alpha1.webp
+            generationPrompt: "photography, SonyAlpha1, sports action freeze frame, incredible detail, professional --v 7 --ar 16:9"
+
+          - id: leica-sl2
+            prompt_zh: 徕卡SL2
+            prompt_en: LeicaSL2
+            preview: lens-position/leica-sl2.webp
+            generationPrompt: "photography, LeicaSL2, premium portrait with exceptional lens quality, rich tones --v 7 --ar 16:9"
+
+          - id: panasonic-lumix-s1r
+            prompt_zh: 松下LUMIX S1R
+            prompt_en: PanasonicLUMIXS1R
+            preview: lens-position/panasonic-lumix-s1r.webp
+            generationPrompt: "photography, PanasonicLUMIXS1R, high-resolution landscape with excellent dynamic range --v 7 --ar 16:9"
+
+          - id: hasselblad-h2d
+            prompt_zh: 哈苏H2D
+            prompt_en: HasselbladH2D
+            preview: lens-position/hasselblad-h2d.webp
+            generationPrompt: "photography, HasselbladH2D, medium format fashion photography, exquisite detail, studio quality --v 7 --ar 16:9"
+
+          - id: gopro
+            prompt_zh: GoPro运动相机
+            prompt_en: GoPro
+            preview: lens-position/gopro.webp
+            generationPrompt: "photography, GoPro, action sports with wide angle view, extreme sports, dynamic motion --v 7 --ar 16:9"
+
+          - id: dji
+            prompt_zh: 大疆无人机
+            prompt_en: DJI
+            preview: lens-position/dji.webp
+            generationPrompt: "photography, DJI, aerial drone shot of winding river through forest, top-down view --v 7 --ar 16:9"
+
+          - id: cinestill-50
+            prompt_zh: Cinestill 50胶片
+            prompt_en: Cinestill 50 film
+            preview: lens-position/cinestill-50.webp
+            generationPrompt: "photography, Cinestill 50 film, cinematic colors with halation glow, night city lights --v 7 --ar 16:9"
+
+          - id: kodak-trix-400
+            prompt_zh: 柯达Tri-X 400胶片
+            prompt_en: Kodak Tri-X400 film
+            preview: lens-position/kodak-trix-400.webp
+            generationPrompt: "photography, Kodak Tri-X400 film, classic black and white with grain, street photography --v 7 --ar 16:9"
+
+          - id: kodak-fujicolor-c200
+            prompt_zh: 柯达富士C200
+            prompt_en: Kodak Fujicolor C200
+            preview: lens-position/kodak-fujicolor-c200.webp
+            generationPrompt: "photography, Kodak Fujicolor C200, warm film colors, nostalgic summer vibes, natural tones --v 7 --ar 16:9"
+
+          - id: lomography-color100
+            prompt_zh: Lomo Color 100
+            prompt_en: Lomography Color100
+            preview: lens-position/lomography-color100.webp
+            generationPrompt: "photography, Lomography Color100, vibrant saturated colors, artistic vignette, experimental --v 7 --ar 16:9"
+
+  # 光线控制
+  - id: lighting
+    name: 光线控制
+    icon: sunny-outline
+    special:
+      positionTag: lighting
+    subCategories:
+      - id: light-tone
+        name: 光线-影调
+        prompts:
+          - id: rembrandt-lighting
+            prompt_zh: 伦勃朗光
+            prompt_en: Rembrandt lighting
+            preview: lighting/rembrandt-lighting.webp
+            generationPrompt: "photography, rembrandt lighting, portrait with triangle of light on cheek, dramatic shadows, classic studio setup --v 7 --ar 16:9"
+
+          - id: split-lighting
+            prompt_zh: 半面光（分割光）
+            prompt_en: split lighting
+            preview: lighting/split-lighting.webp
+            generationPrompt: "photography, split lighting, portrait with half face lit and half in shadow, dramatic contrast, side lighting --v 7 --ar 16:9"
+
+          - id: clamshell-lighting
+            prompt_zh: 贝壳夹光
+            prompt_en: clamshell lighting
+            preview: lighting/clamshell-lighting.webp
+            generationPrompt: "photography, clamshell lighting, beauty portrait with soft shadows under chin, upper and lower lights, glamorous --v 7 --ar 16:9"
+
+          - id: butterfly-lighting
+            prompt_zh: 蝴蝶光
+            prompt_en: butterfly lighting
+            preview: lighting/butterfly-lighting.webp
+            generationPrompt: "photography, butterfly lighting, portrait with butterfly-shaped shadow under nose, centered above subject, classic beauty lighting --v 7 --ar 16:9 --no butterfly"
+
+          - id: paramount-lighting
+            prompt_zh: 派拉蒙光
+            prompt_en: Paramount Lighting
+            preview: lighting/paramount-lighting.webp
+            generationPrompt: "photography, paramount lighting, glamorous portrait with classic Hollywood lighting, soft shadows, elegant mood --v 7 --ar 16:9"
+
+          - id: loop-lighting
+            prompt_zh: 环形光
+            prompt_en: loop lighting
+            preview: lighting/loop-lighting.webp
+            generationPrompt: "photography, loop lighting, portrait with small shadow of nose looping down, natural look, versatile --v 7 --ar 16:9"
+
+          - id: flat-lighting
+            prompt_zh: 泛光（无影光）
+            prompt_en: flat lighting
+            preview: lighting/flat-lighting.webp
+            generationPrompt: "photography, flat lighting, portrait with minimal shadows, even illumination, beauty photography --v 7 --ar 16:9"
+
+      - id: light-position
+        name: 光线-位置
+        prompts:
+          - id: top-lighting
+            prompt_zh: 顶光
+            prompt_en: Top lighting
+            preview: lighting/top-lighting.webp
+            generationPrompt: "photography, top lighting, subject lit from directly above, dramatic overhead light, theatrical mood --v 7 --ar 16:9"
+
+          - id: stage-lighting
+            prompt_zh: 舞台光
+            prompt_en: Stage lighting
+            preview: lighting/stage-lighting.webp
+            generationPrompt: "photography, stage lighting, performer in spotlight on dark stage, theatrical beams, dramatic atmosphere --v 7 --ar 16:9"
+
+          - id: back-lighting
+            prompt_zh: 背光
+            prompt_en: Back lighting
+            preview: lighting/back-lighting.webp
+            generationPrompt: "photography, back lighting, subject with light source behind, silhouette effect, golden rim --v 7 --ar 16:9"
+
+          - id: rim-lighting
+            prompt_zh: 轮廓光
+            prompt_en: Rim lighting
+            preview: lighting/rim-lighting.webp
+            generationPrompt: "photography, rim lighting, portrait with glowing edge light outlining subject, dramatic separation, moody --v 7 --ar 16:9"
+
+          - id: bottom-lighting
+            prompt_zh: 底光
+            prompt_en: Bottom lighting
+            preview: lighting/bottom-lighting.webp
+            generationPrompt: "photography, bottom lighting, face lit from below, eerie dramatic effect, horror movie style --v 7 --ar 16:9"
+
+          - id: side-lighting
+            prompt_zh: 侧光
+            prompt_en: Side lighting
+            preview: lighting/side-lighting.webp
+            generationPrompt: "photography, side lighting, portrait with strong directional light from side, texture emphasis, dramatic shadows --v 7 --ar 16:9"
+
+      - id: light-intensity
+        name: 光线-光度
+        prompts:
+          - id: hard-lighting
+            prompt_zh: 硬光
+            prompt_en: Hard lighting
+            preview: lighting/hard-lighting.webp
+            generationPrompt: "photography, hard lighting, portrait with sharp defined shadows, strong contrast, intense directional light --v 7 --ar 16:9"
+
+          - id: soft-lighting
+            prompt_zh: 柔光
+            prompt_en: Soft lighting
+            preview: lighting/soft-lighting.webp
+            generationPrompt: "photography, soft lighting, portrait with gentle diffused light, smooth gradual shadows, flattering --v 7 --ar 16:9"
+
+          - id: board-lighting
+            prompt_zh: 宽位光
+            prompt_en: board lighting
+            preview: lighting/board-lighting.webp
+            generationPrompt: "photography, broad lighting, portrait with lit side of face toward camera, fuller look, classic setup --v 7 --ar 16:9"
+
+          - id: short-lighting
+            prompt_zh: 窄位光
+            prompt_en: short lighting
+            preview: lighting/short-lighting.webp
+            generationPrompt: "photography, short lighting, portrait with shadow side facing camera, slimming effect, dramatic contour --v 7 --ar 16:9"
+
+          - id: highkey-lighting
+            prompt_zh: 高调光
+            prompt_en: Highkey lighting
+            preview: lighting/highkey-lighting.webp
+            generationPrompt: "photography, highkey lighting, bright airy portrait with minimal shadows, white background, cheerful mood --v 7 --ar 16:9"
+
+          - id: lowkey-lighting
+            prompt_zh: 低调光
+            prompt_en: Lowkey lighting
+            preview: lighting/lowkey-lighting.webp
+            generationPrompt: "photography, lowkey lighting, dark moody portrait with deep shadows, black background, mysterious atmosphere --v 7 --ar 16:9"
+
+      - id: light-description
+        name: 光线-通用描述
+        prompts:
+          - id: cinematic-lighting
+            prompt_zh: 影视级灯光
+            prompt_en: cinematic lighting
+            preview: lighting/cinematic-lighting.webp
+            generationPrompt: "photography, cinematic lighting, movie-quality scene with dramatic contrast, professional color grading, epic mood --v 7 --ar 16:9"
+
+          - id: studio-lighting
+            prompt_zh: 摄影棚灯光
+            prompt_en: Studio lighting
+            preview: lighting/studio-lighting.webp
+            generationPrompt: "photography, studio lighting, professional portrait with controlled artificial light, softboxes, clean background --v 7 --ar 16:9"
+
+          - id: natural-light
+            prompt_zh: 自然光
+            prompt_en: Natural light
+            preview: lighting/natural-light.webp
+            generationPrompt: "photography, natural light, portrait by window with soft daylight, authentic feel, organic shadows --v 7 --ar 16:9"
+
+          - id: sunlight
+            prompt_zh: 阳光
+            prompt_en: Sunlight
+            preview: lighting/sunlight.webp
+            generationPrompt: "photography, sunlight, outdoor portrait in bright sunshine, warm golden tones, sun flare --v 7 --ar 16:9"
+
+          - id: spotlight
+            prompt_zh: 聚光灯
+            prompt_en: Spotlight
+            preview: lighting/spotlight.webp
+            generationPrompt: "photography, spotlight, subject in focused beam of light, dramatic focal point, theater style --v 7 --ar 16:9"
+
+          - id: glare
+            prompt_zh: 耀光
+            prompt_en: Glare
+            preview: lighting/glare.webp
+            generationPrompt: "photography, glare, intense bright light washing over scene, lens flare, overexposed highlights --v 7 --ar 16:9"
+
+      - id: light-color
+        name: 光线-色彩
+        prompts:
+          - id: neon-lighting
+            prompt_zh: 霓虹灯光
+            prompt_en: Neon lighting
+            preview: lighting/neon-lighting.webp
+            generationPrompt: "photography, neon lighting, urban night scene with colorful neon signs, vibrant glow, cyberpunk atmosphere --v 7 --ar 16:9"
+
+          - id: red-light
+            prompt_zh: 红光
+            prompt_en: red light
+            preview: lighting/red-light.webp
+            generationPrompt: "photography, red light, portrait bathed in red illumination, dramatic intense mood, cinematic --v 7 --ar 16:9"
+
+          - id: blue-light
+            prompt_zh: 蓝光
+            prompt_en: blue light
+            preview: lighting/blue-light.webp
+            generationPrompt: "photography, blue light, portrait with cool blue tones, calm mysterious atmosphere, nighttime feel --v 7 --ar 16:9"
+
+          - id: green-light
+            prompt_zh: 绿光
+            prompt_en: green light
+            preview: lighting/green-light.webp
+            generationPrompt: "photography, green light, portrait in emerald illumination, sci-fi atmosphere, matrix style --v 7 --ar 16:9"
+
+          - id: yellow-light
+            prompt_zh: 黄光
+            prompt_en: yellow light
+            preview: lighting/yellow-light.webp
+            generationPrompt: "photography, yellow light, portrait with golden yellow glow, cheerful warm mood, sunny feel --v 7 --ar 16:9"
+
+          - id: orange-light
+            prompt_zh: 橙光
+            prompt_en: orange light
+            preview: lighting/orange-light.webp
+            generationPrompt: "photography, orange light, portrait with sunset orange tones, warm cozy atmosphere, autumn feel --v 7 --ar 16:9"
+
+          - id: purple-light
+            prompt_zh: 紫光
+            prompt_en: purple light
+            preview: lighting/purple-light.webp
+            generationPrompt: "photography, purple light, portrait in violet illumination, dreamy mysterious mood, artistic --v 7 --ar 16:9"
+
+          - id: pink-light
+            prompt_zh: 粉光
+            prompt_en: pink light
+            preview: lighting/pink-light.webp
+            generationPrompt: "photography, pink light, portrait with soft pink glow, romantic dreamy atmosphere, feminine --v 7 --ar 16:9"
+
+          - id: white-light
+            prompt_zh: 白光
+            prompt_en: white light
+            preview: lighting/white-light.webp
+            generationPrompt: "photography, white light, portrait in pure white illumination, clean bright atmosphere, modern --v 7 --ar 16:9"
+
+          - id: warm-light
+            prompt_zh: 暖光
+            prompt_en: warm light
+            preview: lighting/warm-light.webp
+            generationPrompt: "photography, warm light, portrait with golden warm tones, cozy inviting atmosphere, sunset feel --v 7 --ar 16:9"
+
+          - id: cool-light
+            prompt_zh: 冷光
+            prompt_en: cool light
+            preview: lighting/cool-light.webp
+            generationPrompt: "photography, cool light, portrait with blue-tinted cool tones, refreshing calm atmosphere, morning feel --v 7 --ar 16:9"
+
+          - id: golden-light
+            prompt_zh: 金光
+            prompt_en: golden light
+            preview: lighting/golden-light.webp
+            generationPrompt: "photography, golden light, portrait in rich golden hour illumination, warm luxurious glow, magical --v 7 --ar 16:9"
+
+          - id: silver-light
+            prompt_zh: 银光
+            prompt_en: silver light
+            preview: lighting/silver-light.webp
+            generationPrompt: "photography, silver light, portrait with cool metallic sheen, elegant sophisticated atmosphere, moonlight feel --v 7 --ar 16:9"
+
+          - id: amber-light
+            prompt_zh: 琥珀光
+            prompt_en: amber light
+            preview: lighting/amber-light.webp
+            generationPrompt: "photography, amber light, portrait in warm honey-colored glow, nostalgic vintage atmosphere, retro --v 7 --ar 16:9"
+
+          - id: cyan-light
+            prompt_zh: 青光
+            prompt_en: cyan light
+            preview: lighting/cyan-light.webp
+            generationPrompt: "photography, cyan light, portrait with bright turquoise tones, fresh modern atmosphere, tech feel --v 7 --ar 16:9"
+
+          - id: magenta-light
+            prompt_zh: 品红光
+            prompt_en: magenta light
+            preview: lighting/magenta-light.webp
+            generationPrompt: "photography, magenta light, portrait in vivid fuchsia illumination, bold artistic mood, contemporary --v 7 --ar 16:9"
+
+          - id: violet-light
+            prompt_zh: 紫罗兰光
+            prompt_en: violet light
+            preview: lighting/violet-light.webp
+            generationPrompt: "photography, violet light, portrait with deep purple-blue tones, mysterious ethereal atmosphere, dreamy --v 7 --ar 16:9"
+
+          - id: colorful-light
+            prompt_zh: 彩色光
+            prompt_en: colorful light
+            preview: lighting/colorful-light.webp
+            generationPrompt: "photography, colorful light, portrait with multiple rainbow colors, vibrant festive atmosphere, dynamic --v 7 --ar 16:9"
+
+      - id: light-adjectives
+        name: 光的形容词
+        prompts:
+          - id: coruscating
+            prompt_zh: 闪烁的
+            prompt_en: Coruscating
+            preview: lighting/coruscating.webp
+            generationPrompt: "photography, coruscating light, subject with flickering glittering illumination, dynamic sparkles, magical --v 7 --ar 16:9"
+
+          - id: bright
+            prompt_zh: 明亮的
+            prompt_en: bright
+            preview: lighting/bright.webp
+            generationPrompt: "photography, bright light, scene flooded with intense illumination, high key, cheerful mood --v 7 --ar 16:9"
+
+          - id: flashing
+            prompt_zh: 闪烁的
+            prompt_en: flashing
+            preview: lighting/flashing.webp
+            generationPrompt: "photography, flashing light, subject with intermittent bursts of light, strobe effect, energetic --v 7 --ar 16:9"
+
+          - id: sparkling
+            prompt_zh: 闪闪发光的
+            prompt_en: sparkling
+            preview: lighting/sparkling.webp
+            generationPrompt: "photography, sparkling light, scene with tiny points of glittering light, festive magical atmosphere --v 7 --ar 16:9"
+
+          - id: dappled
+            prompt_zh: 斑驳的
+            prompt_en: Dappled
+            preview: lighting/dappled.webp
+            generationPrompt: "photography, dappled light, subject with spotted light patterns through foliage, natural organic shadows --v 7 --ar 16:9"
+
+          - id: glossy
+            prompt_zh: 光滑的
+            prompt_en: Glossy
+            preview: lighting/glossy.webp
+            generationPrompt: "photography, glossy light, subject with shiny reflective surface highlights, polished sleek appearance --v 7 --ar 16:9"
+
+          - id: gleaming
+            prompt_zh: 闪耀的
+            prompt_en: Gleaming
+            preview: lighting/gleaming.webp
+            generationPrompt: "photography, gleaming light, subject with bright steady radiance, polished metallic shine --v 7 --ar 16:9"
+
+          - id: shining
+            prompt_zh: 发光的
+            prompt_en: shining
+            preview: lighting/shining.webp
+            generationPrompt: "photography, shining light, subject emitting strong steady glow, luminous bright atmosphere --v 7 --ar 16:9"
+
+          - id: radiant
+            prompt_zh: 辐射的
+            prompt_en: radiant
+            preview: lighting/radiant.webp
+            generationPrompt: "photography, radiant light, subject with glowing energy radiating outward, warm luminous aura --v 7 --ar 16:9"
+
+          - id: glistening
+            prompt_zh: 闪耀的
+            prompt_en: Glistening
+            preview: lighting/glistening.webp
+            generationPrompt: "photography, glistening light, subject with wet sparkly surface reflections, fresh dewy appearance --v 7 --ar 16:9"
+
+          - id: lustrous
+            prompt_zh: 有光泽的
+            prompt_en: lustrous
+            preview: lighting/lustrous.webp
+            generationPrompt: "photography, lustrous light, subject with soft pearlescent sheen, elegant refined glow --v 7 --ar 16:9"
+
+          - id: lucid
+            prompt_zh: 清澈的
+            prompt_en: Lucid
+            preview: lighting/lucid.webp
+            generationPrompt: "photography, lucid light, scene with crystal clear transparent illumination, pure pristine quality --v 7 --ar 16:9"
+
+          - id: resplendent
+            prompt_zh: 辉煌的
+            prompt_en: Resplendent
+            preview: lighting/resplendent.webp
+            generationPrompt: "photography, resplendent light, subject with dazzling magnificent brilliance, glorious radiant atmosphere --v 7 --ar 16:9"
+
+          - id: shimmering
+            prompt_zh: 闪烁的
+            prompt_en: Shimmering
+            preview: lighting/shimmering.webp
+            generationPrompt: "photography, shimmering light, subject with soft wavering glow, gentle flowing luminescence --v 7 --ar 16:9"
+
+          - id: spectral
+            prompt_zh: 光谱的
+            prompt_en: Spectral
+            preview: lighting/spectral.webp
+            generationPrompt: "photography, spectral light, scene with rainbow prism colors, ethereal ghostly quality --v 7 --ar 16:9"
+
+          - id: ablaze
+            prompt_zh: 着火的
+            prompt_en: Ablaze
+            preview: lighting/ablaze.webp
+            generationPrompt: "photography, ablaze light, subject engulfed in intense fire-like glow, burning passionate atmosphere --v 7 --ar 16:9"
+
+          - id: aglow
+            prompt_zh: 发光的
+            prompt_en: Aglow
+            preview: lighting/aglow.webp
+            generationPrompt: "photography, aglow light, subject with warm gentle inner radiance, soft comforting luminescence --v 7 --ar 16:9"
+
+          - id: beaming
+            prompt_zh: 欣喜的
+            prompt_en: Beaming
+            preview: lighting/beaming.webp
+            generationPrompt: "photography, beaming light, subject with bright joyful radiance, happy cheerful glow --v 7 --ar 16:9"
+
+          - id: blazing
+            prompt_zh: 熊熊燃烧的
+            prompt_en: Blazing
+            preview: lighting/blazing.webp
+            generationPrompt: "photography, blazing light, subject with fierce intense flames of light, powerful fiery atmosphere --v 7 --ar 16:9"
+
+          - id: dazzling
+            prompt_zh: 眼花缭乱的
+            prompt_en: Dazzling
+            preview: lighting/dazzling.webp
+            generationPrompt: "photography, dazzling light, subject with blindingly brilliant illumination, stunning overwhelming brightness --v 7 --ar 16:9"
+
+          - id: effulgent
+            prompt_zh: 光辉灿烂的
+            prompt_en: Effulgent
+            preview: lighting/effulgent.webp
+            generationPrompt: "photography, effulgent light, subject with radiant shining splendor, magnificent glowing brilliance --v 7 --ar 16:9"
+
+          - id: twinkling
+            prompt_zh: 闪烁的
+            prompt_en: Twinkling
+            preview: lighting/twinkling.webp
+            generationPrompt: "photography, twinkling light, subject with intermittent sparkles, starry magical atmosphere --v 7 --ar 16:9"
+
+          - id: splendor
+            prompt_zh: 华丽的
+            prompt_en: splendor
+            preview: lighting/splendor.webp
+            generationPrompt: "photography, splendor light, subject with magnificent grandeur, majestic glorious radiance --v 7 --ar 16:9"
+
+  # 艺术家/摄影师（特殊分类：建议单选）- 放在最后
+  - id: artists
+    name: 艺术家/摄影师
+    icon: person-outline
+    special:
+      isArtist: true
+      singleSelectionHint: 建议单选，多选可能导致风格冲突
+      positionTag: artist
+    subCategories:
+      - id: surreal
+        name: 超现实
+        prompts:
+          - id: sandy-skoglund
+            prompt_zh: 桑迪·斯科格伦
+            prompt_en: Sandy Skoglund
+            preview: artists/sandy-skoglund.webp
+            generationPrompt: "photography by Sandy Skoglund, surreal installation with hundreds of bright orange cats in a monochrome blue room, highly saturated colors, whimsical repetition --v 7 --ar 16:9"
+
+          - id: david-lachapelle
+            prompt_zh: 大卫·拉切贝尔
+            prompt_en: David LaChapelle
+            preview: artists/david-lachapelle.webp
+            generationPrompt: "photography by David LaChapelle, hyper-saturated pop surrealism portrait with vibrant colors, theatrical lighting, celebrity culture aesthetic, baroque composition --v 7 --ar 16:9"
+
+      - id: vintage-surreal
+        name: 复古超现实
+        prompts:
+          - id: geof-kern
+            prompt_zh: 杰夫·克恩
+            prompt_en: Geof Kern
+            preview: artists/geof-kern.webp
+            generationPrompt: "photography by Geof Kern, vintage surreal fashion editorial with retro styling, dreamlike atmosphere, soft muted colors, 1960s aesthetic --v 7 --ar 16:9"
+
+          - id: angus-mcbean
+            prompt_zh: 安格斯·麦克比恩
+            prompt_en: Angus McBean
+            preview: artists/angus-mcbean.webp
+            generationPrompt: "photography by Angus McBean, vintage theatrical portrait with dramatic surreal elements, classic Hollywood glamour, elaborate staging, black and white --v 7 --ar 16:9"
+
+          - id: ralph-eugene-meatyard
+            prompt_zh: 拉尔夫·尤金·米亚德
+            prompt_en: Ralph Eugene Meatyard
+            preview: artists/ralph-eugene-meatyard.webp
+            generationPrompt: "photography by Ralph Eugene Meatyard, mysterious figure wearing mask in abandoned decaying interior, ghostly atmosphere, black and white, experimental --v 7 --ar 16:9"
+
+      - id: minimalist
+        name: 极简
+        prompts:
+          - id: chema-madoz
+            prompt_zh: 查马·马多斯
+            prompt_en: Chema Madoz
+            preview: artists/chema-madoz.webp
+            generationPrompt: "photography by Chema Madoz, minimalist black and white conceptual still life, poetic everyday objects transformed, clever visual metaphor, simple composition --v 7 --ar 16:9"
+
+          - id: akos-major
+            prompt_zh: 阿克斯·梅吉
+            prompt_en: akos major
+            preview: artists/akos-major.webp
+            generationPrompt: "photography by akos major, minimalist geometric composition with clean lines, abstract architectural forms, monochromatic palette, precise balance --v 7 --ar 16:9"
+
+          - id: scarlett-hooft-graafland
+            prompt_zh: 斯嘉丽·霍夫特·格拉夫兰
+            prompt_en: Scarlett Hooft Graafland
+            preview: artists/scarlett-hooft-graafland.webp
+            generationPrompt: "photography by Scarlett Hooft Graafland, minimalist surreal landscape with unexpected colorful elements, vast empty space, playful intervention in nature --v 7 --ar 16:9"
+
+          - id: erik-madigan-heck
+            prompt_zh: 埃里克·马迪根·赫克
+            prompt_en: Erik Madigan Heck
+            preview: artists/erik-madigan-heck.webp
+            generationPrompt: "photography by Erik Madigan Heck, fine art fashion with vibrant saturated colors, painterly quality, artistic elegance, editorial sophistication --v 7 --ar 16:9"
+
+          - id: miles-aldridge
+            prompt_zh: 迈尔斯·奥尔德里奇
+            prompt_en: Miles Aldridge
+            preview: artists/miles-aldridge.webp
+            generationPrompt: "photography by Miles Aldridge, hyper-saturated cinematic fashion, intense vibrant colors, film noir lighting, dramatic retro aesthetic, glossy finish --v 7 --ar 16:9"
+
+          - id: nick-knight
+            prompt_zh: 尼克·奈特
+            prompt_en: Nick Knight
+            preview: artists/nick-knight.webp
+            generationPrompt: "photography by Nick Knight, avant-garde fashion with experimental techniques, bold innovative visuals, pushing boundaries, contemporary edge --v 7 --ar 16:9"
+
+          - id: annie-leibovitz
+            prompt_zh: 安妮·莱博维茨
+            prompt_en: Annie Leibovitz
+            preview: artists/annie-leibovitz.webp
+            generationPrompt: "photography by Annie Leibovitz, iconic celebrity portrait with narrative storytelling, intimate yet grand, dramatic natural lighting, editorial mastery --v 7 --ar 16:9"
+
+      - id: landscape-artist
+        name: 风景
+        prompts:
+          - id: marcin-sobas
+            prompt_zh: 马辛·索巴斯
+            prompt_en: Marcin Sobas
+            preview: artists/marcin-sobas.webp
+            generationPrompt: "photography by Marcin Sobas, dramatic landscape with moody atmospheric lighting, dark clouds, epic natural scenery, cinematic wilderness --v 7 --ar 16:9"
+
+          - id: martin-rak
+            prompt_zh: 马丁·瑞克
+            prompt_en: Martin Rak
+            preview: artists/martin-rak.webp
+            generationPrompt: "photography by Martin Rak, night sky with stunning star trails circling over landscape, long exposure astrophotography, cosmic motion --v 7 --ar 16:9"
+
+          - id: sebastiao-salgado
+            prompt_zh: 塞巴斯蒂昂·萨尔加多
+            prompt_en: Sebastião Salgado
+            preview: artists/sebastiao-salgado.webp
+            generationPrompt: "photography by Sebastião Salgado, powerful black and white documentary, human condition and nature, dramatic contrast, epic scale, social consciousness --v 7 --ar 16:9"
+
+      - id: nightsky
+        name: 夜空
+        prompts:
+          - id: michael-shainblum
+            prompt_zh: 迈克尔·沙布伦
+            prompt_en: Michael Shainblum
+            preview: artists/michael-shainblum.webp
+            generationPrompt: "photography by Michael Shainblum, vibrant milky way galaxy over dramatic landscape, brilliant star-filled sky, astrophotography with vivid colors --v 7 --ar 16:9"
+
+          - id: mikko-lagerstedt
+            prompt_zh: 米科·拉格斯泰特
+            prompt_en: Mikko Lagerstedt
+            preview: artists/mikko-lagerstedt.webp
+            generationPrompt: "photography by Mikko Lagerstedt, ethereal night landscape with aurora borealis, moody atmospheric blues and greens, minimalist Nordic scenery --v 7 --ar 16:9"
+
+      - id: other-styles
+        name: 其他特色
+        prompts:
+          - id: misha-gordin
+            prompt_zh: 米沙·格尔丁（暗黑）
+            prompt_en: Misha Gordin
+            preview: artists/misha-gordin.webp
+            generationPrompt: "photography by Misha Gordin, dark surreal conceptual art, philosophical themes, haunting atmosphere, dramatic black and white, human silhouettes --v 7 --ar 16:9"
+
+          - id: robert-capa
+            prompt_zh: 罗伯特·卡帕（战地）
+            prompt_en: Robert Capa
+            preview: artists/robert-capa.webp
+            generationPrompt: "photography by Robert Capa, gritty war photojournalism, decisive moment in conflict, raw emotion, black and white documentary, historical significance --v 7 --ar 16:9"
+
+          - id: zhang-kechun
+            prompt_zh: 张克纯（中国农村）
+            prompt_en: Zhang Kechun
+            preview: artists/zhang-kechun.webp
+            generationPrompt: "photography by Zhang Kechun, contemplative Chinese rural landscape, Yellow River scenery, documentary style with artistic vision, muted natural colors --v 7 --ar 16:9"
+
+          - id: ren-hang
+            prompt_zh: 任航
+            prompt_en: Ren hang
+            preview: artists/ren-hang.webp
+            generationPrompt: "photography by Ren hang, avant-garde portrait of urban Chinese youth, bold unconventional angles, raw emotional expression, contemporary street style --v 7 --ar 16:9"
+
+          - id: zhang-jingna
+            prompt_zh: 张晶娜
+            prompt_en: Zhang jingna
+            preview: artists/zhang-jingna.webp
+            generationPrompt: "photography by Zhang jingna, ethereal fantasy portrait with flowing fabrics, dreamy soft lighting, Asian-inspired fairy tale aesthetic, romantic elegance --v 7 --ar 16:9"
+
+          - id: weegee
+            prompt_zh: 维基
+            prompt_en: Weegee
+            preview: artists/weegee.webp
+            generationPrompt: "photography by Weegee, gritty black and white street photography, crime scene and New York nightlife, flash-lit drama, 1940s tabloid style --v 7 --ar 16:9"
+
+

@@ -1,0 +1,316 @@
+Explore and switch between Midjourney versions using the version parameter: --version or --v 
+What are Versions? Think of versions like software updates. When software is updated, it might have better graphics or new features. Similarly, Midjourney versions refer to the different models released over time—each with unique features.
+Each version might handle prompts differently, have unique artistic styles, or offer improved image quality.
+The current default Midjourney version is V8.2.
+Setting a Version
+Add --v # to the end of your prompt in the Imagine bar.
+
+You can choose a default version for all your images in the settings panel. To do this, click the settings  button in the Imagine bar. Once you set it, this will apply to all your future prompts. 
+
+Add --v # to the end of your prompt in Discord.
+
+
+
+You can also set the default Version for all images using the settings command and selecting one from the version dropdown menu.
+
+V8.2V8.2 released as the default version on July 24, 2026. V8.2 is an update focused on aesthetics, image quality, and Personalization. It also features the new Edit Model, which replaces Omni Reference, Character Reference, and the Retexture tool.
+V8.2 images are more creative, bold, sophisticated, and edgy. Personalization "understands" your aesthetic tastes much better, especially on profiles with a large amount of points. Creating Personalization profiles for V8.2 now has a much larger and improved pool of images to choose from.
+For more information and tips, see our Version 8.2 post. 
+V8.1V8.1 released on April 14, 2026, and was the default version from June 10 to July 23, 2026. V8.1 is our fastest model so far, with standard jobs rendering about 4–5 times faster than earlier versions. It also does a better job reading your prompt and holding on to small details. For even more prompt adherence, you can turn on Raw to remove default styling.
+You may need to unlock your Global V7/V8 Personalization Profile to use V8.1.
+HD ImagesV8.1 features HD images, allowing you to generate higher resolution 2K images, without upscaling. You can turn on HD images in the Version section of the settings panel on web, or by using the --sd and --hd parameters. Using the web "Run batch as HD" button on SD V8.1 images will rerun the seedlocked prompt in HD. HD costs 1.3 minutes of GPU time, compared to SD which costs 0.8 minutes of GPU time.
+Note: Using any of our inpainting or outpainting tools (Pan, Zoom Out, Edit/Vary Region) on HD images will downscale the resulting images to SD. You can use the Upscale options to return these images to HD resolution.
+For more information and tips, see our V8.1 Alpha post. 
+V8.0 was an early access alpha version that launched on March 17, 2026 and was available on the Midjourney Alpha website until July 24, 2026. Images generated in V8.0 are still available in your website gallery, but the version is no longer available for use.
+Feature Compatibility & Comparison Chart
+
+  | 
+V6 | 
+V7 | 
+V8.1 & V8.2 | 
+
+
+
+
+Max. Aspect Ratio  | 
+14:1 | 
+14:1 | 
+14:1 (4:1 for HD) | 
+
+
+
+
+Variations  | 
+[OK] | 
+[OK] | 
+[OK] | 
+
+
+
+
+Upscalers  | 
+Subtle & Creative | 
+Using V6.1 Upscalers | 
+
+[OK] SD Images | 
+
+
+
+HD Images (2048px) | 
+[NO] | 
+[NO] | 
+
+[OK]
+(1.3 min GPU cost) | 
+
+
+
+
+Pan  | 
+[OK] | 
+
+[OK] Using V6.1 | 
+
+[OK] Using Edit Model | 
+
+
+
+
+Zoom Out  | 
+[OK] | 
+
+[OK] Using V6.1 | 
+
+[OK] Using Edit Model | 
+
+
+
+
+Remix  | 
+[OK] | 
+[OK] | 
+[OK] | 
+
+
+
+Personalization | 
+[OK] | 
+[OK] | 
+[OK] | 
+
+
+
+
+Moodboards  | 
+[OK] | 
+[OK] | 
+[OK] | 
+
+
+
+Edit Model | 
+
+[NO]  | 
+
+[NO]  | 
+[OK] | 
+
+
+
+
+Editor  | 
+[OK] | 
+
+[OK] Using V6.1 | 
+
+[OK] Using Edit Model | 
+
+
+
+Omni Reference | 
+[NO] | 
+[OK] | 
+
+[NO]  | 
+
+
+
+Omni Reference Weight | 
+[NO] | 
+[OK] | 
+
+[NO]  | 
+
+
+
+
+Style Reference  | 
+[OK] | 
+[OK] | 
+[OK] | 
+
+
+
+
+Style Reference Codes  | 
+[OK] | 
+[OK] | 
+[OK] | 
+
+
+
+
+Style Weight  | 
+[OK] | 
+[OK] | 
+[OK] | 
+
+
+
+Image Prompts  | 
+[OK] | 
+[OK] | 
+[OK] | 
+
+
+
+
+Image Weight  | 
+[OK] | 
+[OK] | 
+[OK] | 
+
+
+
+Multi-Prompting  | 
+[OK] | 
+[NO] | 
+[NO] | 
+
+
+
+No Parameter  | 
+[OK] | 
+[OK] | 
+[OK] | 
+
+
+
+Quality Parameter  | 
+
+[OK] (0.5, 1, 2) | 
+
+[OK] (1, 2, 4) | 
+[NO] | 
+
+
+
+Seed Parameter  | 
+[OK] | 
+[OK] | 
+
+[OK] 
+(99% identical) | 
+
+
+
+Chaos Parameter  | 
+[OK] | 
+[OK] | 
+[OK] | 
+
+
+
+Raw | 
+[OK] | 
+[OK] | 
+[OK] | 
+
+
+
+
+Stylize Parameter  | 
+[OK] | 
+[OK] | 
+[OK] | 
+
+
+
+Tile Parameter  | 
+[OK] | 
+[OK] | 
+[OK] | 
+
+
+
+Weird Parameter  | 
+[OK] | 
+[OK] | 
+[OK] | 
+
+
+
+--exp Parameter | 
+[NO] | 
+[OK] | 
+[OK] | 
+
+
+
+Niji Version  | 
+
+[OK] --niji 6 | 
+
+[OK] --niji 7 | 
+[NO] | 
+
+
+
+Draft Mode | 
+[NO] | 
+[OK] | 
+[NO] | 
+
+
+
+Conversational Mode | 
+[NO] | 
+[OK] | 
+[OK] | 
+
+
+
+
+Relax Mode  | 
+[OK] | 
+[OK] | 
+
+[OK]  | 
+
+
+
+
+Fast Mode  | 
+[OK] | 
+[OK] | 
+[OK] | 
+
+
+
+
+Turbo Mode  | 
+[OK] | 
+[OK] | 
+[NO] | 
+
+
+
+V7V7 was released on April 3, 2025, and was the default version from June 17, 2025 to June 9, 2026. 
+In V7, text and image prompts are handled with stunning precision, while image quality shines with richer textures and more coherent details—especially in bodies, hands, and objects.
+V7 also introduced Draft Mode and Omni Reference.
+V6.1V6.1 was released on July 30, 2024, and was the default version until June 16, 2025. It produces more coherent images with more precise details and textures, and generates images approximately 25% faster than V6.
+V6V6 was released on December 20, 2023, and was the default version from February 14 to July 30, 2024. V6 has enhanced prompt accuracy for longer inputs, improved coherence and knowledge, and advanced image prompting and remixing capabilities.
+Niji 7Niji models are a special series within Midjourney, developed in collaboration with Spellbrush, to focus on Eastern and anime aesthetics and illustrative styles. Niji models have their own dedicated website and Discord server, providing a tailored experience for anime enthusiasts.
+Niji 7, launched on January 9, 2026, brings a major boost in coherency. Fine details like eyes, reflections, and small background elements are now much clearer. It also follows prompts more closely, which helps with specific designs or repeatable characters. This version is more literal, so broad or “vibey” prompts may not behave the same as before. Niji 7 also introduces a cleaner, flatter look designed to highlight its improved line work. For more details check out the Niji blog.
+For information about older versions, please see our Legacy Features article.
+
