@@ -30,6 +30,9 @@ CLAUDE.md
 # WorkBuddy 项目工作记忆（agent 内部状态，非项目源码）
 .workbuddy/
 
+# 本地采集产物（styles_top 的 sref 清单 / 失败记录；由 collect 工具落地，不入 git）
+data/
+
 # 临时工作文件
 preview_prompt.json
 

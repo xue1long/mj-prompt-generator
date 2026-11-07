@@ -16,7 +16,9 @@
     "update:explore": "npm run collect:explore && npm run decompose:explore && npm run build",
     "sync:style-images": "node tools/sync-style-images.ts",
     "build:styles-top": "node tools/build-styles-top.ts",
-    "sync:styles-top-images": "node tools/sync-style-top-images.ts",
+    "sync:styles-top-images": "node tools/sync-styles-top-images.ts",
+    "collect:styles-top": "node tools/collect-styles-top.ts",
+    "update:styles-top": "npm run collect:styles-top && npm run build:styles-top && npm run build",
     "verify": "node scripts/verify-app.mjs"
   },
   "dependencies": {
