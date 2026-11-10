@@ -1,8 +1,8 @@
 {
   "methodologyVersion": "v8.2",
   "schemaVersion": 1,
-  "generatedAt": "2026-11-07T03:23:23.692Z",
-  "model": "混合：3 条 WorkBuddy 手工精拆 + 25 条逐条精拆（LLM 语义判断） + 914 条规则兜底",
+  "generatedAt": "2026-11-07T05:09:15.800Z",
+  "model": "混合：3 条 WorkBuddy 手工精拆 + 50 条逐条精拆（LLM 语义判断） + 889 条规则兜底",
   "jobs": [
     {
       "jobId": "7b95a9a0-f44a-4b27-9c18-e139023fa47a",
@@ -273,7 +273,7 @@
       ],
       "summary": "一个女孩被丢进超现实怪诞的混合媒介拼贴里，正文只给主体和两个风格词，场景、光线与画幅全靠 sref 参考图补全。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.552Z"
+      "generatedAt": "2026-11-07T05:09:15.698Z"
     },
     {
       "jobId": "202ed0e7-1a97-40f7-b7fb-912e124372d9",
@@ -420,7 +420,7 @@
       ],
       "summary": "七张促销主题贴纸按等距网格排在纯黑哑光背景上，走时尚编辑式高级 3D 质感，作者用大量自然语言排除项锁死数量、间距和留白，但 SALE 这类准确字样恰恰是 MJ 最容易写崩的地方。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.556Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "e7152976-7282-40ec-88d2-6ceda6d3ff39",
@@ -566,7 +566,7 @@
       ],
       "summary": "一张虚构白人书呆子说唱歌手的超写实年鉴照，用夸张表情、荒诞发型和不搭调穿着制造喜剧感，面孔真实度和幽默感靠反差撑起来。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.556Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "2f97e8f9-3056-469f-b20c-aff6f5f1094d",
@@ -707,7 +707,7 @@
       ],
       "summary": "黑白 2D 动画风的 Crybaby 女神像，作者只用忧郁、窈窕、神圣三个抽象词定调，把画面细节几乎全部交给角色本身的视觉符号。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.556Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "425e4d59-0b34-4236-9edd-34a6b81dc7ca",
@@ -849,7 +849,7 @@
       ],
       "summary": "一只穿蓝毛衣白裤子、戴墨镜用吸管喝饮料的拟人鸭子，站在颗粒感粉蓝背景前，走可爱质感数字绘画的路线。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.556Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "38bed841-7a08-4675-8e5d-c5a52adee455",
@@ -997,7 +997,7 @@
       ],
       "summary": "黑底 lowrider 风格写真，用汽车后视镜当画框，框里是浓眼影侧望的眼睛和副驾上的头骨，镜下垂着红骰子与金属十字架，喷绘质感配高反差把亚文化味道做足。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.556Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "d9002c47-31ca-49d6-8ea2-1bc7331634f5",
@@ -1146,7 +1146,7 @@
       ],
       "summary": "一只呆萌又疲惫的皮克斯风卡通狼，红底特写、四分之三侧面看向镜头，作者同时挂上皮克斯、童书插画、羊毛毡和 Mo Willems 四个风格锚点。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.556Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "aaf1d855-3655-49bd-9eb3-9499299c37f3",
@@ -1287,7 +1287,7 @@
       ],
       "summary": "一句法语勾勒的黑豹：不给场景、不给光影，只把柔软、性感、神秘、母性四个气质词叠上去，让猛兽变成一尊情绪化的肖像。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "40082802-f767-4946-aa5e-b59e92eafc7c",
@@ -1439,7 +1439,7 @@
       ],
       "summary": "一幅洛可可混搭 preppy 的水彩匹克球场：粉色场地里四位女士挥拍，四周留白、粉绿金铺满色调，但作者把三十多个风格词堆在主体前面，还写了个根本不生效的 ar- - 3:2。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "1d182ccf-432c-4f67-8d9a-f6d659cc84e2",
@@ -1583,7 +1583,7 @@
       ],
       "summary": "一对情侣在床上相拥、满眼爱意的黑白墨线画，作者用切割动势的平行线当构图手法，但除了媒介和情绪几乎没给任何画面信息。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "49f99aa2-1578-4c29-bbf3-10e23fb6d898",
@@ -1731,7 +1731,7 @@
       ],
       "summary": "草莓针织开衫女孩坐在红白格野餐布上捏着一颗草莓，篮子和柠檬水摆在一旁，开阔草地配柔光胶片色，是一张把服装细节写满的夏季时尚编辑片。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "7bc56e9c-c239-4188-99d5-4d55c6a6356e",
@@ -1880,7 +1880,7 @@
       ],
       "summary": "一张孔版印刷风的纽约建筑线稿海报，单色墨配米白纸、大色块留白、背后压一层淡天际线，作者连手绘字和城市徽章式的收藏感都写进了风格要求。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "e35ac035-befc-4bc7-bf70-7e3325a0adc8",
@@ -2018,7 +2018,7 @@
       ],
       "summary": "三块百香果切半叠在一起的极简插画，除了数量、叠放关系和 illustration 一个媒介词，作者几乎什么都没规定。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "e0f2eefd-849d-4bde-b40d-4f435bed5619",
@@ -2167,7 +2167,7 @@
       ],
       "summary": "一幅水墨风 2D 动画全身设定图：年轻猎户秦烈穿粗布短打、背猎弓箭袋，憨厚里带怯懦，淡墨背景衬出命运的迷茫感，是角色设定稿而非场景插画。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "050c3cbf-6bf3-4526-8a3d-3de6e5b6400f",
@@ -2321,7 +2321,7 @@
       ],
       "summary": "一间 1960 年代美式客厅的时尚大片布景：橄榄绿皮沙发居中，胡桃木茶几上摆红色转盘电话和旧杂志，钨丝灯配柔光打出复古杂志广告感，四周刻意留白方便后期合成。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "ce18eea4-e6d6-4c40-8476-c4ce71822a9c",
@@ -2476,7 +2476,7 @@
       ],
       "summary": "一张现代版战车塔罗牌：女人开着淡紫古董车沿海岸盘山路远去，车顶蹲两只猫、后座塞满书和行李，水粉彩铅的柔和配色里嵌了金线牌框与 VII 字样，但要求 MJ 写准牌名正是最容易翻车的一环。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "4ac3b561-bceb-436d-9d84-095fd8d0c8dc",
@@ -2619,7 +2619,7 @@
       ],
       "summary": "空城深夜的绿灯路口，一个穿哑光灰皮衣、戴同色头盔的女孩骑灰色 Ducati 穿过，镜头从极远的高处背面用 35mm 拍，作者靠 hex 色值把整套灰调锁死。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "ceeef4b4-1816-4353-8787-aa8037b8b6cd",
@@ -2769,7 +2769,7 @@
       ],
       "summary": "明亮健身房里一位女生在瑜伽垫上倒立、教练在旁扶腿，双人全身入镜，走高端玩偶感 3D 动画路线，暖调电影光配高饱和配色，但结尾挂的 HD 是 V6 之后基本无效的画质堆料。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "506e26d0-ad89-4d9f-b004-d06401e6933a",
@@ -2925,7 +2925,7 @@
       ],
       "summary": "一张伪 2000 年美国爱情喜剧的抓拍剧照：32 岁男人穿炭灰三件套坐在芝加哥酒店吧台，侧头看向画外、嘴角带笑，85mm 平视中近景配冷蓝环境光和一点暖灯，连 halation 和抬黑的胶片味都写进去了。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "633a643e-861d-49b4-a2c2-bc1e073251b8",
@@ -3070,7 +3070,7 @@
       ],
       "summary": "一幅超现实生化机械肖像：机械版蒂法抱着一只古怪的机械猫，作者用温柔、科技感与废土之美三个抽象词定调，把人物和场景细节全留给模型。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "05ac74d4-c050-498d-bad3-6f692e69e003",
@@ -3215,7 +3215,7 @@
       ],
       "summary": "一张手绘粉彩风的电影感画面：55 岁东亚男设计师黑白长发、黑框眼镜，俯身盯着手绘板，桌上散着咖啡杯、数位笔和小手办，窗外是淡化的广州塔，整体走温暖低饱和的手工叙事感。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "651b0814-3256-40ef-bcfb-2698710a7be2",
@@ -3370,7 +3370,7 @@
       ],
       "summary": "餐厅里短发意大利女人一手举白葡萄酒、一手牵着西装男伴，回头对镜头笑，视角故意设在男伴这一侧做成第一人称，逆光高反差加强虚化，配富士 X100V 的胶片抓拍味。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "c5e07636-ffd8-4f39-99e7-1d908470645c",
@@ -3511,7 +3511,7 @@
       ],
       "summary": "一条只有六个词的手绘可爱剪贴画需求：给小朋友看的动物，没指定物种、数量或场景，等于把画面内容全权交给模型自由发挥。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "c87e3cb7-8f71-4a8d-a765-eff5ca3d1dd8",
@@ -3653,7 +3653,7 @@
       ],
       "summary": "一幅仿莫奈的印象派睡莲池：白猫在前景直视前方、黑猫稍靠后，两条尾巴都竖出水面，四周漂着睡莲叶和粉紫橙白的花，靠可见笔触与斑驳光把睡莲系列搬成了猫片。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "eba2b446-e1e6-40b0-8e18-7a441ad0cf26",
@@ -3807,63 +3807,77 @@
       ],
       "summary": "从幽暗岩洞里向外拍的超写实竖幅风景：洞口天然框住上缘和两侧，右侧一棵虬枝老树立在起伏草甸中，近景虚化的粉彩野花拉出纵深，阴天柔光把绿调压得很静。",
       "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
-      "generatedAt": "2026-11-07T03:23:23.557Z"
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "fca14842-1c4e-42c5-a143-481806bc7f27",
       "schemaVersion": 1,
       "methodologyVersion": "v8.2",
-      "framework": "人物画像",
+      "framework": "物体描述",
       "segments": [
         {
           "code": "1",
           "module": "主体",
-          "text": "Can you create a powerful",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "a powerful, thought-provoking abstract expressionist artwork",
+          "note": "主体是一幅抽象表现主义画作，却整个埋在 Can you create 的问句宾语里，前面连一个可画的具体对象都没给，expressive human figures 只算画中元素而非主体"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "",
-          "note": "未检出显式动作或状态词"
+          "text": "exploring feminism, ancestry, and the intergenerational connections between women in a family",
+          "note": "exploring 是画作探讨主题的拟人化动作，不是画面里谁在做什么；后面 convey themes、captures the attention of art critics 也都是策展效果而非画面状态"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "thought-provoking abstract expressionist artwork exploring feminism；ancestry；layered symbolism；…（另有 10 个短语见原文）",
-          "note": "场景 / 周边元素，共 13 个短语"
+          "text": "The painting should measure 2 m × 2 m and incorporate expressive human figures, layered symbolism, and bold, emotionally charged textures",
+          "note": "唯一像画面清单的是这三样元素，但 2 m × 2 m 是画布物理尺寸、layered symbolism 是抽象概念，真正的场景、时间、天气一个都没有"
         },
         {
           "code": "4",
           "module": "构图与镜头",
-          "text": "The composition should be visually striking",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "text": "",
+          "note": "visually striking 与 2 m × 2 m 都不是构图指令，全条没有景别、机位、焦段，也没有三分法或留白那类构图信号词"
         },
         {
           "code": "5",
           "module": "光线与色彩",
           "text": "",
-          "note": "未检出显式光线或色调词"
+          "note": "光线与色彩彻底缺位，emotionally charged textures 说的是笔触情绪不是打光，配色只能交给模型从抽象表现主义这个流派里自行想象"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "and the intergenerational connections between women in a family? The painting should measure 2 m × 2 m and incorporate expressive human figures",
-          "note": "风格 / 媒介信号 1 处，词库命中见下方"
+          "text": "abstract expressionist … powerful, thought-provoking … conceptually rich, and artistically sophisticated, with a distinctive visual language",
+          "note": "全片靠流派词加一串概念形容词定调，female identity、heritage、resilience、sisterhood 都是要传达的主题而非视觉风格，属于主体加意境风格的残缺物体描述形态"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；1:1 与风格参考由上游作业字段承载"
+          "note": "正文一个 -- 参数都没有，2 m × 2 m 是夹在句子里的画布尺寸而非 --ar，1:1 画幅与空白 sref 都由上游作业字段承载，这类策展 brief 最容易让人误把尺寸读成比例参数"
         }
       ],
       "composition": [],
       "tags": {
-        "style": [],
+        "style": [
+          "abstract expressionist",
+          "layered symbolism",
+          "emotionally charged textures",
+          "visually striking",
+          "conceptually rich",
+          "artistically sophisticated",
+          "distinctive visual language"
+        ],
         "lighting": [],
         "angle": [],
-        "emotion": []
+        "emotion": [
+          "powerful",
+          "thought-provoking",
+          "resilience",
+          "sisterhood",
+          "strength"
+        ]
       },
       "paramTail": {
         "text": "",
@@ -3873,67 +3887,77 @@
         {
           "id": "R1",
           "ok": false,
-          "note": "检出 2 处完整描述句 / 系动词结构，偏离「名词短语优先」（复杂场景可控）"
+          "note": "四句完整英文（Can you create…? / The painting should… / I want the work to… / The composition should be…）全是祈使与陈述长句，完全背离名词短语优先"
         },
         {
           "id": "R2",
-          "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "ok": false,
+          "note": "Can you create a 占了开头六个词，artwork 这个主体被压在问句宾语里，权重位置远不如直接以名词短语起手"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "正文没有参数，1:1 比例由上游字段给，2 m × 2 m 用的是乘号 × 且夹在句中，不是末尾的 --ar"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "没写 --no，也没有任何排除项，incorporate、convey、should be 全是正向加法，减法概念根本没出现"
         },
         {
           "id": "R5",
-          "ok": true,
-          "note": "未见画质堆料词"
+          "ok": false,
+          "note": "powerful、thought-provoking 加 visually striking、conceptually rich、artistically sophisticated 连堆抽象形容词，还列了五个主题词，堆料且都不可落笔"
         },
         {
           "id": "M1",
           "ok": true,
-          "note": "全文英文半角标点"
+          "note": "逗号、问号、句号全是英文半角，2 m × 2 m 里的 × 是数学符号不是中文标点，标点层面没有隐患"
         },
         {
           "id": "M2",
           "ok": true,
-          "note": "单主体或主体明确"
+          "note": "主体只有一幅 artwork，human figures 是画中元素，不存在五个主体平分注意力的问题"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "没有要求画面出现可读文字或标语，sparks meaningful conversation 说的是观展效果不是画面文字"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "没有 8k、masterpiece、best quality 这类失效画质词，堆的是概念形容词而不是画质标签"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "全英文输入不涉及中文长句，但整条是英文问句加长句，同样属于自然语言整句而非短语模块"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "没有出现 :: 权重语法，因此不触发 V7 起该语法被移除的兼容问题"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "未写 --style raw，abstract expressionist 是正文流派词，不涉及 V7 起改用 --raw 的参数陷阱"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "没有 --no，自然也不存在 V8.2 下逐词独立审核造成的误伤"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "没有使用 --q / --oref / --cref 这类 V8.1 起被移除或替代的旧参数"
         }
       ],
-      "summary": "画面主体，女性、绘画、构图，1:1 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:16.979Z"
+      "summary": "这是一份用整段英文祈使句写成的策展需求：要一幅两米见方的抽象表现主义画作探讨女权、血缘与家族女性的代际联结，通篇只堆概念与气质形容词，光线、构图和可落笔的画面细节一个都没给。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "cb350521-2fd8-45b4-b751-3a231d19540a",
@@ -4078,49 +4102,54 @@
         {
           "code": "1",
           "module": "主体",
-          "text": "VHS screengrab of a anime girl shotting a ray gun",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "VHS screengrab of a anime girl",
+          "note": "主体是动漫女孩，但 VHS screengrab of 这个媒介体裁词抢在最前，a anime 还写错了冠词（应为 an），主体被推迟到介词之后"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "",
-          "note": "未检出显式动作或状态词"
+          "text": "shotting a ray gun",
+          "note": "shotting 是 shooting 的拼写错误（或生造词），却是全条唯一动作，把女孩正在开射线枪这件事写得干脆具体"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "",
-          "note": "未检出独立环境段"
+          "text": "80s movie scene",
+          "note": "唯一的场景信息是 80 年代电影场景，靠时代词暗示布景与质感，没有地点、天气或周边物件"
         },
         {
           "code": "4",
           "module": "构图与镜头",
           "text": "",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "note": "VHS screengrab 隐含录像截图的取景感，但正文没有任何景别、机位或焦段，也没出现构图五法里的信号词"
         },
         {
           "code": "5",
           "module": "光线与色彩",
           "text": "",
-          "note": "未检出显式光线或色调词"
+          "note": "光线与色彩完全没写，VHS 应有的色偏、扫描线和噪点质感其实被 VHS screengrab 这个媒介词一并承担了"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "80s movie scene in the style of John Carpenter",
-          "note": "风格 / 媒介信号 1 处，词库命中见下方"
+          "text": "VHS screengrab … 80s movie scene in the style of John Carpenter",
+          "note": "录像截图、80 年代电影、具名导演约翰·卡朋特三层风格锚叠在一个短语串里，anime 又指定了动画媒介，风格信息远比画面信息密"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；1:1 与风格参考由上游作业字段承载"
+          "note": "正文一个 -- 参数都没有，1:1 比例由上游字段承载、sref 为空，in the style of John Carpenter 是自然语言写法而不是 --style 或 --sref 参数"
         }
       ],
       "composition": [],
       "tags": {
-        "style": [],
+        "style": [
+          "VHS screengrab",
+          "anime",
+          "80s movie scene",
+          "in the style of John Carpenter"
+        ],
         "lighting": [],
         "angle": [],
         "emotion": []
@@ -4133,67 +4162,77 @@
         {
           "id": "R1",
           "ok": true,
-          "note": "名词短语为主，未检出完整描述句"
+          "note": "逗号串起的名词短语加分词 shotting a ray gun，没展开成带主谓的完整叙述句，短语优先这一条守住了"
         },
         {
           "id": "R2",
-          "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "ok": false,
+          "note": "VHS screengrab of 占了第一短语，anime girl 被推迟到 of 之后，主体权重被媒介词稀释"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "正文没有参数尾，1:1 画幅来自上游作业字段，不存在参数位置错误"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "没有 --no，也没有任何要剔除的元素，画面全靠正向描述"
         },
         {
           "id": "R5",
           "ok": true,
-          "note": "未见画质堆料词"
+          "note": "全条只有 97 个字符、四个短语，少而精走到极致，代价是机位与光线全缺"
         },
         {
           "id": "M1",
-          "ok": true,
-          "note": "全文英文半角标点"
+          "ok": false,
+          "note": "a anime girl 冠词错、shotting 是 shooting 的拼错，两处文字噪声会干扰语义匹配，虽然逗号是英文半角"
         },
         {
           "id": "M2",
           "ok": true,
-          "note": "单主体或主体明确"
+          "note": "只有 anime girl 一个主体，ray gun 是手中道具而非并列对象"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "没有要求画面出现可读文字，VHS 常见的时间戳也没被点名要生成"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "没有 8k、masterpiece 之类失效画质词，连画质形容词都省了"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "全英文短语，不涉及中文长句带来的理解精度损耗"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "没有 :: 权重语法，V8.2 下不存在该语法失效的风险"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "in the style of John Carpenter 是自然语言风格锚而非 --style raw 参数，避开 V7 起改用 --raw 的变更"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "没有 --no，因此不涉及 V8.2 下逐词独立审核的误伤"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "没有使用 --q / --cref 等 V8.1 起被移除或替代的旧参数"
         }
       ],
-      "summary": "女孩，动漫，1:1 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:16.980Z"
+      "summary": "一张 80 年代电影感的 VHS 录像截图：动漫女孩正举着射线枪开火，风格锚定约翰·卡朋特，全条只有四个短语、连光线和机位都没写，shotting 还是 shooting 的拼错。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "94851cd1-22fc-495a-8647-904d6ab84664",
@@ -4204,57 +4243,67 @@
         {
           "code": "1",
           "module": "主体",
-          "text": "high-angle 35mm fashion composition reference of an adult female model wearing a simple full-coverage dark gray outfit",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "an adult female model wearing a simple full-coverage dark gray outfit",
+          "note": "主体是穿深灰全覆盖套装的成年女模，但 high-angle 35mm fashion composition reference of 这一长串镜头体裁词压在前面，主体被推到 of 之后"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "sitting sideways on an old wooden chair in the middle of a misty green pasture；torso leaning slightly backward；a calm white sheep grazing close to the chair",
-          "note": "命中动作 / 状态信号词 3 处"
+          "text": "sitting sideways on an old wooden chair … torso leaning slightly backward, one arm draped over the chair back, the other hand resting on her thigh, one leg bent beside the chair and the other elegantly extended across the wet grass",
+          "note": "侧坐、后仰、双臂与双腿各给一种姿态，全是分词堆叠却细到手脚位置，是这条最扎实的动作状态段"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "one arm draped over the chair back；the other hand resting on her thigh；one leg bent beside the chair and the other elegantly extended across the wet grass；…（另有 4 个短语见原文）",
-          "note": "场景 / 周边元素，共 7 个短语"
+          "text": "in the middle of a misty green pasture … a calm white sheep grazing close to the chair, another sheep softly visible in the distance … foggy hills, dark forest",
+          "note": "湿草牧场、近处白羊、远处另一只羊、雾丘与暗林分层铺开，环境信息密度高且都服务同一套阴天牧场景别"
         },
         {
           "code": "4",
           "module": "构图与镜头",
-          "text": "camera positioned slightly above her；35mm；high angle",
-          "note": "镜头信号：35mm / high angle / 35mm"
+          "text": "high-angle 35mm fashion composition reference … entire model, chair and animals visible, camera positioned slightly above her",
+          "note": "高机位、35mm 焦段、机位略高于人物，再用 entire … visible 锁死全身入画不裁切；写了 composition 一词却没出现五法里任何一条的原词"
         },
         {
           "code": "5",
           "module": "光线与色彩",
-          "text": "dark forest；muted olive and beige palette；soft overcast light",
-          "note": "光线 / 色调信号 3 处"
+          "text": "muted olive and beige palette, soft overcast light",
+          "note": "橄榄与米色的低饱和调色板配柔和阴天光，是全条唯一成形的控光与色调段"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "vintage analog grain；realistic anatomy and animal proportions；35mm",
-          "note": "风格 / 媒介信号 2 处，词库命中见下方"
+          "text": "vintage analog grain, realistic anatomy and animal proportions",
+          "note": "老式模拟胶片颗粒是镜头感锚，realistic anatomy and animal proportions 是怕羊和人被画歪的比例约束，风格词不多但都落在实处"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；3:4 与 sref 311527190 102157450 由上游作业字段承载"
+          "note": "正文连 --ar 和 --sref 都没出现，sref 311527190 与 102157450 两个参考码、3:4 比例全都由上游作业字段承载，这是读他人作业时最容易看漏的歧义点"
         }
       ],
       "composition": [],
       "tags": {
         "style": [
-          "35mm"
+          "35mm",
+          "fashion composition reference",
+          "vintage analog grain",
+          "realistic anatomy and animal proportions"
         ],
-        "lighting": [],
+        "lighting": [
+          "soft overcast light",
+          "muted olive and beige palette"
+        ],
         "angle": [
-          "high angle",
-          "35mm"
+          "high-angle",
+          "camera positioned slightly above her",
+          "35mm",
+          "entire model, chair and animals visible"
         ],
-        "emotion": []
+        "emotion": [
+          "calm"
+        ]
       },
       "paramTail": {
         "text": "",
@@ -4264,130 +4313,150 @@
         {
           "id": "R1",
           "ok": false,
-          "note": "检出 1 处完整描述句 / 系动词结构，偏离「名词短语优先」（复杂场景可控）"
+          "note": "一整条 703 字符的逗号长串，sitting、leaning、draped、resting、bent、extended、grazing 分词层层叠加，已接近美术置景清单而非干净的短语模块"
         },
         {
           "id": "R2",
-          "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "ok": false,
+          "note": "high-angle 35mm fashion composition reference of 占掉开头一长串，an adult female model 被推迟，主体权重先被镜头体裁词分走"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "正文无参数，3:4 比例与两个 sref 都由上游字段承载，连 --ar 都没出现在提示词里"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "没有 --no，画面控制全靠 entire model, chair and animals visible 这类正向的全部入画约束"
         },
         {
           "id": "R5",
-          "ok": true,
-          "note": "未见画质堆料词"
+          "ok": false,
+          "note": "姿态、两只羊、雾丘暗林、调色板逐项展开，信息密度很高，虽每项都对应可画元素但确实超出少而精"
         },
         {
           "id": "M1",
           "ok": true,
-          "note": "全文英文半角标点"
+          "note": "逗号、连字符全为英文半角，high-angle 与 35mm 写法规范，这条没有拼写错误也没有中文标点"
         },
         {
           "id": "M2",
-          "ok": true,
-          "note": "单主体或主体明确"
+          "ok": false,
+          "note": "女模、旧木椅、近处白羊、远处另一只羊都被 entire … visible 要求完整入画，多个强元素有分散注意力的风险"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "没有要求画面生成可读文字或标识，fashion composition reference 是体裁说法不是文字需求"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "没有 8k、masterpiece 之类失效画质词，realistic anatomy 是比例约束而非画质堆料"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "全英文表述，不涉及中文长句的理解精度损耗"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "没有 :: 权重语法，V8.2 下无该语法失效的兼容问题"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "未写 --style raw，不涉及 V7 起改用 --raw 的参数变更"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "没有 --no，因此不存在逐词独立审核带来的误伤"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "sref 是上游作业字段而非正文参数，没有使用 --q / --cref 等 V8.1 起被移除的旧参数"
         }
       ],
-      "summary": "画面主体，高机位、时装、构图、穿着、暗调、灰色配色，3:4 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:16.982Z"
+      "summary": "一张高机位 35mm 时装参考：成年女模穿深灰套装侧坐在雾绿牧场的旧木椅上，一腿屈一腿伸过湿草，身旁白羊低头吃草、远处还有一只，配橄榄米色调、阴天柔光与老式胶片颗粒；值得留意的是它把两只 sref 和 3:4 画幅都挂在上游字段里、正文一个参数都没写。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "10e1cc4e-8edb-40ef-9a92-70876dd77d73",
       "schemaVersion": 1,
       "methodologyVersion": "v8.2",
-      "framework": null,
+      "framework": "物体描述",
       "segments": [
         {
           "code": "1",
           "module": "主体",
-          "text": "Surrealist cinematic photography of the Tibetan Plateau during an apocalyptic blizzard",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "Surrealist cinematic photography of the Tibetan Plateau during an apocalyptic blizzard … A grand Tibetan Buddhist monastery complex inspired by Ta'er Monastery rises from the frozen plateau",
+          "note": "主体其实是青藏高原加寺院建筑群这组场景，开头先铺体裁、地点与末日暴风雪，真正的视觉焦点 grand monastery complex 被推到第三句，属主体加环境的物体描述形态"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "",
-          "note": "未检出显式动作或状态词"
+          "text": "towering mountains dissolving into turbulent storm clouds … colorful prayer flags violently whipping in freezing wind … Structures partially buried in thick snow and ice … cold diffused daylight breaking through storm clouds",
+          "note": "没有任何人物动作，②段全是自然力与景物的状态：山脉消隐、经幡被冻风猛抽、建筑半埋、日光穿云，写的是环境在动而非谁在做"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "Vast snow covered high altitude landscape；towering mountains dissolving into turbulent storm clouds；A grand Tibetan Buddhist monastery complex inspired by Ta'er Monastery rises from the frozen plateau - whitewashed walls；…（另有 14 个短语见原文）",
-          "note": "场景 / 周边元素，共 17 个短语"
+          "text": "Vast snow covered high altitude landscape … whitewashed walls, deep crimson buildings, ornate gilded roofs, golden ornaments, traditional stupas and pagodas, intricate decorative eaves … Extreme wind driven snowfall, swirling vortexes, frozen mist, icy fog",
+          "note": "高原、白墙、绯红楼、鎏金顶、佛塔、经幡再到风雪旋涡与冰雾，用破折号拉出一份建筑与天气清单，是全篇信息最重的一段"
         },
         {
           "code": "4",
           "module": "构图与镜头",
-          "text": "dramatic wide angle composition；wide angle；wide-angle",
-          "note": "镜头信号：wide angle / wide-angle"
+          "text": "dramatic wide angle composition, monumental scale, large format cinematic photography",
+          "note": "给了广角构图、纪念碑尺度和大画幅规格，却没写机位高低或焦段数值，composition 一词只是泛指宽幅取景，没命中五法原词"
         },
         {
           "code": "5",
           "module": "光线与色彩",
-          "text": "golden ornaments；cold diffused daylight breaking through storm clouds；volumetric lighting",
-          "note": "光线 / 色调信号 3 处"
+          "text": "Deep cobalt blue and icy white atmosphere, cold diffused daylight breaking through storm clouds, volumetric lighting",
+          "note": "钴蓝加冰白的整体氛围、穿云冷漫射日光与体积光三项齐全，⑤段是这条写得最完整也最出效果的部分"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "Dreamlike yet photorealistic；ultra detailed textures；large format cinematic photography；…（另有 3 个短语见原文）",
-          "note": "风格 / 媒介信号 3 处，词库命中见下方"
+          "text": "Surrealist … Dreamlike yet photorealistic, haunting isolation, monumental scale, ultra detailed textures, large format cinematic photography, high end art direction",
+          "note": "超现实流派与梦幻却写实并置，haunting isolation 定情绪，末尾 ultra detailed textures、high end art direction 是收益递减的画质与调性堆料"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；3:4 与风格参考由上游作业字段承载"
+          "note": "正文一个 -- 参数都没有，3:4 比例由上游字段承载、sref 为空；句中的破折号 - 与 Ta'er 的撇号都是正文标点，ultra detailed textures 是画质词而非参数"
         }
       ],
       "composition": [],
       "tags": {
         "style": [
-          "photography",
-          "photorealistic",
-          "cinematic"
+          "Surrealist",
+          "cinematic photography",
+          "large format cinematic photography",
+          "Dreamlike yet photorealistic",
+          "high end art direction"
         ],
-        "lighting": [],
+        "lighting": [
+          "Deep cobalt blue and icy white atmosphere",
+          "cold diffused daylight breaking through storm clouds",
+          "volumetric lighting"
+        ],
         "angle": [
-          "wide-angle",
-          "wide angle"
+          "dramatic wide angle composition",
+          "monumental scale"
         ],
-        "emotion": []
+        "emotion": [
+          "haunting isolation",
+          "apocalyptic",
+          "Dreamlike"
+        ]
       },
       "paramTail": {
         "text": "",
@@ -4397,67 +4466,77 @@
         {
           "id": "R1",
           "ok": false,
-          "note": "检出 6 处完整描述句 / 系动词结构，偏离「名词短语优先」（复杂场景可控）"
+          "note": "七个完整句加破折号后的长清单，是设定文档式写法，与逗号分隔的短语模块相去甚远"
         },
         {
           "id": "R2",
-          "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "ok": false,
+          "note": "Surrealist cinematic photography of the Tibetan Plateau during an apocalyptic blizzard 先铺体裁地点天气，寺院建筑群被推到第三句才出场"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "正文无参数，3:4 比例由上游字段承载，rises from 后的破折号 - 只是句中标点不是参数前缀"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "没有 --no，整条全靠正向堆叠建筑与天气元素，连一处减法都没写"
         },
         {
           "id": "R5",
-          "ok": true,
-          "note": "含 1 处画质词（ultra detailed），未构成堆料"
+          "ok": false,
+          "note": "ultra detailed textures、high end art direction、monumental scale 加建筑与风雪长清单，堆料明显且部分语义重复"
         },
         {
           "id": "M1",
           "ok": true,
-          "note": "全文英文半角标点"
+          "note": "逗号、句号、破折号与 Ta'er Monastery 的撇号全为英文半角，没有中文标点也没有拼写错误"
         },
         {
           "id": "M2",
-          "ok": true,
-          "note": "单主体或主体明确"
+          "ok": false,
+          "note": "高原、山脉、寺院建筑群（白墙、绯红殿、鎏金顶、佛塔、经幡）与暴风雪多个强主体并列，注意力容易被均分"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "没有要求画面生成可读文字或经文标语，colorful prayer flags 只是色彩与动势描述"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "没有 8k、masterpiece、best quality 这类失效词，ultra detailed textures 属于收益递减但不在失效清单内"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "全英文输入不涉及中文长句，但整条是英文长句设定文档，同样不是短语优先"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "没有 :: 权重语法，V8.2 下不存在该语法失效的问题"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "未写 --style raw，Surrealist 是正交流派词，不触发 V7 起改用 --raw 的变更"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "没有 --no，因此不涉及 V8.2 下逐词独立审核的误伤"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "没有使用 --q / --oref / --cref 这类 V8.1 起被移除或替代的旧参数"
         }
       ],
-      "summary": "画面主体，电影感、摄影、雪、深邃、金色、蓝色配色，3:4 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:16.984Z"
+      "summary": "一幅超现实藏地末日暴风雪：青藏高原上一座参照塔尔寺的藏传佛寺半埋在冰雪里，白墙绯红殿、鎏金顶与经幡在冻风里猛烈翻卷，钴蓝冰白调配穿云体积光和大画幅广角，通篇用七句设定文档堆出压迫感，3:4 画幅与空白 sref 都挂在上游、正文零参数。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "2f17fec2-0e5e-4009-a221-f475fc4a303d",
@@ -4468,55 +4547,70 @@
         {
           "code": "1",
           "module": "主体",
-          "text": "Photorealistic upper body portrait of a Western female fashion model in her early 20s",
-          "note": "风格 / 景别词前置，主体在首短语内但权重被分走"
+          "text": "Photorealistic upper body portrait of a Western female fashion model in her early 20s … Long sleek straight creamy light blonde hair, middle part … Light blue or green eyes, bright and expressive … Wearing a simple fitted white sleeveless tank top",
+          "note": "主体是二十出头的西方女模，体裁词 Photorealistic upper body portrait of 前置；后面发型、中分、眼色、白背心被拆成独立短句，其实是人物画像框架里装饰特征与容貌段的拉满写法"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "cute playful kitschy vibe；Wearing a simple fitted white sleeveless tank top",
-          "note": "命中动作 / 状态信号词 2 处"
+          "text": "subtle closed lip mischievous smile, direct eye contact, Head upright, no tilt",
+          "note": "没有任何肢体动作，靠闭唇狡黠笑、直视镜头、头正不歪这组微表情与姿态充当状态段，是证件照式人像典型的状态写法"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "strict straight frontal view；middle part；direct eye contact；…（另有 13 个短语见原文）",
-          "note": "场景 / 周边元素，共 16 个短语"
+          "text": "Clean white background",
+          "note": "环境只有纯白底一句，其余五官清单都属于容貌细节而非场景，全条没有地点、时间或周边物件"
         },
         {
           "code": "4",
           "module": "构图与镜头",
-          "text": "head to chest framing；model ID card composition",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "text": "head to chest framing, strict straight frontal view, model ID card composition",
+          "note": "头到胸的取景加严格正面、证件照式构图，景别与机位交代得极硬；严格正面居中在语义上就是对称式构图，只是没写 symmetrical 原词"
         },
         {
           "code": "5",
           "module": "光线与色彩",
-          "text": "Long sleek straight creamy light blonde hair；Light blue or green eyes；bright and expressive；…（另有 1 个短语见原文）",
-          "note": "光线 / 色调信号 4 处"
+          "text": "soft bright studio lighting",
+          "note": "明亮柔和棚拍光是唯一的控光指令，soft pink blush 与 glossy pink lips 是妆容色而非色调词，整体色彩其实由纯白底和奶油金发承担"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "delicate natural freckles across nose bridge and upper cheeks；realistic skin texture；delicate irregular freckles；…（另有 1 个短语见原文）",
-          "note": "风格 / 媒介信号 3 处，词库命中见下方"
+          "text": "Photorealistic … Youthful, fresh faced, cute playful kitschy vibe … Subtle natural facial asymmetry, realistic skin texture, natural facial proportions",
+          "note": "写实体裁加俏皮复古趣味的气质词，再用自然面部不对称、真实肤质、自然比例三处约束把证件照往真人拉，避免画成塑料娃娃"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；1:1 与风格参考由上游作业字段承载"
+          "note": "正文一个 -- 参数都没有，1:1 比例由上游字段承载、sref 为空；no tilt 是写在正文里的自然语言姿态约束而非 --no 参数，model ID card 也只是构图体裁"
         }
       ],
-      "composition": [],
+      "composition": [
+        "对称式（推断：strict straight frontal view 与 model ID card composition 要求严格正面居中）"
+      ],
       "tags": {
         "style": [
-          "photorealistic"
+          "Photorealistic",
+          "realistic skin texture",
+          "natural facial proportions"
         ],
-        "lighting": [],
-        "angle": [],
+        "lighting": [
+          "soft bright studio lighting",
+          "Clean white background"
+        ],
+        "angle": [
+          "upper body portrait",
+          "head to chest framing",
+          "strict straight frontal view",
+          "model ID card composition"
+        ],
         "emotion": [
-          "playful"
+          "cute playful kitschy vibe",
+          "mischievous",
+          "Youthful, fresh faced",
+          "bright and expressive"
         ]
       },
       "paramTail": {
@@ -4527,123 +4621,139 @@
         {
           "id": "R1",
           "ok": false,
-          "note": "检出 9 处完整描述句 / 系动词结构，偏离「名词短语优先」（复杂场景可控）"
+          "note": "把五官逐项拆成八、九句以句号结尾的独立短句，是人脸特征清单而非逗号串起的短语模块"
         },
         {
           "id": "R2",
           "ok": false,
-          "note": "风格 / 景别词抢在主体前，主体权重被分走（社区常见写法）"
+          "note": "Photorealistic upper body portrait of 占了第一短语，a Western female fashion model 被推到 of 之后，主体权重被体裁词抢先"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "正文无参数，1:1 画幅来自上游字段，no tilt 不带 -- 前缀也不是参数尾"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "只有 no tilt 这一处自然语言姿态约束，没用 --no 做画面减法，人物细节几乎全靠正向叠加"
         },
         {
           "id": "R5",
-          "ok": true,
-          "note": "未见画质堆料词"
+          "ok": false,
+          "note": "发缝、鼻梁雀斑、唇珠、唇彩、面部不对称逐项写到毛孔级，信息量极大，虽每项可控但远超少而精"
         },
         {
           "id": "M1",
           "ok": true,
-          "note": "全文英文半角标点"
+          "note": "逗号、句号与 Cupid's bow 的撇号全为英文半角，没有拼写错误也没有中文标点混入"
         },
         {
           "id": "M2",
           "ok": true,
-          "note": "单主体或主体明确"
+          "note": "只有女模一个人物主体，白色背心与纯白底是服饰和背景，不构成并列对象"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "虽叫 model ID card composition，却没要求卡面出现姓名编号等可读文字，正好避开 MJ 出字不准的坑"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "没有 8k、masterpiece、best quality 之类失效词，Photorealistic 与 realistic skin texture 是写实体裁而非画质堆料"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "全英文表述，不涉及中文长句带来的理解精度损耗"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "没有 :: 权重语法，V8.2 下无该语法失效的兼容问题"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "未写 --style raw，不涉及 V7 起改用 --raw 的参数变更"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "no tilt 是自然语言而非 --no 参数，因此不存在逐词独立审核的误伤"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "没有使用 --q / --cref 等 V8.1 起被移除或替代的旧参数"
         }
       ],
-      "summary": "肖像，写实、身体、时装、头部、蓝色、绿色配色，1:1 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:16.986Z"
+      "summary": "一张证件照式的写实半身像：二十出头西方女模严格正面居中、头正不歪，奶油浅金长直发中分，蓝或绿眼直视镜头，鼻梁雀斑、唇珠与闭唇狡黠笑都逐项写死，配纯白底和明亮棚拍柔光；值得留意的是它把五官拆成一串独立短句、连 no tilt 都写在正文而非用参数。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "fc3a680e-cfa9-4c24-a7a5-66fd28a02cbe",
       "schemaVersion": 1,
       "methodologyVersion": "v8.2",
-      "framework": "物体描述",
+      "framework": "人物画像",
       "segments": [
         {
           "code": "1",
           "module": "主体",
-          "text": "Poster",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "Little chibi and angry gengar",
+          "note": "主体是 Q 版小家伙加一只生气的耿鬼，用 and 并列成两个角色；耿鬼是宝可梦 Gengar 的小写写法，chibi 则直接限定了矮圆的身材比例。"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "",
-          "note": "未检出显式动作或状态词"
+          "text": "being a software engineer is using the computer and cursing the code",
+          "note": "当工程师、敲电脑、骂代码三个状态挤在同一句里，angry 又补了情绪；但 is using 前面主语断裂，是这批里语法最拧巴的动作句。"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "Little chibi and angry gengar being a software engineer is using the computer and cursing the code.",
-          "note": "场景 / 周边元素，共 1 个短语"
+          "text": "the computer",
+          "note": "场景信息几乎为零，勉强能算周边元素的只有 the computer 这一件道具，连工作台或屏幕内容都没交代，背景留白全凭 Poster 体裁默认。"
         },
         {
           "code": "4",
           "module": "构图与镜头",
           "text": "",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "note": "没有 shot、angle、lens 任何一个词，连三分法或居中都没写；3:4 竖幅和构图全由上游字段与 sref 2116795492 参考图替它决定。"
         },
         {
           "code": "5",
           "module": "光线与色彩",
           "text": "",
-          "note": "未检出显式光线或色调词"
+          "note": "光源、软硬、色调一个词都没给，angry 只是情绪不是色彩，灰调压根没在正文出现，配色其实锁在 sref 2116795492 里面。"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "Illustration",
-          "note": "风格 / 媒介信号 1 处，词库命中见下方"
+          "text": "Poster. Illustration.",
+          "note": "风格只有开头 Poster. Illustration. 两个体裁词，外加 chibi 这一 Q 版画法信号，媒介、画风、流派全没展开，两句还各自带句号把结构切断。"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；3:4 与 sref 2116795492 由上游作业字段承载"
+          "note": "正文一个 -- 参数都没有，3:4 比例与 sref 2116795492 都由上游作业字段承载，这是读社区作业时最容易看漏的隐性信息。"
         }
       ],
       "composition": [],
       "tags": {
-        "style": [],
+        "style": [
+          "Poster",
+          "Illustration",
+          "chibi"
+        ],
         "lighting": [],
         "angle": [],
-        "emotion": []
+        "emotion": [
+          "angry"
+        ]
       },
       "paramTail": {
         "text": "",
@@ -4653,67 +4763,77 @@
         {
           "id": "R1",
           "ok": false,
-          "note": "检出 3 处完整描述句 / 系动词结构，偏离「名词短语优先」（复杂场景可控）"
+          "note": "being a software engineer is using the computer 直接带出 is using 谓语，是语法断裂的完整句，不是干净的名词短语。"
         },
         {
           "id": "R2",
-          "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "ok": false,
+          "note": "开头 Poster. Illustration. 两句体裁词先占位，Little chibi 和 angry gengar 落到第三句才出现，主体权重被稀释。"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "正文一个 -- 参数都没写，3:4 比例与 sref 2116795492 全由上游作业字段提供，参数位置无从错位。"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "没有写 --no，也没有任何排除项，全靠 chibi 与 angry 这类正向词去限定画风与神情。"
         },
         {
           "id": "R5",
           "ok": true,
-          "note": "未见画质堆料词"
+          "note": "整条才 121 字符，只有一个长句加两个体裁词，少是够少了，但 cursing the code 之外几乎没给可控视觉信息。"
         },
         {
           "id": "M1",
-          "ok": true,
-          "note": "全文英文半角标点"
+          "ok": false,
+          "note": "being a software engineer is using 两个谓语叠在一起语法断裂，gengar 作为宝可梦专名也没大写，句法噪声不小。"
         },
         {
           "id": "M2",
-          "ok": true,
-          "note": "单主体或主体明确"
+          "ok": false,
+          "note": "Little chibi 与 angry gengar 用 and 并列成两个角色，后面又叠了 software engineer 这层身份，注意力被摊薄。"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "没要求画面里出现可读文字，Poster 只是体裁词而非字样要求，cursing the code 是情节不是字幕。"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "全文只有 Poster、Illustration 两个体裁词，没有 8k、masterpiece 这类 V6 之后基本失效的画质堆料。"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "整条是英文，最长的 is using the computer and cursing the code 也只是英文病句，不涉及中文长句的理解损耗。"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "全文连一个冒号都没有，更没有 词::2 权重语法，V8.2 下不触发 V7+ 已移除该语法的兼容问题。"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "正文一个 -- 参数都没有，自然不会踩到 --style raw 在 V7+ 要换成 --raw 的版本陷阱。"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "没有 --no，也就没有逐词独立审核导致的误伤风险；连 chibi 这种画法限定都是正向写在正文里。"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "只挂了 sref 2116795492，没碰 --q / --cref / --oref 这些 V8.1 起被移除或替代的旧参数。"
         }
       ],
-      "summary": "海报，插画，3:4 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:16.987Z"
+      "summary": "一张海报插画里，Q 版小家伙和气呼呼的耿鬼被写成边敲电脑边骂代码的软件工程师，全条只靠 Poster、Illustration 两个体裁词和一句语法拧巴的长句撑着，配色与场景其实都压在 sref 2116795492 参考图上。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "3feee5b6-86a1-436c-8d98-9271411583ef",
@@ -4724,185 +4844,68 @@
         {
           "code": "1",
           "module": "主体",
-          "text": "Realistic fine art portrait photography",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "East Asian woman: preserved facial features, hairstyle, expression, body proportions",
+          "note": "主体是东亚女子，却用冒号列了一串 preserved facial features、hairstyle、body proportions 这类保特征清单，读起来像给参考图写的锁定指令而非人物外貌描写。"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "expression；raised arm pose",
-          "note": "命中动作 / 状态信号词 2 处"
+          "text": "raised arm pose, finger placement … imminent touch not yet made",
+          "note": "抬臂、指尖位置和将触未触的刹那感是②段核心，lowest petal stopping just above raised fingertips 把动作精确到花瓣与指尖的间距，是这条最见功力的地方。"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "East Asian woman: preserved facial features；hairstyle；body proportions；…（另有 25 个短语见原文）",
-          "note": "场景 / 周边元素，共 28 个短语"
+          "text": "Layered lotus leaves in gray green, ink green, deep gray green with natural veins, curled edges, varied heights; a few dried yellow ochre leaves … a shadowy lotus pond",
+          "note": "荷叶分了三种绿还写叶脉、卷边、高低错落，背后又压一层手绘油彩的暗荷塘，环境信息密到近乎美术置景单。"
         },
         {
           "code": "4",
           "module": "构图与镜头",
-          "text": "vertical composition",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "text": "vertical composition … Open space around her face, raised hand, and sleeve … Defocused foreground leaves partially entering edges",
+          "note": "竖构图加面部留白，前景虚化荷叶只从边缘探入、仅压住下摆，语义上同时吃到留白与框架式框景，layered spatial depth 又把纵深点明。"
         },
         {
           "code": "5",
           "module": "光线与色彩",
-          "text": "Soft side light on face",
-          "note": "光线 / 色调信号 1 处"
+          "text": "Soft side light on face, hand, and flower",
+          "note": "光线只有一句柔和侧光，且明确打在脸、手、花三处；真正撑起色彩的是 Pale pink lavender 与 gray green、ink green、yellow ochre 那一长串色名。"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "ink green；Behind her: hand painted oil on canvas backdrop of a shadowy lotus pond ink green；matte texture；…（另有 3 个短语见原文）",
-          "note": "风格 / 媒介信号 4 处，词库命中见下方"
+          "text": "Realistic fine art portrait photography … hand painted oil on canvas backdrop … visible brushstrokes, impasto, matte texture … Photorealistic figure",
+          "note": "写实艺术肖像摄影套手绘油画布景，再叠可见笔触、厚涂 impasto 与哑光质感，摄影与绘画两套媒介并置，还用 Chinese inspired 点出东方来源。"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；2:3 与风格参考由上游作业字段承载"
+          "note": "正文零 -- 参数，2:3 竖幅与 sref 都由上游字段承载；耐人寻味的是 sref 字段为无，正文却留着 preserved facial features，像参考图信息丢失后的残句。"
         }
       ],
-      "composition": [],
+      "composition": [
+        "留白 / 负空间（推断：Open space around her face, raised hand, and sleeve）",
+        "框架式（推断：Defocused foreground leaves partially entering edges 从边缘探入框景）"
+      ],
       "tags": {
         "style": [
-          "photography",
-          "photorealistic"
+          "fine art portrait photography",
+          "Chinese inspired",
+          "hand painted oil on canvas",
+          "visible brushstrokes",
+          "impasto",
+          "matte texture",
+          "Photorealistic"
         ],
-        "lighting": [],
-        "angle": [],
-        "emotion": []
-      },
-      "paramTail": {
-        "text": "",
-        "params": []
-      },
-      "health": [
-        {
-          "id": "R1",
-          "ok": false,
-          "note": "检出 9 处完整描述句 / 系动词结构，偏离「名词短语优先」（复杂场景可控）"
-        },
-        {
-          "id": "R2",
-          "ok": true,
-          "note": "主体位于首个短语，权重保住"
-        },
-        {
-          "id": "R3",
-          "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
-        },
-        {
-          "id": "R4",
-          "ok": true,
-          "note": "无排除项，未使用 --no"
-        },
-        {
-          "id": "R5",
-          "ok": true,
-          "note": "未见画质堆料词"
-        },
-        {
-          "id": "M1",
-          "ok": true,
-          "note": "全文英文半角标点"
-        },
-        {
-          "id": "M2",
-          "ok": false,
-          "note": "检出多个主体词（portrait / woman / face / figure），注意力可能被均分"
-        },
-        {
-          "id": "M3",
-          "ok": true,
-          "note": "未要求画面出现准确文字"
-        },
-        {
-          "id": "M4",
-          "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
-        },
-        {
-          "id": "M5",
-          "ok": true,
-          "note": "无中文长句"
-        },
-        {
-          "id": "V1",
-          "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
-        },
-        {
-          "id": "V3",
-          "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
-        }
-      ],
-      "summary": "肖像，纯艺术、摄影、构图、女性、苍白、粉色配色，2:3 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:16.989Z"
-    },
-    {
-      "jobId": "c0e7070c-2663-46fb-a2fd-447aa7c1b6bf",
-      "schemaVersion": 1,
-      "methodologyVersion": "v8.2",
-      "framework": "人物画像",
-      "segments": [
-        {
-          "code": "1",
-          "module": "主体",
-          "text": "A blonde-haired girl taking a fisheye selfie",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
-        },
-        {
-          "code": "2",
-          "module": "动作 / 状态",
-          "text": "playful yellow hair tufts",
-          "note": "命中动作 / 状态信号词 1 处"
-        },
-        {
-          "code": "3",
-          "module": "细节与环境",
-          "text": "with an oversized rounded head；enormous sparkling eyes；rosy scribbled cheeks；…（另有 15 个短语见原文）",
-          "note": "场景 / 周边元素，共 18 个短语"
-        },
-        {
-          "code": "4",
-          "module": "构图与镜头",
-          "text": "Extreme close-up from slightly above；exaggerated fisheye perspective with her nose and forehead enlarged near the lens；one foreshortened arm reaching toward the camera；…（另有 2 个短语见原文）",
-          "note": "镜头信号：close-up / extreme close-up / close-up"
-        },
-        {
-          "code": "5",
-          "module": "光线与色彩",
-          "text": "pastel pink and sky-blue accents；soft flat lighting",
-          "note": "光线 / 色调信号 2 处"
-        },
-        {
-          "code": "6",
-          "module": "风格与审美",
-          "text": "in a cute hand-drawn doodle illustration style with a cheerful mood；and grainy paper texture；3D rendering",
-          "note": "风格 / 媒介信号 3 处，词库命中见下方"
-        },
-        {
-          "code": "7",
-          "module": "参数尾",
-          "text": "",
-          "note": "正文未写 --ar / --v 等参数；3:4 与风格参考由上游作业字段承载"
-        }
-      ],
-      "composition": [],
-      "tags": {
-        "style": [],
-        "lighting": [],
+        "lighting": [
+          "Soft side light"
+        ],
         "angle": [
-          "extreme close-up",
-          "close-up"
+          "vertical composition"
         ],
         "emotion": [
-          "playful"
+          "quiet anticipation"
         ]
       },
       "paramTail": {
@@ -4913,67 +4916,229 @@
         {
           "id": "R1",
           "ok": false,
-          "note": "检出 2 处完整描述句 / 系动词结构，偏离「名词短语优先」（复杂场景可控）"
+          "note": "通篇是冒号清单加分号长句，Behind her: 后面还接一整段布景描述，远超名词短语优先的写法。"
         },
         {
           "id": "R2",
-          "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "ok": false,
+          "note": "开头 Realistic fine art portrait photography, vertical composition 先铺体裁与构图，East Asian woman 落到第二句才出现。"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "正文一个 -- 参数都没写，2:3 比例由上游作业字段给出，参数位置自然也无从错位。"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "没有 --no，也没有任何排除项，画面减法全靠 overlapping only lower clothing 这类正向限定来完成。"
         },
         {
           "id": "R5",
-          "ok": true,
-          "note": "未见画质堆料词"
+          "ok": false,
+          "note": "1041 字符里荷叶写了三种绿加叶脉卷边，布景又叠 impasto 与 matte texture，密度远超少而精，好在每项都落得到具体画面。"
         },
         {
           "id": "M1",
-          "ok": true,
-          "note": "全文英文半角标点"
+          "ok": false,
+          "note": "冒号分号都是英文半角，但 fingertips  small gap 和 lotus pond  ink green 两处连着双空格，像漏了破折号或冒号，语义衔接有点断。"
         },
         {
           "id": "M2",
           "ok": true,
-          "note": "单主体或主体明确"
+          "note": "画面人物只有 East Asian woman 一位，莲花、层叠荷叶与油画布景都归环境，不存在多主体平分注意力的问题。"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "没有要求画面里出现可读文字或题款，botanically credible scale 是比例约束不是字样，全条不碰准确文字这个坑。"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "Photorealistic、impasto、visible brushstrokes 都是实打实的媒介质感词，没有 8k、masterpiece 这类 V6 之后失效的画质堆料。"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "1041 字符全是英文，长则长矣，却不是误区清单点名的中文长句，不额外叠加语义解析损耗。"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "全文用的是冒号与分号分层，没有 词::2 那种多提示词权重语法，V8.2 下不触发 V7+ 移除该语法的兼容问题。"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "连一个 -- 参数都没有，自然既没 --style raw 也没 --raw，避开 V7+ 必须改口的版本陷阱。"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "没有 --no，也就不存在排除项被逐词拆开误审的风险；保特征用的是 preserved facial features 这种正向措辞。"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "sref 字段为无、正文也没出现 --cref / --oref / --q，虽然 preserved facial features 读起来像参考图残留，但没踩 V8.1 起被移除的旧参数。"
         }
       ],
-      "summary": "女孩，头部、眼睛、发丝、微小、黄色、粉彩配色，3:4 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:16.992Z"
+      "summary": "一张竖幅写实艺术肖像：东亚女子抬手，指尖与低垂粉荷留着一触即发的小空隙，层叠墨绿荷叶与手绘油彩荷塘铺出纵深、以柔和侧光定调；有意思的是 sref 明明写着无，正文却还留着 preserved facial features 这种保参考图特征的措辞。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.700Z"
+    },
+    {
+      "jobId": "c0e7070c-2663-46fb-a2fd-447aa7c1b6bf",
+      "schemaVersion": 1,
+      "methodologyVersion": "v8.2",
+      "framework": "人物画像",
+      "segments": [
+        {
+          "code": "1",
+          "module": "主体",
+          "text": "A blonde-haired girl taking a fisheye selfie, with an oversized rounded head, enormous sparkling eyes, rosy scribbled cheeks, playful yellow hair tufts, and a tiny mischievous smile",
+          "note": "主体是金发女孩，后面一口气挂了圆大脑袋、闪烁大眼、涂鸦腮红、翘发簇和坏笑五个外貌定语，把 Q 版比例和表情一次写死。"
+        },
+        {
+          "code": "2",
+          "module": "动作 / 状态",
+          "text": "taking a fisheye selfie … one foreshortened arm reaching toward the camera",
+          "note": "自拍靠 taking a fisheye selfie 点题，又用一只透视缩短的手伸向镜头把举机自拍的动势坐实，mischievous smile 与 playful 顺带补了神情。"
+        },
+        {
+          "code": "3",
+          "module": "细节与环境",
+          "text": "colorful star stickers, tiny hearts, and loose scribbles … minimal background",
+          "note": "周边只有星星贴纸、小爱心和随意涂鸦这些手账式装饰，minimal background 直接把背景压到最少，等于明说不留场景信息。"
+        },
+        {
+          "code": "4",
+          "module": "构图与镜头",
+          "text": "Extreme close-up from slightly above, exaggerated fisheye perspective … her face filling almost the entire square frame, hair cropped at the borders",
+          "note": "特写、微俯机位、鱼眼透视、曲边、脸占满画框、发丝被边框裁切，④段写得极满却没命中五法原词；square frame 还和上游 3:4 竖幅对不上。"
+        },
+        {
+          "code": "5",
+          "module": "光线与色彩",
+          "text": "soft flat lighting … butter-yellow hair, pastel pink and sky-blue accents",
+          "note": "控光只有 soft flat lighting 一句平光，没有方向；色彩靠 butter-yellow、pastel pink、sky-blue 三个色名撑，butter-yellow 又和开头 blonde-haired 重复了发色。"
+        },
+        {
+          "code": "6",
+          "module": "风格与审美",
+          "text": "cute hand-drawn doodle illustration style with a cheerful mood … colored-pencil strokes, crayon shading, and grainy paper texture",
+          "note": "手绘涂鸦插画打底，彩铅笔触、蜡笔涂色、颗粒纸纹三层质感叠上来，cheerful、cute、mischievous 三个情绪词和画风混在同一串里。"
+        },
+        {
+          "code": "7",
+          "module": "参数尾",
+          "text": "",
+          "note": "正文零 -- 参数，结尾 No photorealism … watermarks 是自然语言排除而非参数尾；3:4 比例由上游字段承载，正文却写 square frame，两处画幅口径打架。"
+        }
+      ],
+      "composition": [],
+      "tags": {
+        "style": [
+          "hand-drawn doodle illustration",
+          "colored-pencil strokes",
+          "crayon shading",
+          "grainy paper texture"
+        ],
+        "lighting": [
+          "soft flat lighting"
+        ],
+        "angle": [
+          "Extreme close-up",
+          "from slightly above",
+          "exaggerated fisheye perspective"
+        ],
+        "emotion": [
+          "cute",
+          "cheerful",
+          "playful",
+          "mischievous"
+        ]
+      },
+      "paramTail": {
+        "text": "",
+        "params": []
+      },
+      "health": [
+        {
+          "id": "R1",
+          "ok": false,
+          "note": "一个 A blonde-haired girl 后面挂了 with、featuring、including 三段介词短语，逗号串出十几个并列项，早已不是干净的短名词短语。"
+        },
+        {
+          "id": "R2",
+          "ok": true,
+          "note": "A blonde-haired girl 开门见山占住第一短语，后面 oversized rounded head 等定语再长也没把主体挤走，权重保得完整。"
+        },
+        {
+          "id": "R3",
+          "ok": true,
+          "note": "正文没有任何 -- 参数，3:4 画幅来自上游字段；结尾 No photorealism 是自然语言不是参数尾，位置虽在末尾但性质不同。"
+        },
+        {
+          "id": "R4",
+          "ok": false,
+          "note": "No photorealism、3D rendering、text 等五项是自然语言排除而非 --no；考虑到 V8.2 下 --no 会逐词独立审核，这写法反而躲开误伤，只是口径不统一。"
+        },
+        {
+          "id": "R5",
+          "ok": false,
+          "note": "827 字符里光风格材质就叠了 colored-pencil strokes、crayon shading、grainy paper texture 三层，加上五官与构图清单，明显超出少而精。"
+        },
+        {
+          "id": "M1",
+          "ok": true,
+          "note": "逗号、连字符与撇号都是英文半角，fisheye、butter-yellow、colored-pencil 这些复合词也拼对了，没有错词或中文标点混入。"
+        },
+        {
+          "id": "M2",
+          "ok": true,
+          "note": "画面只有金发女孩一个人物，star stickers、tiny hearts、loose scribbles 是贴纸涂鸦装饰，不构成并列主体。"
+        },
+        {
+          "id": "M3",
+          "ok": true,
+          "note": "结尾明确把 text 和 watermarks 列进排除项，是主动不要文字，并没有期待 MJ 生成可读字样，恰好绕开这个误区。"
+        },
+        {
+          "id": "M4",
+          "ok": true,
+          "note": "没有 8k、masterpiece、best quality 这类失效画质词，grainy paper texture 与 crayon shading 都是能落地的质感描述。"
+        },
+        {
+          "id": "M5",
+          "ok": true,
+          "note": "整条 827 字符全是英文，最长的 Extreme close-up from slightly above 那句也只是英文长句，不叠加中文长句的解析损耗。"
+        },
+        {
+          "id": "V1",
+          "ok": true,
+          "note": "没有 词::2 权重语法，分层全靠 with、featuring、including 三个介词，V8.2 下不触发 V7+ 移除该语法的问题。"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "一个 -- 参数都没出现，既没 --style raw 也没 --raw，不涉及 V7+ 必须改口 --raw 的版本陷阱。"
+        },
+        {
+          "id": "V3",
+          "ok": true,
+          "note": "没有 --no，因此不存在 No photorealism 被逐词拆成不要写实、不要 3D 之类的误审；那条排除是写在正文的自然语言。"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "sref 字段为无，正文也没出现 --cref / --oref / --q，fisheye 透视是写在正文的镜头词而非旧参数，不碰 V8.1 起被移除的那批参数。"
+        }
+      ],
+      "summary": "一张鱼眼自拍式的可爱涂鸦：金发女孩把脸几乎怼满整个方画框，鼻头额头被透视放大、一只透视缩短的手伸向镜头，作者用彩铅笔触、蜡笔涂色和颗粒纸纹定调；值得一提的是正文写 square frame，上游却给 3:4，结尾还把不要写实、不要文字写成一串自然语言而非 --no。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "0c6dff2e-7f40-4aac-91a9-a623dcedccb4",
@@ -4984,52 +5149,53 @@
         {
           "code": "1",
           "module": "主体",
-          "text": "Illustration - Woman in a trench coat walking away from a scene",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "Woman in a trench coat",
+          "note": "主体就一个穿风衣的女人，trench coat 是唯一给到的外貌信息，年龄、容貌、发色全没写，开头还先摆了 Illustration 这个体裁词。"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "",
-          "note": "未检出显式动作或状态词"
+          "text": "walking away from a scene, glancing over her shoulder",
+          "note": "走远和回眸两个分词动作叠得干净，是这条最实的部分；但 from a scene 里的 a scene 始终没说是什么场景，留下一个含糊的叙事缺口。"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "glancing over her shoulder；off-white background with lots of negative space around；No texts；…（另有 1 个短语见原文）",
-          "note": "场景 / 周边元素，共 4 个短语"
+          "text": "off-white background",
+          "note": "环境只有 off-white background 一句背景色，没有地点、时间或周边物件，画面几乎全靠米白底和大片留白撑着。"
         },
         {
           "code": "4",
           "module": "构图与镜头",
-          "text": "",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "text": "lots of negative space around",
+          "note": "negative space 是构图五法里留白法的原词，直接命中；但没有景别、机位或焦段，9:16 竖幅由上游字段给，人物在画框里多大也没交代。"
         },
         {
           "code": "5",
           "module": "光线与色彩",
           "text": "",
-          "note": "未检出显式光线或色调词"
+          "note": "光源方向、软硬、色调一个词都没给，off-white 只是背景底色不算打光，明暗关系完全交给模型默认处理。"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "",
-          "note": "未检出显式风格词"
+          "text": "Illustration",
+          "note": "风格只有 Illustration 一个媒介词，还是用 Illustration - 这种带空格连字符的标题式前缀起头，画风、笔触、质感一概没展开。"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；9:16 与风格参考由上游作业字段承载"
+          "note": "正文零 -- 参数，结尾 No texts 与 No text signatures 是自然语言排除而非参数尾；9:16 比例由上游字段承载，这两句排除还重复说了同一件事。"
         }
       ],
       "composition": [
-        "留白/负空间",
-        "留白 / 负空间（推断）"
+        "留白 / 负空间（推断：off-white background 上 lots of negative space around）"
       ],
       "tags": {
-        "style": [],
+        "style": [
+          "Illustration"
+        ],
         "lighting": [],
         "angle": [],
         "emotion": []
@@ -5041,124 +5207,142 @@
       "health": [
         {
           "id": "R1",
-          "ok": false,
-          "note": "检出 2 处完整描述句 / 系动词结构，偏离「名词短语优先」（复杂场景可控）"
+          "ok": true,
+          "note": "Illustration 起头，后面 Woman … walking away … glancing over her shoulder 全是分词短语，没展开成带谓语的完整叙述句。"
         },
         {
           "id": "R2",
           "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "note": "Illustration 只是破折号前一个体裁词，Woman in a trench coat 立刻跟上，主体没被长定语推迟，权重位置基本合理。"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "正文没有 -- 参数，9:16 竖幅由上游字段给出；结尾 No texts 虽在末尾，却是自然语言排除，不是参数尾。"
         },
         {
           "id": "R4",
-          "ok": true,
-          "note": "无排除项，未使用 --no"
+          "ok": false,
+          "note": "No texts 与 No text signatures 两句是自然语言排除而非 --no，而且两条都在说别出文字、语义重复；V8.2 下不用 --no 反倒躲开逐词审核。"
         },
         {
           "id": "R5",
           "ok": true,
-          "note": "未见画质堆料词"
+          "note": "全条才 178 字符，一个主体加两个动作加一句负空间就收住，是少而精的干净样本，代价是 a scene 始终没说清是什么。"
         },
         {
           "id": "M1",
           "ok": true,
-          "note": "全文英文半角标点"
+          "note": "逗号、句号与 off-white 的连字符都是英文半角，Illustration 后面用 - 当分隔也不算中文标点；只是 off-white 小写起句、No 大写起句，大小写不统一。"
         },
         {
           "id": "M2",
           "ok": true,
-          "note": "单主体或主体明确"
+          "note": "画面只有 Woman in a trench coat 一位人物，a scene 是她走离的那个模糊场景不是第二个主体，off-white background 也不构成并列对象。"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "结尾连写 No texts 和 No text signatures 两道排除，明确不要画面出字，主动避开了让 MJ 写准确文字的坑。"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "全条连一个画质形容词都没有，更没有 8k、masterpiece、best quality，Illustration 一个媒介词就收尾，谈不上堆料。"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "178 字符全是英文短句，最长的是 walking away from a scene, glancing over her shoulder 那串分词，不涉及中文长句的理解损耗。"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "没有 词::2 权重语法，连冒号都没出现，分层只靠逗号和句号，V8.2 下不触发 V7+ 移除该语法的兼容问题。"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "一个 -- 参数都没有，自然不涉及 --style raw 在 V7+ 要改 --raw 的版本陷阱；画风只用 Illustration 一个词交代。"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "没有 --no，也就不存在 No text signatures 被逐词拆成不要文字加不要签名的误审风险；两句排除都写在正文里。"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "sref 字段为无，正文也没出现 --cref / --oref / --q，9:16 由上游给、负空间写在正文，都不碰 V8.1 起被移除的旧参数。"
         }
       ],
-      "summary": "插画、女性，行走、背景、白色配色，9:16 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:16.994Z"
+      "summary": "一张极简插画：穿风衣的女人正从某个没交代清的场景走远、又回头望了一眼，米白底上留出一大片负空间，作者收尾连写两句 No texts、No text signatures 来堵文字，全条干净得几乎没有风格词。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "baaeba3d-e572-4814-a6be-760e9c675fbb",
       "schemaVersion": 1,
       "methodologyVersion": "v8.2",
-      "framework": null,
+      "framework": "人物画像",
       "segments": [
         {
           "code": "1",
           "module": "主体",
-          "text": "a cozy digital drawing depicting a white duck tucked into a striped bed",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "a white duck tucked into a striped bed",
+          "note": "主体是窝进条纹床的白鸭，开头先用 a cozy digital drawing depicting 把体裁和 cozy 气质垫在前面，鸭子的物种和姿态其实一句话就给全了。"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "",
-          "note": "未检出显式动作或状态词"
+          "text": "reading a small book … is holding the open book with its wingtips",
+          "note": "读书和用翅尖捧开着的书两个动作都写实了，tucked into 又补了窝着的静态，是这批里②段落得最具体的拟人写法之一。"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "reading a small book；the entire image has a soft；textucolor effect with gentle",
-          "note": "场景 / 周边元素，共 3 个短语"
+          "text": "the bedding has a pattern of light blue and cream stripes … the background is softly blurred with muted blue tones",
+          "note": "床品条纹、亮橙喙、虚化的蓝调背景分三句铺开，环境道具写得很细，bright orange beak 还顺手给了一处高饱和点缀。"
         },
         {
           "code": "4",
           "module": "构图与镜头",
           "text": "",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "note": "没有景别、机位或焦段，softly blurred 只暗示了浅景深虚化，2:3 竖幅由上游字段承载，鸭子占画面多大完全没交代。"
         },
         {
           "code": "5",
           "module": "光线与色彩",
-          "text": "the bedding has a pattern of light blue and cream stripes；the duck has a bright orange beak and is holding the open book with its wingtips；the background is softly blurred with muted blue tones and a warm glow illuminating the scene；…（另有 1 个短语见原文）",
-          "note": "光线 / 色调信号 4 处"
+          "text": "a warm glow illuminating the scene … gentle, warm lighting",
+          "note": "暖光被 warm glow 和 gentle, warm lighting 说了两遍，配 muted blue tones、light blue and cream 的冷底，冷暖对比其实靠这些色彩词而非打光描述成立。"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "",
-          "note": "未检出显式风格词"
+          "text": "a cozy digital drawing … a soft, textucolor effect",
+          "note": "风格只有 cozy digital drawing 打底，收尾的 textucolor 是 texture 与 color 拼坏的生造词，词库匹配不上，等于把质感交给一个不存在的效果名。"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；2:3 与风格参考由上游作业字段承载"
+          "note": "正文零 -- 参数，2:3 比例由上游作业字段承载；全条五句都是小写 the 起头的完整句，连一个参数或排除项都没往末尾放。"
         }
       ],
       "composition": [],
       "tags": {
-        "style": [],
-        "lighting": [],
+        "style": [
+          "cozy digital drawing",
+          "textucolor effect"
+        ],
+        "lighting": [
+          "warm glow",
+          "gentle, warm lighting"
+        ],
         "angle": [],
-        "emotion": []
+        "emotion": [
+          "cozy"
+        ]
       },
       "paramTail": {
         "text": "",
@@ -5168,122 +5352,143 @@
         {
           "id": "R1",
           "ok": false,
-          "note": "检出 1 处完整描述句 / 系动词结构，偏离「名词短语优先」（复杂场景可控）"
+          "note": "the bedding has、the duck has … is holding、the background is、the entire image has 四句带谓语的完整陈述句，明显偏离名词短语优先。"
         },
         {
           "id": "R2",
           "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "note": "a cozy digital drawing depicting 之后立刻落到 a white duck，主体在首句前半就出现，没被 cozy、digital 这些定语挤到后面。"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "正文一个 -- 参数都没写，2:3 竖幅由上游字段给出，参数位置自然谈不上错位。"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "没有 --no，也没有任何排除项，画面全靠 a white duck、light blue and cream stripes 这类正向描述堆出来。"
         },
         {
           "id": "R5",
-          "ok": true,
-          "note": "未见画质堆料词"
+          "ok": false,
+          "note": "warm glow illuminating the scene 和 gentle, warm lighting 把暖光说了两遍，bed 的条纹又单独成句，405 字符里有可压缩的重复描写。"
         },
         {
           "id": "M1",
-          "ok": true,
-          "note": "全文英文半角标点"
+          "ok": false,
+          "note": "textucolor 是 texture 与 color 拧在一起的生造词，词库里查不到；四句还一律用小写 the 起句，逗号句号虽是英文半角但文字噪声不小。"
         },
         {
           "id": "M2",
           "ok": true,
-          "note": "单主体或主体明确"
+          "note": "画面只有 a white duck 一个主角，small book、striped bed、bright orange beak 都是它的道具与身体部件，不构成并列主体。"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "reading a small book 只是让鸭子做读书的动作，没有要求书页上出现可读文字，避开了让 MJ 写准确字样的坑。"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "没有 8k、masterpiece、best quality 这类失效词，textucolor effect 虽然生造，但只是个效果描述而非画质堆料。"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "405 字符全是英文陈述句，不是误区清单点名的中文长句，不叠加中文提示词的理解损耗。"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "五个句子全用句号分隔，没有 词::2 权重语法，连冒号都没出现，V8.2 下不触发 V7+ 移除该语法的兼容问题。"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "一个 -- 参数都没出现，既没 --style raw 也没 --raw，不涉及 V7+ 必须改口 --raw 的版本陷阱；cozy 是写在正文的气质词。"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "没有 --no，因此不存在排除项被逐词拆开误审的风险；连 textucolor 这种生造词都是正向写在正文里的。"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "sref 字段为无，正文也没出现 --cref / --oref / --q，softly blurred 是写进句子的景深描述而非旧参数，不碰 V8.1 起被移除的那批参数。"
         }
       ],
-      "summary": "画面主体，床、书、明亮、手持、白色、蓝色配色，2:3 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:16.995Z"
+      "summary": "一张温馨的数字绘画：白鸭窝在浅蓝奶油条纹的被窝里，用翅尖捧着一本小书在读，背景虚成柔和的蓝调、罩着一层暖光；作者连写五句完整陈述句来铺细节，末尾还造了个词库里查不到的 textucolor effect。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "2323e7e5-6435-4bd5-9288-e09013134210",
       "schemaVersion": 1,
       "methodologyVersion": "v8.2",
-      "framework": null,
+      "framework": "物体描述",
       "segments": [
         {
           "code": "1",
           "module": "主体",
-          "text": "Arcane 3D/2D hybrid style by Fortiche Studio",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "cat One complete centered asset",
+          "note": "主体是猫，却被要求做成 one complete centered asset 这种单个完整居中的素材，不是叙事场景；cat 前面三个风格短语先占掉权重位，metallic graininess.. 的双句点还把它和 One complete 断成没有分隔的残句。"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
           "text": "",
-          "note": "未检出显式动作或状态词"
+          "note": "全条没有姿势、表情或动作词，连猫是整只还是只有头像都没交代；cat 后面直接跳到 One complete centered asset，等于把角色状态全交给 sref 2791842605 参考图去补。"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "impressionist brushstrokes；metallic graininess.；cat One complete centered asset on pure black；…（另有 3 个短语见原文）",
-          "note": "场景 / 周边元素，共 6 个短语"
+          "text": "on pure black",
+          "note": "纯黑底是唯一环境信息，配合 asset 说明这是要去背的独立素材图标；没有场景、时间、天气，也没有任何周边物件，环境克制到只剩一个底色。"
         },
         {
           "code": "4",
           "module": "构图与镜头",
-          "text": "",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "text": "slightly elevated three-quarter view",
+          "note": "略高机位的四分之三视角是明确的机位词，正文里没有景别也没有焦段；再叠加前面 centered 的居中要求，整体是产品展示式的观看角度，不是故事镜头。"
         },
         {
           "code": "5",
           "module": "光线与色彩",
           "text": "bright studio lighting",
-          "note": "光线 / 色调信号 1 处"
+          "note": "只给了明亮棚拍光一个词，没有光源方向、软硬或整体色调；纯黑底与明亮主体之间形成的强反差，实际承担了这条全部的明暗关系。"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "",
-          "note": "未检出显式风格词"
+          "text": "Arcane 3D/2D hybrid style by Fortiche Studio, impressionist brushstrokes, metallic graininess",
+          "note": "三个风格锚全压在句首：具名工作室 Fortiche 的《双城之战》3D/2D 混合、印象派笔触、金属颗粒，是这条最用力的地方；但风格词抢占首位直接稀释了主体权重，graininess 后还多打了一个句点。"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；3:4 与 sref 2791842605 由上游作业字段承载"
+          "note": "正文零 -- 参数，3:4 比例与 sref 2791842605 都由上游作业字段承载；no text、no watermark 是自然语言排除而非参数，读他人作业时最容易看漏的就是这层 upstream 歧义。"
         }
       ],
-      "composition": [],
+      "composition": [
+        "对称式（推断：One complete centered asset 把素材锁在画面正中）"
+      ],
       "tags": {
-        "style": [],
-        "lighting": [],
-        "angle": [],
+        "style": [
+          "Arcane 3D/2D hybrid style",
+          "Fortiche Studio",
+          "impressionist brushstrokes",
+          "metallic graininess"
+        ],
+        "lighting": [
+          "bright studio lighting"
+        ],
+        "angle": [
+          "slightly elevated three-quarter view"
+        ],
         "emotion": []
       },
       "paramTail": {
@@ -5294,67 +5499,77 @@
         {
           "id": "R1",
           "ok": true,
-          "note": "名词短语为主，未检出完整描述句"
+          "note": "逗号串起的名词短语为主，没有展开成完整叙述句；只是 metallic graininess.. 多打一个句点，把 cat 与 One complete centered asset 断成两截。"
         },
         {
           "id": "R2",
-          "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "ok": false,
+          "note": "Arcane 3D/2D hybrid style by Fortiche Studio 占掉第一短语，cat 被推到 metallic graininess.. 之后，主体权重被三个风格短语稀释。"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "正文没有任何 -- 参数，3:4 画幅来自上游作业字段，不存在参数错位；no text、no watermark 是自然语言排除也不是参数。"
         },
         {
           "id": "R4",
-          "ok": true,
-          "note": "无排除项，未使用 --no"
+          "ok": false,
+          "note": "两条排除写成 no text / no watermark 的自然语言而非 --no；不过 V8.2 下 --no 会逐词审核，这样写反而规避了误伤。"
         },
         {
           "id": "R5",
           "ok": true,
-          "note": "未见画质堆料词"
+          "note": "八个短语各自对应风格、主体、机位、光线或排除，没有 8k、ultra-detailed 这类收益递减的画质堆料词。"
         },
         {
           "id": "M1",
-          "ok": true,
-          "note": "全文英文半角标点"
+          "ok": false,
+          "note": "标点全是英文半角，没有中文标点，但 metallic graininess.. 连打两个句点、结尾 no watermark. 还用句号收束，是这条最明显的文字噪声。"
         },
         {
           "id": "M2",
           "ok": true,
-          "note": "单主体或主体明确"
+          "note": "One complete centered asset 明确要求单个完整素材，画面里只有一只猫，不存在多主体平分注意力。"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "正文用 no text / no watermark 主动排除文字与水印，正好绕开 MJ 生成准确文字不可靠这个坑。"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "全条没有 8k、masterpiece、best quality 这类 V6 之后收益极低的画质词，metallic graininess 是质感而非画质堆料。"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "整条是英文短语清单，不是中文长句；连 Fortiche Studio 这类具名锚点也保持英文原写，不触发中文长句的理解损耗。"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "全条是 Arcane 风格加 cat 素材的短语清单，连一个 :: 都没出现，V8.2 下不触发 V7+ 移除多提示词权重语法的红线。"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "正文零参数，三个风格短语全靠自然语言，既没写 --style raw 也没写 --raw，V7+ 必须改用 --raw 的陷阱不存在。"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "两条排除走 no text / no watermark 的自然语言而非 --no，因此不触碰 V8.2 下 --no 逐词独立审核的误伤风险。"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "正文只用 sref 2791842605 参考图且还在上游字段里，没碰 --q / --oref / --cref 这些 V8.1 起被移除或由 --edit 取代的参数。"
         }
       ],
-      "summary": "画面主体，影棚、猫、明亮、黑色配色，3:4 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:16.996Z"
+      "summary": "纯黑底上一只被要求完整居中的猫素材，用略高的四分之三视角配明亮棚拍光来展示，作者把 Fortiche 工作室的《双城之战》3D/2D 混合风、印象派笔触和金属颗粒三个风格锚全压在句首，结果 cat 这个主体反而被挤到了句子中段。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.700Z"
     },
     {
       "jobId": "35bed494-6141-48ac-a350-ed088782c898",
@@ -5365,53 +5580,211 @@
         {
           "code": "1",
           "module": "主体",
-          "text": "Using the reference image as the primary visual source",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "The woman",
+          "note": "全条没有独立的主体名词短语，主体只以回指代词 The woman（还有 the subject's pose）出现，年龄、容貌、服饰一个属性都没给；开篇 Using the reference image as the primary visual source, generate alternative versions of the same concept 把视觉定义全交给参考图。"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "Introduce subtle changes: vary the subject's pose；and facial expression",
-          "note": "命中动作 / 状态信号词 2 处"
+          "text": "vary the subject's pose, body position, and facial expression. The woman must always cover part of her face with her hands - change hand positioning in every photo",
+          "note": "②段写的不是单一动作而是每张都要换姿势、体位、表情的变体规则；cover part of her face with her hands 是唯一锁死不变的动作，还要求逐张换手位，用动作约束来维持同一组照片的辨识度。"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "generate alternative versions of the same concept；Preserve the core idea；visual identity；…（另有 17 个短语见原文）",
-          "note": "场景 / 周边元素，共 20 个短语"
+          "text": "",
+          "note": "场景、时间、天气、周边物件一个都没写，只用 background 和 the same photoshoot 要求与参考图保持一致；环境完全外包给 the primary visual source，正文读不出是棚拍还是户外。"
         },
         {
           "code": "4",
           "module": "构图与镜头",
-          "text": "Each variation should feel like a different shot from the same photoshoot；different shot",
-          "note": "镜头信号：different shot"
+          "text": "a different shot from the same photoshoot",
+          "note": "shot 在这里是同一场拍摄里的另一张，而不是景别信号；One face per photo only 限的也是人脸数量，全条没有 close-up、机位或焦段词，镜头语言其实由参考图决定。"
         },
         {
           "code": "5",
           "module": "光线与色彩",
-          "text": "lighting；color palette；slightly diffused aesthetic with gentle blur；…（另有 4 个短语见原文）",
-          "note": "光线 / 色调信号 7 处"
+          "text": "Keep lighting direction, softness, contrast, shadows, highlights, skin tones, background, textures, and color grading consistent",
+          "note": "光线被拆成 direction / softness / contrast / shadows / highlights / color grading 一长串维度，但每条只要求与参考图 consistent，没有一个具体光源方向或色调值；唯一主动加的是 dreamy, soft focus, slightly diffused 那层柔焦。"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "photographic style",
-          "note": "风格 / 媒介信号 1 处，词库命中见下方"
+          "text": "Maintain realism and photographic finish",
+          "note": "风格锚只有 realism 与 photographic finish 两个词，加上前面的 photographic style、artistic direction，全是保持参考图摄影感的元约束，没有一个具体画风或媒介词；dreamy 是唯一有画面感的调性词。"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；3:4 与风格参考由上游作业字段承载"
+          "note": "正文零 -- 参数，3:4 比例由上游字段承载；最值得点明的是全条反复依赖 the reference image / the primary visual source，可上游 sref 却记为无，参考图很可能走 --edit 图生图通道而非 sref 码。"
         }
       ],
       "composition": [],
       "tags": {
-        "style": [],
-        "lighting": [],
-        "angle": [
-          "different shot"
+        "style": [
+          "photographic style",
+          "realism",
+          "photographic finish"
         ],
+        "lighting": [
+          "lighting direction",
+          "softness",
+          "contrast",
+          "color grading",
+          "soft focus",
+          "slightly diffused",
+          "gentle blur"
+        ],
+        "angle": [],
+        "emotion": [
+          "dreamy"
+        ]
+      },
+      "paramTail": {
+        "text": "",
+        "params": []
+      },
+      "health": [
+        {
+          "id": "R1",
+          "ok": false,
+          "note": "通篇十余个完整祈使句与陈述句，generate / Preserve / Introduce / Apply / Keep / Maintain / Avoid 轮番开头，是给模型的变体生成指令，和名词短语优先完全相反。"
+        },
+        {
+          "id": "R2",
+          "ok": false,
+          "note": "Using the reference image as the primary visual source 占掉第一句，主体 The woman 到中段才回指出现，权重位被编辑指令占满。"
+        },
+        {
+          "id": "R3",
+          "ok": true,
+          "note": "正文没有任何 -- 参数，3:4 画幅来自上游作业字段；连排除项都是 Avoid unrelated elements 这样的自然语言，参数位置无从谈起。"
+        },
+        {
+          "id": "R4",
+          "ok": false,
+          "note": "Avoid unrelated elements, excessive effects, or stylistic inconsistencies 是自然语言排除而非 --no；不过 V8.2 下 --no 会逐词审核，用 Avoid 反而避开误伤。"
+        },
+        {
+          "id": "R5",
+          "ok": false,
+          "note": "Preserve 后跟 8 项、Keep 后跟 9 项的保持一致清单，加上八条独立祈使句，全批最长的一条，远超少而精；好在多数是约束维度而非画质堆料。"
+        },
+        {
+          "id": "M1",
+          "ok": true,
+          "note": "逗号、冒号、句点全英文半角，没有中文标点或重音字符；her hands - change hand positioning 用半角连字符当破折号虽不规范但不影响解析。"
+        },
+        {
+          "id": "M2",
+          "ok": true,
+          "note": "One face per photo only 把每张图锁在单张人脸，主体唯一；虽然要生成 alternative versions 一组变体，那是多张输出不是一张画里塞多主体。"
+        },
+        {
+          "id": "M3",
+          "ok": true,
+          "note": "通篇是姿势、光线、调性约束，没有要求画面里出现可读文字或字样，不触碰 MJ 生成准确文字的短板。"
+        },
+        {
+          "id": "M4",
+          "ok": true,
+          "note": "没有 8k、masterpiece、best quality 这类失效画质词；Maintain realism and photographic finish 是体裁要求而非画质堆料。"
+        },
+        {
+          "id": "M5",
+          "ok": true,
+          "note": "全英文输入，不是中文长句，不触发中文长句理解精度低这一条；但十余个完整句本质仍是自然语言指令而非提示词短语。"
+        },
+        {
+          "id": "V1",
+          "ok": true,
+          "note": "通篇是 generate / Preserve / Keep 这类变体生成指令，没有用 :: 给任何词加权，V8.2 下不触发 V7+ 移除权重语法的红线。"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "正文没有参数尾，连 the primary visual source 都是自然语言，既没 --style raw 也没 --raw，不碰 V7+ 的版本变更。"
+        },
+        {
+          "id": "V3",
+          "ok": true,
+          "note": "排除项走 Avoid unrelated elements 的自然语言而非 --no，因此不涉及 V8.2 下 --no 逐词独立审核把 modern clothing 拆成两词的误伤。"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "没碰 --q / --oref / --cref；正文反复要 the reference image 而上游 sref=无，参考图更像走 V8.1 起取代 cref 的 --edit 图生图通道。"
+        }
+      ],
+      "summary": "以参考图为母本生成一组女性肖像变体：每张换姿势、体位、表情和遮脸的手位，却把光线方向、色调、肤色与摄影质感全部要求保持一致，整条是十余句编辑指令，主体只靠 The woman 回指，画面细节几乎全外包给参考图。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.700Z"
+    },
+    {
+      "jobId": "7919fe1b-269b-4966-9ec3-039a95571fac",
+      "schemaVersion": 1,
+      "methodologyVersion": "v8.2",
+      "framework": "物体描述",
+      "segments": [
+        {
+          "code": "1",
+          "module": "主体",
+          "text": "at the center is a sticker style cutout of a cat face with a thick off white border",
+          "note": "主体是居中的猫脸贴纸剪贴，还带一圈粗米白描边；但开篇先写了 a graphic design on a solid dark blue background 这个体裁句，猫脸到第二句才出现，主体权重被推迟，at the center 又提前给了居中信号。"
+        },
+        {
+          "code": "2",
+          "module": "动作 / 状态",
+          "text": "the cat has its eyes closed, mouth open in a meow or yawn, and visible tabby stripe markings on its forehead and cheeks",
+          "note": "闭眼、张嘴像在喵叫或打哈欠是这条唯一的神态，写得具体可读；额头脸颊的虎斑纹严格说是主体装饰而非动作，meow or yawn 还留了口型二选一的歧义。"
+        },
+        {
+          "code": "3",
+          "module": "细节与环境",
+          "text": "a solid dark blue background … on an off white background",
+          "note": "外层深蓝纯底与猫脸内米白底构成两层底色，是贴纸剪贴的层次来源；整条是平面图形设计，没有真实场景、时间、天气，连周边物件都只剩底色。"
+        },
+        {
+          "code": "4",
+          "module": "构图与镜头",
+          "text": "at the center … centered horizontally",
+          "note": "at the center 把猫脸锁在正中，centered horizontally 又让下方 meow 字样水平居中，两处居中合起来是明确的居中排版意图；全条没有景别、机位或焦段词，因为这是平面设计不是摄影。"
+        },
+        {
+          "code": "5",
+          "module": "光线与色彩",
+          "text": "using dark navy ink on an off white background",
+          "note": "深海军蓝墨配米白底、再加浅蓝字，三色都是 ink 印刷式配色而非光线；全条没有任何光源方向、软硬或打光词，色彩其实就是这套双底色加字体色撑起来的。"
+        },
+        {
+          "code": "6",
+          "module": "风格与审美",
+          "text": "a graphic design … a vintage halftone dot pattern",
+          "note": "graphic design、sticker style cutout、vintage halftone dot pattern 三层媒介锚把画面钉在复古印刷贴纸上，半调网点是这条最有辨识度的风格词；handwritten sans serif 又单独给字体定了调。"
+        },
+        {
+          "code": "7",
+          "module": "参数尾",
+          "text": "",
+          "note": "正文零 -- 参数，9:16 竖幅与 sref=无 都由上游字段承载；the word \"meow\" 是要画进画面的字样而非参数尾，别把它和 --no 之类参数混为一谈，V8.2 下准确文字本身也不可靠。"
+        }
+      ],
+      "composition": [
+        "对称式（推断：at the center 与 centered horizontally 双重居中）"
+      ],
+      "tags": {
+        "style": [
+          "graphic design",
+          "sticker style cutout",
+          "vintage halftone dot pattern",
+          "sans serif font"
+        ],
+        "lighting": [
+          "dark navy ink",
+          "light blue"
+        ],
+        "angle": [],
         "emotion": []
       },
       "paramTail": {
@@ -5422,70 +5795,224 @@
         {
           "id": "R1",
           "ok": false,
-          "note": "检出 9 处完整描述句 / 系动词结构，偏离「名词短语优先」（复杂场景可控）"
+          "note": "五句都是 is rendered / has / is written 这类完整陈述句，句句带句号，把平面设计写成一段说明文，完全不是名词短语优先的结构。"
         },
         {
           "id": "R2",
-          "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "ok": false,
+          "note": "第一句 a graphic design on a solid dark blue background 是体裁加背景，主体 a sticker style cutout of a cat face 到第二句才出现，权重被推迟。"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "没有任何 -- 参数，9:16 竖幅来自上游作业字段，参数位置无从谈起；centered horizontally 是排版描述不是参数。"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "全条只有正向描述，没有要剔除的元素，也没写 --no；贴纸的干净感靠 solid dark blue background 纯底正向实现。"
         },
         {
           "id": "R5",
-          "ok": true,
-          "note": "未见画质堆料词"
+          "ok": false,
+          "note": "底色、描边、半调网点、闭眼口型、虎斑纹、字样字体与位置逐项写死，虽然每项都具体可画，五句话的展开量确实超出少而精，好在无画质堆料词。"
         },
         {
           "id": "M1",
           "ok": true,
-          "note": "全文英文半角标点"
+          "note": "逗号、句点与 \"meow\" 的双引号全是英文半角，没有中文标点或重音字符；off white 没加连字符也只是书写习惯，不影响解析。"
         },
         {
           "id": "M2",
           "ok": true,
-          "note": "单主体或主体明确"
+          "note": "画面只有一个猫脸贴纸主体，下方 \"meow\" 字样属于排版元素，深蓝底与米白底是底色，不存在多主体平分注意力。"
         },
         {
           "id": "M3",
-          "ok": true,
-          "note": "未要求画面出现准确文字"
+          "ok": false,
+          "note": "the word \"meow\" is written in a handwritten, light blue sans serif font 明确要求画面里出现拼写准确的可读文字，还指定了字体与颜色，正是期待 MJ 出准确文字这条误区，关键字样建议后期合成。"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "没有 8k、masterpiece、best quality 之类失效画质词；vintage halftone dot pattern 是印刷工艺词而非画质堆料。"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "全英文输入，不是中文长句，不触发中文长句理解精度低这一条；不过五句完整陈述句本质是自然语言说明文，也不是提示词惯用的短语。"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "五句平面设计说明文里没有 词::2 这类权重写法，连一个 :: 都没出现，V8.2 下不触发 V7+ 移除该语法的兼容问题。"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "正文没有参数尾，vintage halftone dot pattern 也是自然语言，既没 --style raw 也没 --raw，V7+ 的版本陷阱不存在。"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "没有 --no，画面干净靠 solid dark blue background 正向实现，因此不涉及 V8.2 下 --no 逐词独立审核的误伤。"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "没碰 --q / --oref / --cref 这些 V8.1 起被移除或由 --edit 取代的参数，上游 sref 也记为无，整条完全靠正文自描述。"
         }
       ],
-      "summary": "画面主体，氛围、细腻、身体、表情，3:4 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:16.998Z"
+      "summary": "一张深蓝纯底的平面贴纸设计：居中的猫脸带粗米白描边、用复古半调网点和深海军蓝墨印出闭眼打哈欠的虎斑纹，下方还手写了一行浅蓝色 meow 字样，把可读文字写进画面正是这条最该留意的写法。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.701Z"
     },
     {
-      "jobId": "7919fe1b-269b-4966-9ec3-039a95571fac",
+      "jobId": "41077198-2fef-4ee0-90a6-ed50d66c2b80",
+      "schemaVersion": 1,
+      "methodologyVersion": "v8.2",
+      "framework": "物体描述",
+      "segments": [
+        {
+          "code": "1",
+          "module": "主体",
+          "text": "Relief Print of mythical black creature",
+          "note": "主体是神话里的黑色生物，但 Relief Print of 这个版画笔裁词占掉第一短语，主体被压在 of 后面当宾语；black 是唯一外貌属性，体型、五官、姿态一概没给。"
+        },
+        {
+          "code": "2",
+          "module": "动作 / 状态",
+          "text": "hidden",
+          "note": "hidden 是全条唯一的动作或状态词，还是过去分词写的被动藏匿，交代的是黑兽与稻田的遮挡关系，没写它在做什么；除此之外 uncanny 是气质词，不算状态。"
+        },
+        {
+          "code": "3",
+          "module": "细节与环境",
+          "text": "flowing undulating rice fields",
+          "note": "起伏流动的稻田是唯一环境，flowing 与 undulating 两个近义分词叠写强调波浪感；没有时间、天气、天空或周边物件，稻田同时充当藏住黑兽的遮挡层。"
+        },
+        {
+          "code": "4",
+          "module": "构图与镜头",
+          "text": "",
+          "note": "没有景别、机位、焦段，也没命中构图五法里任何信号词；9:16 竖幅由上游字段给出，黑兽藏在稻田里的前后遮挡算隐式纵深，但正文没把它写成一个镜头。"
+        },
+        {
+          "code": "5",
+          "module": "光线与色彩",
+          "text": "black",
+          "note": "唯一的色彩线索是 black，还写在①段的主体短语里，并没有形成独立的⑤段；coloured 只是圆珠笔的属性，全条没有光源方向或色调指令。"
+        },
+        {
+          "code": "6",
+          "module": "风格与审美",
+          "text": "uncanny art, stylised illustration, coloured biro drawing, ink drawing, line art",
+          "note": "一口气挂了五个风格媒介词，加上句首的 Relief Print 共六个：诡异艺术、风格化插画、彩色圆珠笔、墨线、线描；ink drawing 与 line art 语义重叠，媒介锚偏多且互相拉扯。"
+        },
+        {
+          "code": "7",
+          "module": "参数尾",
+          "text": "",
+          "note": "正文零 -- 参数，9:16 竖幅由上游字段承载；Relief Print 等六个风格词全用逗号写在正文里，没有一个是参数形式，这条的版画感完全靠自然语言词撑。"
+        }
+      ],
+      "composition": [],
+      "tags": {
+        "style": [
+          "Relief Print",
+          "stylised illustration",
+          "coloured biro drawing",
+          "ink drawing",
+          "line art"
+        ],
+        "lighting": [],
+        "angle": [],
+        "emotion": [
+          "uncanny"
+        ]
+      },
+      "paramTail": {
+        "text": "",
+        "params": []
+      },
+      "health": [
+        {
+          "id": "R1",
+          "ok": true,
+          "note": "Relief Print of 加五个逗号分隔的名词短语，没有展开成完整叙述句，短语优先守住了；只是第一个短语带了 of 介词链，略长。"
+        },
+        {
+          "id": "R2",
+          "ok": false,
+          "note": "Relief Print of 这个版画笔裁词抢了最前，真正的主体 mythical black creature 被压在 of 后面当宾语，权重被体裁词分走。"
+        },
+        {
+          "id": "R3",
+          "ok": true,
+          "note": "正文没有任何 -- 参数，9:16 画幅来自上游作业字段；六个风格词也没一个写成参数形式，不存在参数错位。"
+        },
+        {
+          "id": "R4",
+          "ok": true,
+          "note": "没有需要剔除的元素，也没写 --no；黑兽藏在稻田里的辨识度全靠 hidden amongst 正向描述实现。"
+        },
+        {
+          "id": "R5",
+          "ok": false,
+          "note": "ink drawing 与 line art、stylised illustration 三个词都指向线描类媒介，再加 Relief Print 与 coloured biro，六个风格锚挤进 167 字符短句，属于堆料而非少而精。"
+        },
+        {
+          "id": "M1",
+          "ok": true,
+          "note": "逗号全英文半角，没有中文标点；stylised 与 coloured 是规范的英式拼写而非错词，不影响 MJ 解析。"
+        },
+        {
+          "id": "M2",
+          "ok": true,
+          "note": "画面只有一个 mythical black creature，稻田是藏匿环境而非并列主体，不存在注意力被多个对象均分。"
+        },
+        {
+          "id": "M3",
+          "ok": true,
+          "note": "没有要求画面出现题字、标识或可读文字，Relief Print 是版画体裁词不是要印出来的字。"
+        },
+        {
+          "id": "M4",
+          "ok": true,
+          "note": "没有 8k、masterpiece、best quality 之类失效画质词，六个词全是媒介与气质描述，不靠画质词撑场面。"
+        },
+        {
+          "id": "M5",
+          "ok": true,
+          "note": "全英文短语清单，不是中文长句，不触发中文长句理解精度低这一条；167 字符也是这批里偏短的一条。"
+        },
+        {
+          "id": "V1",
+          "ok": true,
+          "note": "六个媒介短语里没有 词::2 权重写法，连一个 :: 都没出现，V8.2 下不触发 V7+ 移除该语法的兼容问题。"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "正文没有参数尾，Relief Print 等六个风格词全是自然语言，既没 --style raw 也没 --raw，不碰 V7+ 的版本变更。"
+        },
+        {
+          "id": "V3",
+          "ok": true,
+          "note": "没有 --no，黑兽辨识度靠 hidden amongst 正向描述，因此不涉及 V8.2 下 --no 逐词独立审核的误伤。"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "没碰 --q / --oref / --cref 这些 V8.1 起被移除或由 --edit 取代的参数，上游 sref 也记为无，版画感完全靠正文媒介词自描述。"
+        }
+      ],
+      "summary": "一幅凸版印刷风的诡异插画：神话黑兽藏进起伏流动的稻田里，作者把风格化插画、彩色圆珠笔、墨线、线描一口气叠了六个媒介词来定版画调子，机位与光源却一概没写，9:16 竖幅全交给上游字段。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.701Z"
+    },
+    {
+      "jobId": "04ca445d-fe54-42f9-82cc-e0bd9519f953",
       "schemaVersion": 1,
       "methodologyVersion": "v8.2",
       "framework": "人物画像",
@@ -5493,177 +6020,51 @@
         {
           "code": "1",
           "module": "主体",
-          "text": "a graphic design on a solid dark blue background",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "western outlaw on horseback",
+          "note": "主体是骑马的西部亡命徒，一个名词短语把身份与坐骑都带了；年龄、服饰、容貌一个属性没给，但主体落在最前，权重没被句尾的风格锚抢走。"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "",
-          "note": "未检出显式动作或状态词"
+          "text": "overlooking",
+          "note": "overlooking 是全条唯一的动作，写的是亡命徒居高俯瞰的视线关系，顺带把视点也暗示出来；没有情绪词，人物表情完全空白。"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "the cat has its eyes closed；mouth open in a meow or yawn；and visible tabby stripe markings on its forehead and cheeks；…（另有 2 个短语见原文）",
-          "note": "场景 / 周边元素，共 5 个短语"
+          "text": "snowy landscape",
+          "note": "雪景是唯一环境词，没有地点、时间或周边物件，snowy 本身算一点天气信息；overlooking snowy landscape 把动作和对象连成一个短语，环境与视线绑在一起。"
         },
         {
           "code": "4",
           "module": "构图与镜头",
-          "text": "",
-          "note": "未检出景别 / 机位 / 焦段信号"
-        },
-        {
-          "code": "5",
-          "module": "光线与色彩",
-          "text": "the cat's face is rendered in a vintage halftone dot pattern using dark navy ink on an off white background；light blue sans serif font centered horizontally.",
-          "note": "光线 / 色调信号 2 处"
-        },
-        {
-          "code": "6",
-          "module": "风格与审美",
-          "text": "at the center is a sticker style cutout of a cat face with a thick off white border",
-          "note": "风格 / 媒介信号 1 处，词库命中见下方"
-        },
-        {
-          "code": "7",
-          "module": "参数尾",
-          "text": "",
-          "note": "正文未写 --ar / --v 等参数；9:16 与风格参考由上游作业字段承载"
-        }
-      ],
-      "composition": [
-        "框架式（推断）"
-      ],
-      "tags": {
-        "style": [],
-        "lighting": [],
-        "angle": [],
-        "emotion": []
-      },
-      "paramTail": {
-        "text": "",
-        "params": []
-      },
-      "health": [
-        {
-          "id": "R1",
-          "ok": false,
-          "note": "检出 1 处完整描述句 / 系动词结构，偏离「名词短语优先」（复杂场景可控）"
-        },
-        {
-          "id": "R2",
-          "ok": true,
-          "note": "主体位于首个短语，权重保住"
-        },
-        {
-          "id": "R3",
-          "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
-        },
-        {
-          "id": "R4",
-          "ok": true,
-          "note": "无排除项，未使用 --no"
-        },
-        {
-          "id": "R5",
-          "ok": true,
-          "note": "未见画质堆料词"
-        },
-        {
-          "id": "M1",
-          "ok": true,
-          "note": "全文英文半角标点"
-        },
-        {
-          "id": "M2",
-          "ok": true,
-          "note": "单主体或主体明确"
-        },
-        {
-          "id": "M3",
-          "ok": false,
-          "note": "要求画面出现准确文字，MJ 出字不可靠，建议后期合成"
-        },
-        {
-          "id": "M4",
-          "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
-        },
-        {
-          "id": "M5",
-          "ok": true,
-          "note": "无中文长句"
-        },
-        {
-          "id": "V1",
-          "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
-        },
-        {
-          "id": "V3",
-          "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
-        }
-      ],
-      "summary": "画面主体，背景、贴纸、猫、面部、暗调、蓝色配色，9:16 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:16.999Z"
-    },
-    {
-      "jobId": "41077198-2fef-4ee0-90a6-ed50d66c2b80",
-      "schemaVersion": 1,
-      "methodologyVersion": "v8.2",
-      "framework": null,
-      "segments": [
-        {
-          "code": "1",
-          "module": "主体",
-          "text": "Relief Print of mythical black creature hidden amongst flowing undulating rice fields",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
-        },
-        {
-          "code": "2",
-          "module": "动作 / 状态",
-          "text": "",
-          "note": "未检出显式动作或状态词"
-        },
-        {
-          "code": "3",
-          "module": "细节与环境",
-          "text": "uncanny art；coloured biro drawing；line art",
-          "note": "场景 / 周边元素，共 3 个短语"
-        },
-        {
-          "code": "4",
-          "module": "构图与镜头",
-          "text": "",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "text": "overlooking snowy landscape",
+          "note": "overlooking 把视点定成居高临下远眺，属于不写机位词的隐式构图；wide shot、焦段、三分法这些信号一个都没有，3:4 画幅由上游字段而非正文参数给出。"
         },
         {
           "code": "5",
           "module": "光线与色彩",
           "text": "",
-          "note": "未检出显式光线或色调词"
+          "note": "没有光源方向、软硬或色调词；snowy 只说明地面积雪，波普风的配色实际被句尾 in the style of roy lichtenstein 那个具名锚点接管，⑤段完全空缺。"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "stylised illustration；ink drawing",
-          "note": "风格 / 媒介信号 2 处，词库命中见下方"
+          "text": "in the style of roy lichtenstein",
+          "note": "具名艺术家罗伊·利希滕斯坦是唯一风格锚，指向波普艺术的网点、粗描边与原色；roy lichtenstein 全小写没按专有名词大写，可能稍微削弱词向量匹配。"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；9:16 与风格参考由上游作业字段承载"
+          "note": "正文零 -- 参数，3:4 比例与 sref=无 都由上游字段承载；in the style of roy lichtenstein 是写进正文的自然语言风格锚，不是 --style 或 --sref 参数，这是读这条短作业时最容易看漏的歧义。"
         }
       ],
       "composition": [],
       "tags": {
-        "style": [],
+        "style": [
+          "in the style of roy lichtenstein"
+        ],
         "lighting": [],
         "angle": [],
         "emotion": []
@@ -5676,247 +6077,136 @@
         {
           "id": "R1",
           "ok": true,
-          "note": "名词短语为主，未检出完整描述句"
+          "note": "整条就是 western outlaw on horseback overlooking snowy landscape in the style of 一个名词短语链，连一个谓语动词都没有，短语优先守得最干净。"
         },
         {
           "id": "R2",
           "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "note": "western outlaw 落在第一个词，主体权重完整；具名风格锚 in the style of roy lichtenstein 被老老实实放在句尾，没有抢占首位。"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "正文没有任何 -- 参数，3:4 画幅与 sref=无 全由上游作业字段承载；88 个字符里连一个连字符参数都没写。"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "没有要剔除的元素，也没写 --no；overlooking snowy landscape 这类正向短语占满全条，连减法都省了。"
         },
         {
           "id": "R5",
           "ok": true,
-          "note": "未见画质堆料词"
+          "note": "全条 88 字符，主体、环境、风格各一个短语，没有画质堆料词，是少而精走到极端的例子；代价是服饰、光线、机位全交给模型默认。"
         },
         {
           "id": "M1",
           "ok": true,
-          "note": "全文英文半角标点"
+          "note": "逗号和空格都是英文半角，没有中文标点；roy lichtenstein 没按专有名词大写，但和基准里 monet / tifa 一样不影响 MJ 识别。"
         },
         {
           "id": "M2",
           "ok": true,
-          "note": "单主体或主体明确"
+          "note": "只有 western outlaw 一个人物主体，马是坐骑、snowy landscape 是环境，不存在多主体平分注意力。"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "没有要求画面出现文字、标牌或字样；in the style of roy lichtenstein 是风格锚不是要印进画面的签名。"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "88 个字符里没有 8k、masterpiece、best quality 之类失效画质词，连一个画质形容词都没混进来。"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "全英文一个短语，不是中文长句，不触发中文长句理解精度低这一条；连自然语言整句都算不上。"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "88 个字符的一个短语链里没有 词::2 权重写法，连一个 :: 都没出现，V8.2 下不触发 V7+ 移除该语法的兼容问题。"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "正文没有参数尾，波普风靠 in the style of roy lichtenstein 自然语言给，既没 --style raw 也没 --raw，不碰 V7+ 的版本变更。"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "没有 --no，88 个字符里全是正向描述，因此不涉及 V8.2 下 --no 逐词独立审核的误伤风险。"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "没碰 --q / --oref / --cref 这些 V8.1 起被移除或由 --edit 取代的参数，上游 sref 也记为无，风格全靠一个具名艺术家短语承载。"
         }
       ],
-      "summary": "画面主体，插画、黑色配色，9:16 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:17.000Z"
-    },
-    {
-      "jobId": "04ca445d-fe54-42f9-82cc-e0bd9519f953",
-      "schemaVersion": 1,
-      "methodologyVersion": "v8.2",
-      "framework": null,
-      "segments": [
-        {
-          "code": "1",
-          "module": "主体",
-          "text": "western outlaw on horseback overlooking snowy landscape in the style of roy lichtenstein",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
-        },
-        {
-          "code": "2",
-          "module": "动作 / 状态",
-          "text": "",
-          "note": "未检出显式动作或状态词"
-        },
-        {
-          "code": "3",
-          "module": "细节与环境",
-          "text": "",
-          "note": "未检出独立环境段"
-        },
-        {
-          "code": "4",
-          "module": "构图与镜头",
-          "text": "",
-          "note": "未检出景别 / 机位 / 焦段信号"
-        },
-        {
-          "code": "5",
-          "module": "光线与色彩",
-          "text": "",
-          "note": "未检出显式光线或色调词"
-        },
-        {
-          "code": "6",
-          "module": "风格与审美",
-          "text": "",
-          "note": "未检出显式风格词"
-        },
-        {
-          "code": "7",
-          "module": "参数尾",
-          "text": "",
-          "note": "正文未写 --ar / --v 等参数；3:4 与风格参考由上游作业字段承载"
-        }
-      ],
-      "composition": [],
-      "tags": {
-        "style": [],
-        "lighting": [],
-        "angle": [],
-        "emotion": []
-      },
-      "paramTail": {
-        "text": "",
-        "params": []
-      },
-      "health": [
-        {
-          "id": "R1",
-          "ok": true,
-          "note": "名词短语为主，未检出完整描述句"
-        },
-        {
-          "id": "R2",
-          "ok": true,
-          "note": "主体位于首个短语，权重保住"
-        },
-        {
-          "id": "R3",
-          "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
-        },
-        {
-          "id": "R4",
-          "ok": true,
-          "note": "无排除项，未使用 --no"
-        },
-        {
-          "id": "R5",
-          "ok": true,
-          "note": "未见画质堆料词"
-        },
-        {
-          "id": "M1",
-          "ok": true,
-          "note": "全文英文半角标点"
-        },
-        {
-          "id": "M2",
-          "ok": true,
-          "note": "单主体或主体明确"
-        },
-        {
-          "id": "M3",
-          "ok": true,
-          "note": "未要求画面出现准确文字"
-        },
-        {
-          "id": "M4",
-          "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
-        },
-        {
-          "id": "M5",
-          "ok": true,
-          "note": "无中文长句"
-        },
-        {
-          "id": "V1",
-          "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
-        },
-        {
-          "id": "V3",
-          "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
-        }
-      ],
-      "summary": "画面主体，3:4 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:17.000Z"
+      "summary": "骑马的西部亡命徒俯瞰一片雪原，全条只有 88 个字符，波普调子全押在句尾 in the style of roy lichtenstein 这个具名艺术家锚上，主体稳稳放在最前，光线与机位一概留给模型。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.701Z"
     },
     {
       "jobId": "968f02b2-00d6-4a84-b3e1-22500e79b38b",
       "schemaVersion": 1,
       "methodologyVersion": "v8.2",
-      "framework": null,
+      "framework": "物体描述",
       "segments": [
         {
           "code": "1",
           "module": "主体",
           "text": "Acrylic painted breakfast table",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "note": "Acrylic painted 把丙烯媒介直接焊在 breakfast table 上，主体只有一张早餐桌，没写桌面摆了什么食物或餐具"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
           "text": "",
-          "note": "未检出显式动作或状态词"
+          "note": "静物命题全篇找不到任何动词或情绪词，作者压根没打算让桌子或谁去做什么"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "Blue；pink；peach",
-          "note": "场景 / 周边元素，共 3 个短语"
+          "text": "",
+          "note": "除了 breakfast 这个时间暗示，场景、天气、周边物件一样没写，环境几乎全交给观者脑补"
         },
         {
           "code": "4",
           "module": "构图与镜头",
           "text": "",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "note": "9:16 竖幅是上游作业字段给的，正文连 --ar 都没露面，三个短语里也寻不到机位或构图法信号"
         },
         {
           "code": "5",
           "module": "光线与色彩",
-          "text": "light blue；lilac and white colors",
-          "note": "光线 / 色调信号 2 处"
+          "text": "Blue, light blue, pink, peach, lilac and white colors",
+          "note": "六种颜色被平铺成一张调色清单，是全片唯一实写的信息，但只给色相不给光源方向和硬软"
         },
         {
           "code": "6",
           "module": "风格与审美",
           "text": "Leon Cauvy style",
-          "note": "风格 / 媒介信号 1 处，词库命中见下方"
+          "note": "靠 Leon Cauvy style 借法国画家风格撑审美，Acrylic painted 作为媒介词其实也该归风格，却被嵌进主体短语里，是落段歧义"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；9:16 与风格参考由上游作业字段承载"
+          "note": "三个短语全靠句号断开、零 -- 参数，9:16 比例和 v8.2 版本都由上游字段承载，正文完全看不到参数尾"
         }
       ],
       "composition": [],
       "tags": {
-        "style": [],
-        "lighting": [],
+        "style": [
+          "Acrylic painted",
+          "Leon Cauvy style"
+        ],
+        "lighting": [
+          "Blue, light blue, pink, peach, lilac and white colors"
+        ],
         "angle": [],
         "emotion": []
       },
@@ -5927,124 +6217,142 @@
       "health": [
         {
           "id": "R1",
-          "ok": false,
-          "note": "检出 2 处完整描述句 / 系动词结构，偏离「名词短语优先」（复杂场景可控）"
+          "ok": true,
+          "note": "三个句号分隔的都是名词短语（breakfast table、Leon Cauvy style、颜色清单），没有主谓句，名词短语优先这条守住了"
         },
         {
           "id": "R2",
           "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "note": "Acrylic painted breakfast table 就在第一短语，主体权重没被任何前置套话稀释"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "三个句号收尾的短语里零 -- 参数，9:16 竖幅和 v8.2 都由上游字段承载"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "全片不设排除项，Blue 到 white 这套颜色是正面列举，没用 --no 做减法也没必要减"
         },
         {
           "id": "R5",
           "ok": true,
-          "note": "未见画质堆料词"
+          "note": "仅主体、艺术家、色单三个短语，精简到极致，代价是环境与光线信息几乎为零"
         },
         {
           "id": "M1",
           "ok": true,
-          "note": "全文英文半角标点"
+          "note": "三处句点加颜色清单里的逗号都是英文半角，Leon Cauvy 这类专名也没混入中文标点"
         },
         {
           "id": "M2",
           "ok": true,
-          "note": "单主体或主体明确"
+          "note": "只有 breakfast table 一个主体，六种颜色是修饰不是并列对象，注意力不会均分"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "没有要求画面出现任何可读文字或字母，连品牌字样都没提"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "只有 Acrylic painted、Leon Cauvy style 和一串颜色词，连 sharp、detail 这类画质词都没出现，更没有 8k 堆料"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "整条都是英文短语，Leon Cauvy style 这类风格词也保持英文，不存在中文长句拖低精度的问题"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "三个短语用句号分层，没出现 :: 加权，不触发 V7+ 移除该语法的兼容问题"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "风格用 Leon Cauvy style 自然语言指定，没写 --style raw，不涉及 V7+ 改 --raw"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "完全不写 --no，颜色靠 Blue 到 white 正面列举，不存在逐词审核误伤"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "上游 sref 标的是无，连参考图都没有，自然也没碰 V8.1 起被移除的 --q / --cref"
         }
       ],
-      "summary": "画面主体，桌、蓝色、粉色配色，9:16 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:17.001Z"
+      "summary": "一张丙烯画就的早餐桌只靠 Leon Cauvy 的画家风格和蓝粉紫白的调色清单撑起画面，场景、光线、构图一概留白，连画幅和版本都甩给了上游字段。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.701Z"
     },
     {
       "jobId": "ceb1674c-e5a1-4e7e-8d60-ecdab55b38fa",
       "schemaVersion": 1,
       "methodologyVersion": "v8.2",
-      "framework": null,
+      "framework": "人物画像",
       "segments": [
         {
           "code": "1",
           "module": "主体",
-          "text": "ちいかわみたいなデフォルメアニメ風のシンプルアニメミームオリジナルキャラ。二足歩行の動物。シンプルな2Dセルアニメ調。フォトリアルな背景にぽつんと立っている。",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "ちいかわみたいなデフォルメアニメ風のシンプルアニメミームオリジナルキャラ。二足歩行の動物",
+          "note": "主体是像吉伊卡哇的简化变形动画风原创 meme 角色，二足歩行の動物 再补它是双足行走的动物，全程没写具体长相或配色"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "",
-          "note": "未检出显式动作或状态词"
+          "text": "ぽつんと立っている",
+          "note": "立っている 是全片唯一的状态词，ぽつんと 给这个角色添了孤零零的寂寥感，动作信息仅止于站着"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "",
-          "note": "未检出独立环境段"
+          "text": "フォトリアルな背景",
+          "note": "环境只给了 フォトリアルな背景 一句，用写实照片背景去反衬前面的 2D 卡通角色，没写地点和时间"
         },
         {
           "code": "4",
           "module": "构图与镜头",
           "text": "",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "note": "原文没出现 negative space 之类构图词，倒是 ぽつんと 让一个角色孤零零立在写实背景里，语义上逼出大片留白"
         },
         {
           "code": "5",
           "module": "光线与色彩",
           "text": "",
-          "note": "未检出显式光线或色调词"
+          "note": "全片既无光源方向也无任何颜色词，造型与配色实际交给 225034070、4277459420 两条 sref 去锁"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "",
-          "note": "未检出显式风格词"
+          "text": "シンプルな2Dセルアニメ調",
+          "note": "风格词最密：ちいかわ 式变形、シンプルアニメミーム、2Dセルアニメ調 三层叠加，可这些词大多粘在第一段的主体短语里没单独成段"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；9:16 与 sref 225034070 4277459420 由上游作业字段承载"
+          "note": "四个短句用全角句号收尾、零 -- 参数，9:16 竖幅和两条 sref 全由上游字段承载，正文看不到参数尾"
         }
       ],
-      "composition": [],
+      "composition": [
+        "留白 / 负空间（推断：ぽつんと立っている，孤零零一个角色立在写实背景里）"
+      ],
       "tags": {
-        "style": [],
+        "style": [
+          "ちいかわみたいなデフォルメアニメ風",
+          "シンプルアニメミーム",
+          "シンプルな2Dセルアニメ調"
+        ],
         "lighting": [],
         "angle": [],
-        "emotion": []
+        "emotion": [
+          "ぽつんと"
+        ]
       },
       "paramTail": {
         "text": "",
@@ -6054,67 +6362,77 @@
         {
           "id": "R1",
           "ok": true,
-          "note": "名词短语为主，未检出完整描述句"
+          "note": "四个句号分段里前三个是名词短语，只有 フォトリアルな背景にぽつんと立っている 带谓语，整体仍以短语为主"
         },
         {
           "id": "R2",
           "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "note": "ちいかわみたいな…オリジナルキャラ 第一个分段就是主体，二足歩行の動物 随后补充类别"
         },
         {
           "id": "R3",
-          "ok": false,
-          "note": "正文含中文标点，MJ 解析可能失败"
+          "ok": true,
+          "note": "四个分段里零 -- 参数，两条 sref（225034070、4277459420）和 9:16 都在上游字段"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "没写 --no，减法靠 シンプルな 和只留一个角色来完成"
         },
         {
           "id": "R5",
           "ok": true,
-          "note": "未见画质堆料词"
+          "note": "四个短句一个角色，没堆料，但造型配色大量压在两条 sref 上"
         },
         {
           "id": "M1",
           "ok": false,
-          "note": "含中文标点，MJ 解析可能失败"
+          "note": "四个分段全用日文全角句号而非英文半角句点，虽然正文没有参数区，标点并不符合全半角要求"
         },
         {
           "id": "M2",
           "ok": true,
-          "note": "单主体或主体明确"
+          "note": "只有一个 オリジナルキャラ（双足动物），二足歩行の動物 是同一主体的类别说明不是第二个主体"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "シンプルアニメミーム 只是风格说法，没写要在画面里出可读的字"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "四个短句里全是 デフォルメ、2Dセルアニメ調 这类风格词，没有 8k 或 masterpiece，简洁到底"
         },
         {
           "id": "M5",
           "ok": false,
-          "note": "含 11 个中文字符的长句，理解精度低于英文"
+          "note": "整条是日语，2Dセルアニメ調、デフォルメアニメ風 这类关键风格词都用日文而非英文，理解精度可能打折"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "四个分段用句号而不是 :: 加权，V8.2 下无失效风险"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "风格是 デフォルメアニメ風、2Dセルアニメ調 这些日文短语，没碰 --style raw / --raw"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "减法靠 シンプルな 和单一主体完成，没写 --no，避开逐词审核"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "用的是 sref 225034070、4277459420 两条参考图，没碰 V8.1 起被移除或替代的 --q / --cref"
         }
       ],
-      "summary": "画面主体，9:16 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:17.001Z"
+      "summary": "一个像吉伊卡哇那样简化变形的原创双足动物角色，被孤零零摆在写实照片般的背景里走 2D 赛璐珞动画调，卡通与写实的反差全靠风格词和两条 sref 撑，正文连光线颜色都没写。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.701Z"
     },
     {
       "jobId": "a96ba873-ee4d-4182-8dd1-fb302445f9b1",
@@ -6125,44 +6443,44 @@
         {
           "code": "1",
           "module": "主体",
-          "text": "체스판 위에 사람들이 체스말 대신에 서있게 해줘.",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "체스판 위에 사람들이",
+          "note": "主体是 사람들이（人们），却先被 체스판 위에（棋盘上）这个地点状语领起，체스말 대신에 才点明他们是顶替棋子的人"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "",
-          "note": "未检出显式动作或状态词"
+          "text": "체스말 대신에 서있게 해줘",
+          "note": "서있게 해줘 是让…站着吧的使役请求，整条唯一的状态就是站立，해줘 还带着直接对模型下指令的口吻"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "",
-          "note": "未检出独立环境段"
+          "text": "체스판",
+          "note": "环境只剩 체스판 这一个平面，没写室内外、时间或棋盘外的任何东西，连格子颜色都没交代"
         },
         {
           "code": "4",
           "module": "构图与镜头",
           "text": "",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "note": "要把 체스판 拍全多半得俯视，可 bird's eye、机位、焦段一个没写；棋盘方格自带网格秩序，算没被点破的构图资源"
         },
         {
           "code": "5",
           "module": "光线与色彩",
           "text": "",
-          "note": "未检出显式光线或色调词"
+          "note": "光线与色调全线空缺，连棋盘经典的黑白格都没点名，画面明暗只能靠模型自行发挥"
         },
         {
           "code": "6",
           "module": "风格与审美",
           "text": "",
-          "note": "未检出显式风格词"
+          "note": "通篇找不到任何画风、媒介、流派或镜头感词，连 photorealistic 都没写，整体更像一句概念设定而非带审美的 prompt"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；9:16 与风格参考由上游作业字段承载"
+          "note": "末尾只有 해줘 后一个半角句点、零 -- 参数，9:16 竖幅和 v8.2 版本全由上游作业字段承载"
         }
       ],
       "composition": [],
@@ -6179,123 +6497,144 @@
       "health": [
         {
           "id": "R1",
-          "ok": true,
-          "note": "名词短语为主，未检出完整描述句"
+          "ok": false,
+          "note": "整条是 체스판 위에…서있게 해줘 一句带使役请求的韩语命令句，完全不是名词短语堆叠"
         },
         {
           "id": "R2",
-          "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "ok": false,
+          "note": "开篇 체스판 위에 是地点状语，主体 사람들이 排在其后，没占到第一短语的权重"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "只有一个 해줘 后半角句点、没有 -- 参数尾，9:16 画幅由上游字段给，不存在半角全角错位"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "一句使役请求里没有任何 --no 或排除项，连减法都没做"
         },
         {
           "id": "R5",
           "ok": true,
-          "note": "未见画质堆料词"
+          "note": "全条 27 字符一句话，精简到头，代价是风格、光线、机位一概没有"
         },
         {
           "id": "M1",
           "ok": true,
-          "note": "全文英文半角标点"
+          "note": "正文没有逗号，只在 해줘 后点了一个半角句点，没混入中文标点，也没有参数区可错"
         },
         {
           "id": "M2",
           "ok": true,
-          "note": "单主体或主体明确"
+          "note": "主体类别只有 사람들 一种，没塞五种不同对象，只是人数没限定、要铺满棋盘格"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "체스말、체스판 是物件名不是要渲染的字样，没要求画面出字"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "全条就 체스판、사람들、체스말、서있게 几个词，连 photorealistic 都没写，更谈不上 8k 堆料"
         },
         {
           "id": "M5",
-          "ok": true,
-          "note": "无中文长句"
+          "ok": false,
+          "note": "全条是一句韩语使役请求 서있게 해줘，没有任何英文风格词可兜底，语义精度全压在 MJ 对韩语句式的理解上"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "就一句 서있게 해줘，没有任何 :: 权重语法"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "本条压根没有任何风格词或风格参数，谈不上 --style raw 的版本陷阱"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "一句祈使句里没有任何 --no，也就没有逐词独立审核的坑"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "上游 sref 标的是无，正文也没 --q / --cref / --oref，参数区彻底空"
         }
       ],
-      "summary": "画面主体，9:16 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:17.001Z"
+      "summary": "一句韩语祈使句请模型让一群人站上棋盘顶替棋子，主体是复数人群却先被「棋盘上」领起，光线、画风、机位一概没写，是个干净但几乎全靠脑补的超现实概念。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.701Z"
     },
     {
       "jobId": "f117d615-c2f2-4254-b6d3-1c7daf993bd5",
       "schemaVersion": 1,
       "methodologyVersion": "v8.2",
-      "framework": null,
+      "framework": "物体描述",
       "segments": [
         {
           "code": "1",
           "module": "主体",
-          "text": "vertical composition featuring light blue wide leg pants on maroon steps",
-          "note": "风格 / 景别词前置，主体在首短语内但权重被分走"
+          "text": "light blue wide leg pants",
+          "note": "首个主体是浅蓝阔腿裤，但后面 vintage telephone、paper clips、beige envelopes、metallic cup 又并列出一堆物件，实为一组静物清单"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "",
-          "note": "未检出显式动作或状态词"
+          "text": "lies on a step with its coiled white wire draping downward",
+          "note": "静物没有真动作，lies 写电话躺姿、draping downward 写卷线垂向，靠摆放姿态和线的走向凑出一点动势"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "text overlays include bold cream lettering \"creative agency\"；small white text \"odd jobs\" and \"[001]\"；beige envelopes；…（另有 1 个短语见原文）",
-          "note": "场景 / 周边元素，共 4 个短语"
+          "text": "stationery items like paper clips, beige envelopes, and a shiny metallic cup on a silver saucer",
+          "note": "maroon steps 当底色台阶，回形针、米色信封、银托金属杯铺成周边道具，text overlays 那几组字又另算一层画面元素"
         },
         {
           "code": "4",
           "module": "构图与镜头",
-          "text": "",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "text": "vertical composition",
+          "note": "只给了竖构图这一个方向词，既不属于三分法、引导线等构图五法，也没落到景别或焦段；2:3 画幅其实由上游字段定"
         },
         {
           "code": "5",
           "module": "光线与色彩",
-          "text": "",
-          "note": "未检出显式光线或色调词"
+          "text": "light blue wide leg pants on maroon steps",
+          "note": "浅蓝、栗、奶油、白、黄、米、银凑成一套复古配色，却从头到尾没有一个光源或硬软光词，颜色全是物体固有色"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "and handwritten yellow style text \"[odd jobs]\"；a cream colored vintage telephone lies on a step with its coiled white wire draping downward towards stationery items like paper clips",
-          "note": "风格 / 媒介信号 2 处，词库命中见下方"
+          "text": "",
+          "note": "通篇找不到 oil painting、photography、editorial 之类画风或媒介词，vintage 只形容电话、handwritten yellow style text 里的 style 是字体样式，整体编辑式审美全靠物件暗示"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；2:3 与风格参考由上游作业字段承载"
+          "note": "零 -- 参数，四组带引号和「[001]」方括号的 text overlays 都是画面文字不是参数尾，2:3 与 v8.2 全由上游字段承载"
         }
       ],
       "composition": [],
       "tags": {
-        "style": [],
-        "lighting": [],
-        "angle": [],
+        "style": [
+          "vintage"
+        ],
+        "lighting": [
+          "light blue",
+          "maroon",
+          "cream",
+          "yellow",
+          "beige",
+          "silver"
+        ],
+        "angle": [
+          "vertical composition"
+        ],
         "emotion": []
       },
       "paramTail": {
@@ -6305,68 +6644,78 @@
       "health": [
         {
           "id": "R1",
-          "ok": true,
-          "note": "名词短语为主，未检出完整描述句"
+          "ok": false,
+          "note": "三句都带谓语（featuring、include、lies、draping），是描写长句而非名词短语"
         },
         {
           "id": "R2",
           "ok": false,
-          "note": "风格 / 景别词抢在主体前，主体权重被分走（社区常见写法）"
+          "note": "开篇 vertical composition featuring 是构图状语，主体 light blue wide leg pants 被 featuring 领在后面"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "零 -- 参数，逗号句点引号方括号全英文半角，看着像参数的「[001]」其实只是画面文字，2:3 与 v8.2 都在上游字段"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "没写 --no，全靠 include、lies 正面清单，物件只增不减"
         },
         {
           "id": "R5",
-          "ok": true,
-          "note": "未见画质堆料词"
+          "ok": false,
+          "note": "裤子电话卷线回形针信封金属杯加四组文字叠加，422 字符，明显超出少而精"
         },
         {
           "id": "M1",
           "ok": true,
-          "note": "全文英文半角标点"
+          "note": "逗号、句点、引号、方括号全英文半角，没有中文标点；「[001]」的方括号是画面的一部分而非参数括号"
         },
         {
           "id": "M2",
-          "ok": true,
-          "note": "单主体或主体明确"
+          "ok": false,
+          "note": "列了 light blue wide leg pants、vintage telephone、paper clips、beige envelopes、metallic cup、silver saucer 等多个独立物件，注意力容易被均分"
         },
         {
           "id": "M3",
           "ok": false,
-          "note": "要求画面出现准确文字，MJ 出字不可靠，建议后期合成"
+          "note": "要求精确渲染「creative agency」「odd jobs」「[001]」等字样，还要 bold、small、handwritten 三种字体，正是 MJ 最容易写崩的部分"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "有 shiny metallic cup 的 shiny 这种质感形容，但 8k、masterpiece、best quality 那类失效堆砌一个没写"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "三句英文描述句里连一个画风锚点都没有，审美全靠 vintage telephone 与文字叠加堆出来，谈不上中文长句问题"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "「[001]」的方括号容易看花眼，但全条没有 :: 权重语法，V8.2 下不涉及"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "handwritten yellow style text 里的 style 是字体样式，不是 --style raw 参数"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "没写 --no，物件与文字全靠正面 include、lies 列举，避开逐词审核"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "上游 sref 标的是无，也没 --q / --cref，画面全靠正面清单堆出来"
         }
       ],
-      "summary": "画面主体，构图、复古、纸质、蓝色、米白配色，2:3 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:17.002Z"
+      "summary": "一条浅蓝阔腿裤、奶油色复古电话和回形针信封金属杯被摆在栗色台阶上做竖幅静物排版，还压了 creative agency、odd jobs、[001] 几组精确字样，配色复古考究却没一个光线或画风词，文字与多物件正是最容易翻车的两处。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.701Z"
     },
     {
       "jobId": "0b9c7140-cf97-4ce2-87f4-306def85511f",
@@ -6377,58 +6726,69 @@
         {
           "code": "1",
           "module": "主体",
-          "text": "A beautiful cinematic shot of a young couple driving together in a vintage red convertible along a scenic coastal mountain road",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "a young couple driving together in a vintage red convertible",
+          "note": "主体是年轻情侣加一辆复古红敞篷车，后文又把两人拆成 The girl 坐副驾、the man 开车，车和人并列成双焦点"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "The girl is sitting in the passenger seat",
-          "note": "命中动作 / 状态信号词 1 处"
+          "text": "The girl is sitting in the passenger seat, and the man is driving. They are enjoying the ride together, relaxed and natural, with subtle interaction between them",
+          "note": "动作写足了开车、坐副驾、共赏旅途，relaxed and natural 与 enjoying 补情绪，subtle interaction 还点了两人间克制的互动"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "and the man is driving；They are enjoying the ride together；relaxed and natural；…（另有 11 个短语见原文）",
-          "note": "场景 / 周边元素，共 14 个短语"
+          "text": "along a scenic coastal mountain road. The road winds along a stunning blue lake, surrounded by dramatic green mountains, Mediterranean villas, cypress trees and lush vegetation",
+          "note": "环境是全片最堆的一段：海岸山路蜿蜒过蓝湖，再套绿山、地中海别墅、柏树、茂密植被，层层加景"
         },
         {
           "code": "4",
           "module": "构图与镜头",
-          "text": "Vertical 9:16 composition；cinematic wide shot；cinematic shot；…（另有 1 个短语见原文）",
-          "note": "镜头信号：cinematic shot / wide shot / wide shot"
+          "text": "Vertical 9:16 composition, cinematic wide shot, the entire red convertible clearly visible, beautiful landscape dominating the background",
+          "note": "给了 cinematic wide shot 景别和竖幅构图，还安排整车清晰、背景主导的主次；但 wide shot 配 9:16 竖幅略有张力，蜿蜒公路语义上又像引导线"
         },
         {
           "code": "5",
           "module": "光线与色彩",
-          "text": "Bright sunny day；warm natural sunlight",
-          "note": "光线 / 色调信号 2 处"
+          "text": "Bright sunny day, clear blue sky, warm natural sunlight",
+          "note": "晴天、清澈蓝天、暖自然光把光源和色温都交代了，红车配蓝湖绿山又是现成的互补色，是这批里光线色彩最完整的一条"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "realistic photography；high-end travel campaign aesthetic；photography；…（另有 1 个短语见原文）",
-          "note": "风格 / 媒介信号 2 处，词库命中见下方"
+          "text": "realistic photography, natural skin and hair, authentic proportions, high-end travel campaign aesthetic",
+          "note": "电影感、写实摄影、高端旅行广告审美三层定调，natural skin and hair 与 authentic proportions 是防 AI 畸变的写实约束"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；9:16 与风格参考由上游作业字段承载"
+          "note": "正文零 -- 参数，Vertical 9:16 composition 只是被当构图写的自然语言而非 --ar 9:16，比例和 v8.2 版本实则都由上游作业字段承载"
         }
       ],
-      "composition": [],
+      "composition": [
+        "引导线（推断：The road winds along a stunning blue lake，蜿蜒沿海公路把视线引向湖山纵深）"
+      ],
       "tags": {
         "style": [
-          "photography",
-          "cinematic"
+          "cinematic shot",
+          "realistic photography",
+          "high-end travel campaign aesthetic",
+          "luxurious summer atmosphere"
         ],
-        "lighting": [],
+        "lighting": [
+          "Bright sunny day",
+          "clear blue sky",
+          "warm natural sunlight"
+        ],
         "angle": [
-          "wide shot",
-          "cinematic shot"
+          "cinematic wide shot",
+          "Vertical 9:16 composition"
         ],
-        "emotion": []
+        "emotion": [
+          "relaxed and natural",
+          "enjoying the ride together"
+        ]
       },
       "paramTail": {
         "text": "",
@@ -6438,120 +6798,132 @@
         {
           "id": "R1",
           "ok": false,
-          "note": "检出 6 处完整描述句 / 系动词结构，偏离「名词短语优先」（复杂场景可控）"
+          "note": "The girl is sitting、They are enjoying、The road winds 一连串完整英文句，散文式描写而非名词短语"
         },
         {
           "id": "R2",
-          "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "ok": false,
+          "note": "开篇 A beautiful cinematic shot of 是镜头套话，主体 a young couple 被 of 领在后面"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "正文把 9:16 写成 Vertical 9:16 composition 而非 --ar 9:16，冒号虽半角但不是参数，v8.2 由上游给"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "没写 --no，改用 natural skin、authentic proportions 等正面写实词反推不要畸形"
         },
         {
           "id": "R5",
-          "ok": true,
-          "note": "未见画质堆料词"
+          "ok": false,
+          "note": "761 字符多句长描写，湖山别墅柏树植被层层堆，beautiful、stunning、dramatic 叠用，明显堆料"
         },
         {
           "id": "M1",
           "ok": true,
-          "note": "全文英文半角标点"
+          "note": "The girl is sitting 后的逗号、句末句点都规矩，全英文半角，9:16 里的冒号也是半角，没有中文标点"
         },
         {
           "id": "M2",
-          "ok": false,
-          "note": "检出多个主体词（couple / girl / man），注意力可能被均分"
+          "ok": true,
+          "note": "主体是 a young couple 加一辆 vintage red convertible，虽把两人拆成 girl、man 两句写，焦点仍在这一对人和车上"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "Mediterranean、cypress 这类是地名和植物名，没要求画面出现任何可读文字"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "beautiful、stunning、dramatic 这类主观美化词不少，但 8k、masterpiece、best quality 一个没写"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "整条是英文散文句，cinematic、realistic photography 等关键风格词都用了英文，不存在中文长句的精度损耗"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "多句描写里没出现 :: 权重，靠语序和逗号分层，V8.2 下无风险"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "风格靠 cinematic、realistic photography 正文词，没写 --style raw / --raw"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "用 realistic photography、authentic proportions 等正面写实词代替 --no 减法，绕开逐词审核"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "上游 sref 标的是无，也没 --q / --cref，写实感全靠 realistic photography 等正文词兜"
         }
       ],
-      "summary": "情侣，电影感、复古、山、女孩、红色、蓝色配色，9:16 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:17.004Z"
+      "summary": "一对年轻情侣开着复古红敞篷车沿蓝湖海岸山路兜风，副驾女孩与开车的男人轻松互动，用电影宽镜头加暖阳写实摄影堆出高端旅行广告的奢华夏日感，环境和形容词都铺得很满，9:16 却只写成自然语言而非参数。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.701Z"
     },
     {
       "jobId": "237f7a53-84a6-4bbb-b2b5-bd7330a14b1a",
       "schemaVersion": 1,
       "methodologyVersion": "v8.2",
-      "framework": null,
+      "framework": "人物画像",
       "segments": [
         {
           "code": "1",
           "module": "主体",
-          "text": "Two midgets in a sword fight in space with rabbits in tie dye space suits in the background",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "Two midgets",
+          "note": "主体是两个侏儒，一上来就用数量词 Two 把人数锁死，但除了 midgets 这个带冒犯色彩的旧称，没有任何年龄、容貌或服饰属性，形象全靠模型补；背景那群兔子其实也是强视觉主体。"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "",
-          "note": "未检出显式动作或状态词"
+          "text": "in a sword fight",
+          "note": "in a sword fight 是全条唯一的动作信息，用介词短语点出正在斗剑这件事，但没写谁攻谁守、什么姿势，动作只到有这场打斗为止，两个侏儒各自的动态是缺的。"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "",
-          "note": "未检出独立环境段"
+          "text": "in space with rabbits in tie dye space suits",
+          "note": "in space 把场景直接丢到太空，后面又用 with 拉出一群穿 tie dye space suits 的兔子当背景；扎染宇航服这记嬉皮配色是全条最有记忆点的环境细节，比主体还抢眼。"
         },
         {
           "code": "4",
           "module": "构图与镜头",
-          "text": "",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "text": "in the background",
+          "note": "全条没有景别、机位、焦段，唯一的空间指令是 in the background 把兔子压到后景、把侏儒留在前景，属于用位置词代替镜头的隐式分层，也没命中五法里 rule of thirds / framed / negative space 等任一条原词。"
         },
         {
           "code": "5",
           "module": "光线与色彩",
           "text": "",
-          "note": "未检出显式光线或色调词"
+          "note": "tie dye 的斑斓色只属于兔子宇航服的图案，不是全画的光源方向或整体色调指令，本段没有任何打光词、色温或明暗关系，太空该有的冷光也一个没写。"
         },
         {
           "code": "6",
           "module": "风格与审美",
           "text": "",
-          "note": "未检出显式风格词"
+          "note": "全条没有任何画风、媒介或流派词，也没有摄影感或情感词，既没写超写实也没写卡通，成像风格完全交给模型默认；侏儒、剑斗、扎染太空兔这组荒诞搭配本身有黑色幽默味，但那是题材趣味不是写出来的风格词。"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；1:1 与风格参考由上游作业字段承载"
+          "note": "正文零 -- 参数，1:1 方幅和 sref=无 都由上游作业字段承载；整条只有 91 字符、连 --ar 都没出现，比例是最容易看漏的由上游代劳信息。"
         }
       ],
       "composition": [],
       "tags": {
-        "style": [],
+        "style": [
+          "tie dye"
+        ],
         "lighting": [],
         "angle": [],
         "emotion": []
@@ -6563,68 +6935,78 @@
       "health": [
         {
           "id": "R1",
-          "ok": true,
-          "note": "名词短语为主，未检出完整描述句"
+          "ok": false,
+          "note": "全条是 Two midgets 后面连挂 in a sword fight / in space / with rabbits / in the background 四段介词短语，一口气串成 91 字符的长串，没用逗号切成名词短语模块，读起来就是一句场景描述。"
         },
         {
           "id": "R2",
           "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "note": "Two midgets 就在最开头，两个侏儒的身份和数量第一眼就锁住，没有被体裁词或风格词抢走首短语，权重落点干净。"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "正文里连一个 -- 参数都没有，1:1 方幅来自上游作业字段，也就谈不上参数位置错误或全角冒号问题。"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "没有写 --no，也没有任何要剔除的画面元素，侏儒、剑、太空、扎染兔子全是正向加进来的，本条根本用不上减法。"
         },
         {
           "id": "R5",
           "ok": true,
-          "note": "未见画质堆料词"
+          "note": "全条只有 91 字符、一个句子，把侏儒斗剑、太空、扎染宇航服兔子三件事一次说完，没堆一个形容词，少而精守得很干净，代价是可控信息偏薄。"
         },
         {
           "id": "M1",
           "ok": true,
-          "note": "全文英文半角标点"
+          "note": "全英文半角，只有 tie dye 分开写而非连字符 tie-dye 的习惯差异，没有中文标点混入，也没有明显拼错的词，midgets 是用词不当不是拼写问题。"
         },
         {
           "id": "M2",
-          "ok": true,
-          "note": "单主体或主体明确"
+          "ok": false,
+          "note": "Two midgets 已经是双主体，背景再加一群 rabbits in tie dye space suits，前景两人和后景兔子群同时争夺注意力，是典型的多主体分散。"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "没有要求画面出现任何可读文字或标语，扎染是花色不是字样，避开了 MJ 生成准确文字不可靠这个坑。"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "91 字符里没有 8k、masterpiece、best quality 这类 V6 之后基本失效的画质词，连 ultra-detailed 之类的质感词都没塞，堆料为零。"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "全条是英文短句，不存在中文长句带来的理解精度损耗；倒是 midgets 这个旧称和太空扎染兔的荒诞搭配，比语言问题更值得留意。"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "没有出现 词::2 之类的多提示词权重语法，V8.2 下不触发 V7+ 已移除该语法的兼容问题。"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "没写 --style raw，因此不涉及 V7+ 必须改用 --raw 的版本变更，风格本来就留空。"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "没有 --no，自然也不存在 V8.2 下逐词独立审核把某个短语拆开误伤的风险。"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "正文没碰 --q / --oref / --cref 这些 V8.1 起被移除或替代的旧参数，1:1 和上游 sref 为空都由字段承载。"
         }
       ],
-      "summary": "画面主体，背景，1:1 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:17.005Z"
+      "summary": "两个侏儒在太空里斗剑，背景飘着一群穿扎染宇航服的兔子，作者把荒诞角色与嬉皮配色压进一个短句，没写参数也没定风格，1:1 方幅由上游字段代劳。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.701Z"
     },
     {
       "jobId": "99b65836-1ecc-481d-a6e8-82e6ab782f7e",
@@ -6635,49 +7017,50 @@
         {
           "code": "1",
           "module": "主体",
-          "text": "A poster with a retro vibe",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "A poster with a retro vibe. The main subjects are two K-pop girl group members",
+          "note": "开头先用 A poster with a retro vibe 把体裁和复古调子定成第一句，真正的画面主体两个 K-pop 女团成员要到第二句才由 The main subjects are 点出，主体被体裁词推迟了一层。"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "",
-          "note": "未检出显式动作或状态词"
+          "text": "不要比耶动作",
+          "note": "这是全条唯一涉及动作的一句，而且是否定式的中文排除，明确不许两位成员比 V 字剪刀手；它从反面承认了 K-pop 摆拍最爱出现这个姿势、作者特意来堵它，但没有任何正面动作或表情被写出来。"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "The main subjects are two K-pop girl group members；pencils；pencil cases；…（另有 2 个短语见原文）",
-          "note": "场景 / 周边元素，共 5 个短语"
+          "text": "surrounded by a collage of stationery items such as notebooks, pencils, pencil cases, fountain pens, and erasers",
+          "note": "用 surrounded by 把笔记本、铅笔、笔袋、钢笔、橡皮五样文具列成拼贴环绕人物，环境细节落到了具体道具，是偶像周边海报常见的置景写法，只是 such as 清单略啰嗦。"
         },
         {
           "code": "4",
           "module": "构图与镜头",
           "text": "",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "note": "全条没给景别、机位或焦段，也没说两位成员是半身还是全身、海报怎么排版；拼贴环绕只暗示满版构图，没命中五法原词，3:4 竖幅由上游字段给出，正文连 --ar 都没写。"
         },
         {
           "code": "5",
           "module": "光线与色彩",
           "text": "",
-          "note": "未检出显式光线或色调词"
+          "note": "没有任何光源方向、软硬或色调词，复古海报本该有的泛黄、褪色、网点配色一个都没写，颜色信息全压在 retro 这一个抽象调子词和文具清单上。"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "surrounded by a collage of stationery items such as notebooks；collage",
-          "note": "风格 / 媒介信号 1 处，词库命中见下方"
+          "text": "retro vibe",
+          "note": "with a retro vibe 是全条唯一的风格调子词，还写在第一句的海报体裁里而不是独立成段，复古感靠它一个词撑，没落到具体年代、印刷媒介或画风锚点（没写 70s、没写 halftone / risograph）。"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；3:4 与风格参考由上游作业字段承载"
+          "note": "结尾那句中文『不要比耶动作』紧贴 erasers. 的句号、没有空格也没有 -- 前缀，是自然语言排除而非参数；正文零 -- 参数，3:4 比例与 sref=无 都由上游作业字段承载。"
         }
       ],
       "composition": [],
       "tags": {
         "style": [
+          "retro",
           "collage"
         ],
         "lighting": [],
@@ -6692,122 +7075,136 @@
         {
           "id": "R1",
           "ok": false,
-          "note": "检出 2 处完整描述句 / 系动词结构，偏离「名词短语优先」（复杂场景可控）"
+          "note": "两句带谓语的英文（A poster with... / The main subjects are...）再加一句中文排除混在一起，不是逗号分隔的名词短语模块，叙述成分明显多于短语清单。"
         },
         {
           "id": "R2",
-          "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "ok": false,
+          "note": "第一句 A poster with a retro vibe 先把体裁和调子占掉，两个 K-pop 女团成员要到第二句才作为主体登场，首短语权重被体裁词分走。"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "正文没有任何 -- 参数尾，结尾中文『不要比耶动作』是自然语言排除不是参数，3:4 比例与 sref=无 由上游字段承载，不存在参数错位或全角冒号问题。"
         },
         {
           "id": "R4",
-          "ok": true,
-          "note": "无排除项，未使用 --no"
+          "ok": false,
+          "note": "作者明确要做『不要比耶动作』这个减法，却用中文自然语句而不是 --no 来写；考虑到 V8.2 下 --no 会逐词独立审核，用自然语言反而更稳，但严格说没走铁律 4 的参数形式。"
         },
         {
           "id": "R5",
-          "ok": true,
-          "note": "未见画质堆料词"
+          "ok": false,
+          "note": "文具一口气列了 notebooks、pencils、pencil cases、fountain pens、erasers 五样，还挂在冗长的 such as 后面，不算精简；好在每样都对应拼贴里的具体道具，属于可控罗列。"
         },
         {
           "id": "M1",
-          "ok": true,
-          "note": "全文英文半角标点"
+          "ok": false,
+          "note": "英文两句的标点是半角没问题，但结尾『不要比耶动作』是纯中文、紧贴 erasers. 的句号且中间没空格，中英混排无分隔，容易让解析把中文粘到 erasers 后面。"
         },
         {
           "id": "M2",
-          "ok": true,
-          "note": "单主体或主体明确"
+          "ok": false,
+          "note": "two K-pop girl group members 是双人物主体，再加五类文具拼贴铺满四周，人物与道具同时争夺注意力，和情侣双主体那类问题一样。"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "没有要求画面出现可读文字，文具是实物道具、海报也没点名要写标题或团名字样，避开了 MJ 生成准确文字不可靠的坑。"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "199 字符里没有 8k、masterpiece、best quality 这类 V6 之后失效的画质词，也没堆 ultra-detailed 之类的质感词，retro 是唯一的程度修饰。"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "中文仅『不要比耶动作』六个字、不构成误区清单点名的中文长句；真正该留意的是这句唯一的关键排除没用英文，非英语语义的解析精度通常略低。"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "没有出现 词::2 之类的多提示词权重语法，V8.2 下不触发 V7+ 已移除该语法的兼容问题。"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "未写 --style raw，因此不涉及 V7+ 必须改用 --raw 的版本变更，retro 是正文词不是参数。"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "没有 --no，那句中文排除不会被 V8.2 的逐词独立审核拆成『不要 / 比耶 / 动作』而误伤，反倒比参数形式省心。"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "正文没有 --q / --oref / --cref 这些 V8.1 起被移除或替代的旧参数，3:4 与 sref=无 都走上游字段。"
         }
       ],
-      "summary": "海报，女孩、拼贴，3:4 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:17.006Z"
+      "summary": "一张复古调的 K-pop 女团双人海报，两位成员被笔记本、铅笔、笔袋、钢笔和橡皮的文具拼贴环绕，作者还特意用中文补一句『不要比耶动作』来堵住偶像摆拍的剪刀手，3:4 画幅由上游字段给出。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.701Z"
     },
     {
       "jobId": "6856df44-babb-4a40-a153-5f3761e20755",
       "schemaVersion": 1,
       "methodologyVersion": "v8.2",
-      "framework": null,
+      "framework": "物体描述",
       "segments": [
         {
           "code": "1",
           "module": "主体",
           "text": "rue New York années 1970's",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "note": "全条没有具名人物或单个物件，rue New York années 1970's 把 1970 年代的纽约街道整个场景当主体抛出来，是街景摄影式的场景主体，années 还带着法语重音、1970's 又混了英语撇号写法。"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "",
-          "note": "未检出显式动作或状态词"
+          "text": "avec des gens qui marche",
+          "note": "avec des gens qui marche 是全条唯一带动作的一句，写有正在走路的人，但 marche 漏了第三人称复数变位的 -nt（应为 marchent），是个语法错，动作也就止于有人在走这一笼统状态，紧接着还把 ultra realiste 粘在后面。"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "du trotoir；avec des gens qui marche ultra realiste",
-          "note": "场景 / 周边元素，共 2 个短语"
+          "text": "du trotoir",
+          "note": "du trotoir（trottoir 拼错少了一个 t）把观看位置落在人行道，配合 New York 与 années 1970's 给出地点和年代，环境信息就这三个词，没有天气、建筑、车辆或街灯细节。"
         },
         {
           "code": "4",
           "module": "构图与镜头",
           "text": "",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "note": "没有景别、机位、焦段，du trotoir 只暗示了平视街拍的站位线索、不算标准镜头指令；也没写 deep perspective 之类能命中引导线的词，9:16 竖幅由上游字段给出，正文没写 --ar。"
         },
         {
           "code": "5",
           "module": "光线与色彩",
           "text": "",
-          "note": "未检出显式光线或色调词"
+          "note": "没有任何光源方向、时段光线或色调词，1970 年代纽约本可写的暖黄街灯、胶片褪色感一个都没给，画面明暗全交给 ultra realiste 这个风格词去默认。"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "",
-          "note": "未检出显式风格词"
+          "text": "ultra realiste",
+          "note": "ultra realiste（应为 ultra réaliste，缺重音）是全条唯一的风格词，还紧贴在 marche 后面没用逗号隔开，容易被解析成动作句的尾巴；除它之外没有任何画风、媒介或情感词。"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；9:16 与风格参考由上游作业字段承载"
+          "note": "正文零 -- 参数，9:16 竖幅和 sref=无 都由上游作业字段承载；années 1970's 里的撇号是年代写法而非权重或参数符号，别误读成语法标记。"
         }
       ],
       "composition": [],
       "tags": {
-        "style": [],
+        "style": [
+          "ultra realiste"
+        ],
         "lighting": [],
-        "angle": [],
+        "angle": [
+          "du trotoir"
+        ],
         "emotion": []
       },
       "paramTail": {
@@ -6818,123 +7215,145 @@
         {
           "id": "R1",
           "ok": true,
-          "note": "名词短语为主，未检出完整描述句"
+          "note": "全条是逗号切开的三个短语（rue... / du trotoir / avec des gens...），没展开成带主谓的完整叙述句，短语优先这条基本守住，只是 qui marche 里藏了个漏变位的从句谓语。"
         },
         {
           "id": "R2",
           "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "note": "rue New York années 1970's 把 1970 年代纽约街道放在最前，场景主体第一眼就立住，没被 ultra realiste 这类风格词抢走首位。"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "正文没有任何 -- 参数，两处逗号是英文半角，9:16 竖幅与 sref=无 由上游字段承载，不存在参数错位或全角标点问题。"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "没有写 --no，也没有任何要剔除的元素，街道、年代、人行道、行人、超写实全是正向叠加，本条用不上减法。"
         },
         {
           "id": "R5",
-          "ok": true,
-          "note": "未见画质堆料词"
+          "ok": false,
+          "note": "79 字符虽然短，能落的画面信息却只有街道、年代、人行道和行人四样，ultra realiste 还是个缺重音的孤词，少是少了，却没有一项具体可控的视觉细节，模型自由度过大。"
         },
         {
           "id": "M1",
-          "ok": true,
-          "note": "全文英文半角标点"
+          "ok": false,
+          "note": "trotoir 少了 trottoir 的一个 t、marche 漏了复数变位 -nt、realiste 与 années 的重音也不规范，1970's 还混了英语撇号，法语写法的噪声不少。"
         },
         {
           "id": "M2",
-          "ok": true,
-          "note": "单主体或主体明确"
+          "ok": false,
+          "note": "des gens 是未定数量的复数行人，等于把一群人丢进街景，MJ 很可能自行塞进多个主体，注意力没有单一落点。"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "没有要求画面里出现可读文字或招牌字样，1970 年代只是时间标签，避开了 MJ 生成准确文字不可靠的问题。"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "79 字符里没有 8k、masterpiece、best quality 之类失效画质词，ultra realiste 已是唯一的程度修饰，也没堆别的写实词。"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "整条是法语而非中文、更谈不上中文长句，但同样属于非英语自然语言输入，MJ 对这类语义的解析精度通常低于英文。"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "没出现 词::2 之类的多提示词权重语法，V8.2 下不触发 V7+ 已移除该语法的兼容问题；1970's 的撇号是年代写法不是权重符。"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "未写 --style raw，因此不涉及 V7+ 必须改用 --raw 的版本变更。"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "没有 --no，也就不存在 V8.2 下逐词独立审核造成的误伤风险。"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "正文没碰 --q / --oref / --cref 这些 V8.1 起被移除或替代的旧参数，9:16 与 sref=无 都走上游字段。"
         }
       ],
-      "summary": "画面主体，9:16 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:17.007Z"
+      "summary": "一句拼错连篇的法语街景速写：1970 年代的纽约街道、从人行道望过去有行人走过，作者只甩下 ultra realiste 一个风格词，把年代质感和光线细节全留给模型猜，9:16 竖幅由上游字段代劳。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.701Z"
     },
     {
       "jobId": "8168f9a6-fd5b-4ed6-95d3-81ffdffdde79",
       "schemaVersion": 1,
       "methodologyVersion": "v8.2",
-      "framework": null,
+      "framework": "人物画像",
       "segments": [
         {
           "code": "1",
           "module": "主体",
-          "text": "中国古代贵族女将军，左手挺拔站立，右手握一把出鞘的直剑，表情略带不耐烦，眉毛挑起，目光强势。眼神中的高光，眼中的倒影。 摄影写实影像，自然形体，紧凑而稳定的构图，以面部和主要主体为视觉重心。大面积柔和主光从侧前方照射，亮部细腻，阴影边缘柔软，背光面补光较弱，保留温和而明确的面部…",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "中国古代贵族女将军",
+          "note": "主体是身份先行的中国古代贵族女将军，性别、阶层、时代一次给全，但『古代贵族』没落到具体朝代、甲胄或服饰，形象仍偏概念化，和具名角色那条设定稿的写法不同。"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "",
-          "note": "未检出显式动作或状态词"
+          "text": "左手挺拔站立，右手握一把出鞘的直剑，表情略带不耐烦，眉毛挑起，目光强势",
+          "note": "这段把站立、握出鞘直剑两个动作，加不耐烦、挑眉、强势目光三层微表情叠在一起，是人物画像框架里最见功力的状态段；但『左手挺拔站立』是明显语病，把站姿错安在左手上，中文长句里很容易让解析跑偏。"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "",
-          "note": "未检出独立环境段"
+          "text": "眼神中的高光，眼中的倒影 … 背景化为柔和色块，轮廓与细节随焦点自然减弱",
+          "note": "眼神高光与眼中倒影是全条最细的局部细节，专门点名要瞳孔里的映象；环境则只有背景化为柔和色块、轮廓随焦点减弱一句，用虚化把背景架空，没有任何地点、道具或时代陈设，是纯影棚人像的留白处理。"
         },
         {
           "code": "4",
           "module": "构图与镜头",
-          "text": "",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "text": "紧凑而稳定的构图，以面部和主要主体为视觉重心",
+          "note": "这是全文唯一直接谈构图的句子，明确要紧凑稳定、以面部和主体为视觉重心；但没给景别是特写还是半身、也没机位或焦段，紧凑稳定属于感受式描述，没命中五法里 symmetrical / negative space 等原词，2:3 竖幅由上游字段给出。"
         },
         {
           "code": "5",
           "module": "光线与色彩",
-          "text": "",
-          "note": "未检出显式光线或色调词"
+          "text": "大面积柔和主光从侧前方照射，亮部细腻，阴影边缘柔软，背光面补光较弱，保留温和而明确的面部体积 … 肤色呈自然的暖灰与细微红润，整体微反差较柔 … 少量强调色与局部反光提供层次",
+          "note": "这是全条最扎实的一段，把主光方位（侧前方）、光质（大面积柔和）、亮部、阴影边缘、背光补光、面部体积逐项写清，又补了暖灰加微红润的肤色、微反差、强调色与局部反光，几乎是一份布光加调色单，唯一缺的是没有具体色号或色温。"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "",
-          "note": "未检出显式风格词"
+          "text": "摄影写实影像，自然形体 … 材料厚度、纹理和反光行为彼此区分 … 主体和环境共享柔和光线与细腻的成像质感",
+          "note": "用摄影写实影像定体裁，再要求材料厚度、纹理、反光行为彼此区分，最后收在柔和光线与细腻成像质感上，通篇是成像品质与材质写实的要求，没点名任何画风、流派或艺术家，风格全靠写实加柔和两个方向词兜着。"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；2:3 与风格参考由上游作业字段承载"
+          "note": "正文零 -- 参数，全条是中文长句、连一个英文参数都没出现；2:3 竖幅与 sref=无 都由上游作业字段承载，中文标点（，。）只出现在描述文字里、不会触发参数解析。"
         }
       ],
       "composition": [],
       "tags": {
-        "style": [],
-        "lighting": [],
+        "style": [
+          "摄影写实影像"
+        ],
+        "lighting": [
+          "大面积柔和主光从侧前方照射",
+          "亮部细腻",
+          "阴影边缘柔软",
+          "背光面补光较弱",
+          "局部反光",
+          "暖灰与细微红润"
+        ],
         "angle": [],
-        "emotion": []
+        "emotion": [
+          "表情略带不耐烦",
+          "目光强势"
+        ]
       },
       "paramTail": {
         "text": "",
@@ -6943,68 +7362,78 @@
       "health": [
         {
           "id": "R1",
-          "ok": true,
-          "note": "名词短语为主，未检出完整描述句"
+          "ok": false,
+          "note": "通篇是中文完整长句和分句，逗号连缀成一整段布光与成像要求，和逗号分隔的名词短语模块完全是两种写法，属于典型的需求文档式叙述。"
         },
         {
           "id": "R2",
           "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "note": "中国古代贵族女将军 就在第一句开头，身份第一眼立住，后面才接动作、布光和构图，主体权重没被体裁词或风格词抢占。"
         },
         {
           "id": "R3",
-          "ok": false,
-          "note": "正文含中文标点，MJ 解析可能失败"
+          "ok": true,
+          "note": "正文没有任何 -- 参数，2:3 竖幅与 sref=无 由上游字段承载；全条中文标点只在描述文字里，不涉及参数区的全角冒号问题。"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "没有写 --no，也没出现任何不要 / 无 / 排除的字样，画面控制全靠正向的布光、色彩与材质描述堆叠，背景化为柔和色块也是弱化而非剔除，本条用不上减法。"
         },
         {
           "id": "R5",
-          "ok": true,
-          "note": "未见画质堆料词"
+          "ok": false,
+          "note": "278 字里从主光方位、亮部、阴影边缘、补光、肤色、微反差、强调色一直写到材料厚度与反光行为，几乎每句都在加要求，虽然每句都对应具体画质，密度仍远超少而精，是整批里最满的一条。"
         },
         {
           "id": "M1",
           "ok": false,
-          "note": "含中文标点，MJ 解析可能失败"
+          "note": "全中文标点（，。），且『左手挺拔站立』把站姿错安在左手上是明显语病；按误区清单，中文标点加关键描述用中文都会拉低解析精度，写实、柔光这类关键风格词改用英文通常更稳。"
         },
         {
           "id": "M2",
           "ok": true,
-          "note": "单主体或主体明确"
+          "note": "全条只有女将军一个人物主体，出鞘直剑是手持道具、背景被虚化成柔和色块，不存在多个强元素平分注意力的问题。"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "没有要求画面里出现任何可读文字、题字或标识，连将军甲胄都只讲材质厚度与反光、不讲纹样字样。"
         },
         {
           "id": "M4",
           "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "note": "没出现 8k、masterpiece、best quality 这类 V6 之后失效的画质词，作者用的是亮部细腻、保留轻微肤理这类具体描述而非空泛堆料，只是整体要求偏密。"
         },
         {
           "id": "M5",
           "ok": false,
-          "note": "含 248 个中文字符的长句，理解精度低于英文"
+          "note": "这正是误区清单点名的中文长句提示词，278 字一整段靠逗号连缀，MJ 对中文长句的语义解析精度明显低于英文，关键风格词若用英文会更稳。"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "没有出现 词::2 之类的多提示词权重语法，V8.2 下不触发 V7+ 已移除该语法的兼容问题。"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "未写 --style raw，因此不涉及 V7+ 必须改用 --raw 的版本变更；摄影写实影像是正文描述不是参数。"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "没有 --no，自然也不存在 V8.2 下逐词独立审核造成的误伤风险。"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "正文没碰 --q / --oref / --cref 这些 V8.1 起被移除或替代的旧参数，2:3 与 sref=无 都走上游字段。"
         }
       ],
-      "summary": "画面主体，2:3 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:17.008Z"
+      "summary": "一幅中国古代贵族女将军的摄影写实人像：握出鞘直剑、挑眉、目光强势带点不耐烦，作者用一大段中文把侧前方柔光、暖灰肤色、阴影边缘和背景虚化逐项写成布光单，信息密到几乎不给模型留白，2:3 竖幅由上游字段给出。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.701Z"
     },
     {
       "jobId": "9c81341d-1168-4c04-af6a-a7b4b165c5d9",
@@ -7015,52 +7444,67 @@
         {
           "code": "1",
           "module": "主体",
-          "text": "Head-only high-fashion portrait of a devastatingly handsome man with a monumental jaw",
-          "note": "首个短语视为主体，位置最前（铁律 2）"
+          "text": "Head-only high-fashion portrait of a devastatingly handsome man with a monumental jaw, strong nose and a cool bad-boy expression",
+          "note": "主体是仅头部的极英俊男人，一上来就用 Head-only 定死景别、用 monumental jaw / strong nose / bad-boy expression 把骨相和神态写满；但 high-fashion portrait of 这个体裁从句占在最前，人物被包在里面，主体权重被体裁分走一层。"
         },
         {
           "code": "2",
           "module": "动作 / 状态",
-          "text": "",
-          "note": "未检出显式动作或状态词"
+          "text": "a cool bad-boy expression",
+          "note": "纯头部肖像没有任何肢体动作，全靠 bad-boy expression 这一处冷傲神态撑起状态段，和用疲惫感充当状态的写法一样是拿表情替代动作；后面的 The spots must / Keep 都是给模型的制作指令，不是画面里人物的动作。"
         },
         {
           "code": "3",
           "module": "细节与环境",
-          "text": "Modern cropped buzz cut with a sharp low skin fade on the sides；clean temple line and slightly longer dense hair on top；The upper hair is dyed in a complex poison-dart-frog-inspired blend of deep black；…（另有 10 个短语见原文）",
-          "note": "场景 / 周边元素，共 13 个短语"
+          "text": "Modern cropped buzz cut with a sharp low skin fade, clean temple line and slightly longer dense hair on top … creating large irregular rounded spots and flowing patches … Heavy polished silver hoop, stacked ear cuffs and a subtle brow piercing",
+          "note": "细节密度是全批最高：短寸两侧低渐层铲青、干净鬓角线、顶部略长浓密，加上大块不规则圆斑与流动色块，再挂抛光银耳环、叠戴耳骨夹和一枚眉钉；周边元素几乎全压在头部这一个限定里，没有场景、时间或天气。"
         },
         {
           "code": "4",
           "module": "构图与镜头",
-          "text": "Keep the shaved sides mostly dark and clean so the patterned top becomes the focal point",
-          "note": "未检出景别 / 机位 / 焦段信号"
+          "text": "Head-only … so the patterned top becomes the focal point",
+          "note": "Head-only 把景别锁死在仅头部，又用 Keep the shaved sides mostly dark and clean so the patterned top becomes the focal point 明确把视觉重心交给顶部花纹，等于拿明暗对比做了一次构图指令；但没给机位、焦段，absolute black background 也只是背景色、未写 negative space 之类原词，3:4 竖幅由上游字段给出。"
         },
         {
           "code": "5",
           "module": "光线与色彩",
-          "text": "strong nose and a cool bad-boy expression；dramatic shadow planes",
-          "note": "光线 / 色调信号 2 处"
+          "text": "dramatic shadow planes … poison-dart-frog-inspired blend of deep black, vivid emerald green, electric turquoise, cobalt blue and fiery orange-red … absolute black background",
+          "note": "光线只有 dramatic shadow planes 一句讲暗面戏剧感，没有主光方向、光质或补光；真正撑起这段的是毒箭蛙那串高饱和色（emerald / turquoise / cobalt / orange-red）与 absolute black background 的高反差黑底，色彩信息极具体、打光信息几乎为零。"
         },
         {
           "code": "6",
           "module": "风格与审美",
-          "text": "",
-          "note": "未检出显式风格词"
+          "text": "high-fashion … Bold masculine silhouette, crisp realism",
+          "note": "high-fashion 与 crisp realism 定下高级时尚写实的调子，Bold masculine silhouette 补一层阳刚轮廓，风格锚不多但都服务同一套硬朗肖像，没挂任何具名艺术家或画派；末尾那个孤零零的 4K 是画质堆料而非风格词。"
         },
         {
           "code": "7",
           "module": "参数尾",
           "text": "",
-          "note": "正文未写 --ar / --v 等参数；3:4 与 sref 3282860382 由上游作业字段承载"
+          "note": "正文零真参数，结尾写成 background.4K. 的 4K 紧贴句号、无空格也无 -- 前缀，只是失效画质堆料而非参数（也见 M4）；3:4 比例与 sref 3282860382 都由上游作业字段承载，这是本条在末段最容易把 4K 误读成参数尾的歧义点。"
         }
       ],
       "composition": [],
       "tags": {
-        "style": [],
-        "lighting": [],
-        "angle": [],
-        "emotion": []
+        "style": [
+          "high-fashion",
+          "crisp realism",
+          "poison-dart-frog-inspired"
+        ],
+        "lighting": [
+          "dramatic shadow planes",
+          "absolute black background",
+          "vivid emerald green",
+          "electric turquoise",
+          "cobalt blue",
+          "fiery orange-red"
+        ],
+        "angle": [
+          "Head-only"
+        ],
+        "emotion": [
+          "a cool bad-boy expression"
+        ]
       },
       "paramTail": {
         "text": "",
@@ -7070,67 +7514,77 @@
         {
           "id": "R1",
           "ok": false,
-          "note": "检出 7 处完整描述句 / 系动词结构，偏离「名词短语优先」（复杂场景可控）"
+          "note": "七个带谓语的完整句（The upper hair is dyed… / The spots must feather… / Keep the shaved sides…），还有 must 和 Keep 这种命令句，完全不是逗号分隔的名词短语模块，是叙事加制作指令混着写。"
         },
         {
           "id": "R2",
-          "ok": true,
-          "note": "主体位于首个短语，权重保住"
+          "ok": false,
+          "note": "Head-only high-fashion portrait of 把体裁和景别占掉首短语，devastatingly handsome man 被包在 portrait of 后面才出现，主体权重被体裁词分走一层。"
         },
         {
           "id": "R3",
           "ok": true,
-          "note": "正文无参数尾，不存在参数错位或中文标点；比例由上游作业字段承载"
+          "note": "正文没有任何 -- 参数尾，结尾 4K 是画质词不是参数（见 M4），3:4 比例与 sref 3282860382 由上游字段承载，不存在参数错位或全角标点问题。"
         },
         {
           "id": "R4",
           "ok": true,
-          "note": "无排除项，未使用 --no"
+          "note": "没有写 --no，no hard printed edges 只是斑点要柔和渐变这句正面对照里的半个措辞、不是要剔除的画面元素，真正的画面收缩用的是 Keep the shaved sides mostly dark and clean 这种正向约束，本条减法意图很弱、用不上参数。"
         },
         {
           "id": "R5",
-          "ok": true,
-          "note": "未见画质堆料词"
+          "ok": false,
+          "note": "900 字符把一个头部肖像的发型、五色染发、斑点羽化、耳饰、暗面、黑底逐项展开，连 individual hairs、gradient edges 都写到了，信息量是这批最大的一条；好在每个细节都对应同一颗头，不算无谓堆料，但离少而精很远。"
         },
         {
           "id": "M1",
           "ok": true,
-          "note": "全文英文半角标点"
+          "note": "逗号、连字符、撇号都是英文半角，poison-dart-frog-inspired 这种多重连字符也规整；唯一别扭处是 background.4K. 把 4K 粘在句号后没空格，属于排版噪声不算拼写错。"
         },
         {
           "id": "M2",
-          "ok": false,
-          "note": "检出多个主体词（portrait / man / boy），注意力可能被均分"
+          "ok": true,
+          "note": "全条只死盯一个男人的头部，银耳环、耳骨夹、眉钉、染发斑点都是同一颗头上的附属细节，没有第二个主体来分注意力。"
         },
         {
           "id": "M3",
           "ok": true,
-          "note": "未要求画面出现准确文字"
+          "note": "没有要求画面出现可读文字或标识，毒箭蛙斑点是花纹不是字样，避开了 MJ 生成准确文字不可靠的问题。"
         },
         {
           "id": "M4",
-          "ok": true,
-          "note": "未堆砌 8k / masterpiece / best quality"
+          "ok": false,
+          "note": "结尾 background.4K. 里的 4K 正是 V6 之后基本失效的画质堆料词，和 HD / 8k 一个性质，孤零零挂在句号后既不加分还容易被误读成参数尾。"
         },
         {
           "id": "M5",
           "ok": true,
-          "note": "无中文长句"
+          "note": "全条是英文，不存在中文长句的理解损耗；倒是 The spots must / Keep 这种命令句和 900 字符的篇幅，会让模型把制作指令和画面描述混着读。"
         },
         {
           "id": "V1",
           "ok": true,
-          "note": "未出现 :: 权重语法（V7+ 已移除）"
+          "note": "没出现 词::2 之类的多提示词权重语法，V8.2 下不触发 V7+ 已移除该语法的兼容问题。"
+        },
+        {
+          "id": "V2",
+          "ok": true,
+          "note": "未写 --style raw，因此不涉及 V7+ 必须改用 --raw 的版本变更；crisp realism 是正文风格词不是参数。"
         },
         {
           "id": "V3",
           "ok": true,
-          "note": "未使用 --no，无逐词审核误伤风险"
+          "note": "没有 --no，那句 no hard printed edges 留在正文里，不会被 V8.2 的逐词独立审核拆成不要硬 / 不要印刷 / 不要边而误伤。"
+        },
+        {
+          "id": "V4",
+          "ok": true,
+          "note": "正文没碰 --q / --oref / --cref 这些 V8.1 起被移除或替代的旧参数，3:4 与 sref 3282860382 都走上游字段。"
         }
       ],
-      "summary": "肖像、男性，头部、时装、男孩、表情、冷调、黑色配色，3:4 画幅。",
-      "model": "WorkBuddy 规则解析 v1（确定性关键词匹配，非 LLM）",
-      "generatedAt": "2026-11-06T16:54:17.010Z"
+      "summary": "一张只拍头部的高级时尚男肖像：轮廓分明的下颌配坏小子神情，顶着毒箭蛙启发的黑绿青蓝橙红短寸斑纹，两侧铲青压暗让顶部花纹成焦点，银耳环与眉钉衬在纯黑底上，末尾还把『4K』当成画质后缀贴在句号后，比例和 sref 全由上游字段代劳。",
+      "model": "WorkBuddy 逐条精拆 v1（LLM 语义判断）",
+      "generatedAt": "2026-11-07T05:09:15.701Z"
     },
     {
       "jobId": "f6b6b659-7edf-4a18-a80f-f055ee847ca2",
