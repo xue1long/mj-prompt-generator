@@ -298,6 +298,8 @@ export async function captureStylesTop(options: CaptureOptions): Promise<string[
 
   try {
     const page = await browser.newPage()
+    // 与 curl 通道同 UA：Cloudflare 会向 headless Chrome 的真实 UA 下挑战页
+    await page.setUserAgent(UA)
     await page.goto(MJ_EXPLORE, { waitUntil: 'load', timeout: 60_000 })
     try {
       await page.waitForSelector('a[href^="/styles/0_"]', { timeout: 20_000 })
@@ -344,7 +346,8 @@ if (invokedDirectly) {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
   const argv = process.argv.slice(2)
   const readArg = (name: string): string | undefined => {
-    const i = argv.indexOf(`--${name}`)
+    // 文档同时写了 -i / --i，两种前缀都要认；否则 -i 会被忽略并静默回退读旧快照
+    const i = argv.findIndex(a => a === `--${name}` || a === `-${name}`)
     return i >= 0 ? argv[i + 1] : undefined
   }
   const capture = argv.includes('--capture')
@@ -383,7 +386,8 @@ if (invokedDirectly) {
     const summary = await fetchStylesTop({ root, codes, workers, dryRun, log })
     if (!dryRun && !noBuild) {
       const { buildStylesTopFromLocal } = await import('./build-styles-top.ts')
-      const out = buildStylesTopFromLocal(root)
+      // 用本次采集到的码清单，别回退到旧快照里的码，否则新码进不了 YAML
+      const out = buildStylesTopFromLocal(root, { codes })
       log(`已刷新 ${out}`)
     }
     console.log(
