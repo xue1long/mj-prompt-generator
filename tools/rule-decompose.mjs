@@ -12,6 +12,10 @@
  * 边界：这是确定性关键词匹配，不是 LLM 判断。框架判定、构图法归属为启发式推断，
  * 中文速读为词表拼接。已有的手工精拆条目按 jobId 保留，不被覆盖。
  *
+ * 输出格式：JSON。派生文件 config/explore-decomposed.yaml 由全部写者统一写 JSON
+ * （另两个写者是 tools/decompose-explore.ts 与 tools/merge-fine-parts.mjs）。
+ * 文件名沿用 .yaml 是历史遗留，读方走容错解析，不靠扩展名判格式。
+ *
  * 用法：
  *   node tools/rule-decompose.mjs --dry-run          # 只统计，不写文件
  *   node tools/rule-decompose.mjs --limit 20         # 只处理前 20 条（调试）
@@ -21,6 +25,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
+import { describeSources, serializeDecomposed } from './decomposed-format.mjs'
 
 const require = createRequire(import.meta.url)
 const yaml = require('js-yaml')
@@ -483,11 +488,15 @@ function main() {
     methodologyVersion: METHODOLOGY_VERSION,
     schemaVersion: SCHEMA_VERSION,
     generatedAt: new Date().toISOString(),
-    model: `混合：${handmade.size} 条 WorkBuddy 手工精拆 + ${merged.length - handmade.size} 条规则解析（确定性，非 LLM）`,
+    // 顶层 model 是元信息说明。措辞与 decompose-explore.ts 对齐（共用
+    // tools/decomposed-format.mjs 的 describeSources），避免同一文件在不同
+    // 写者手里出现不同口径的「混合：…」。每条目的 model 字段才是前端分层依据
+    // （build-webui-data.mjs 的 modelSource）。
+    model: describeSources(merged),
     jobs: merged,
   }
   const tmp = OUTPUT + '.tmp'
-  fs.writeFileSync(tmp, JSON.stringify(config, null, 2) + '\n', 'utf8')
+  fs.writeFileSync(tmp, serializeDecomposed(config), 'utf8')
   fs.renameSync(tmp, OUTPUT)
   console.log(`\nWROTE ${OUTPUT} (${(fs.statSync(OUTPUT).size / 1024 / 1024).toFixed(2)} MB)`)
 }

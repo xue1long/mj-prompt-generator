@@ -6,6 +6,10 @@
  *   node tools/merge-fine-parts.mjs --check    # 只校验分片，不写主文件
  *   node tools/merge-fine-parts.mjs            # 校验并合并写回 config/explore-decomposed.yaml
  *
+ * 输出格式：JSON。派生文件 config/explore-decomposed.yaml 由全部写者统一写 JSON
+ * （另两个写者是 tools/decompose-explore.ts 与 tools/rule-decompose.mjs）。
+ * 文件名沿用 .yaml 是历史遗留，读方走容错解析，不靠扩展名判格式。
+ *
  * 分片格式（config/decompose-parts/part-NNN.json，顶层数组）：
  *   {
  *     "jobId": "...",
@@ -31,6 +35,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
+import { describeSources, serializeDecomposed } from './decomposed-format.mjs'
 
 const require = createRequire(import.meta.url)
 const yaml = require('js-yaml')
@@ -146,7 +151,20 @@ function main() {
   const checkOnly = process.argv.includes('--check') || process.argv.includes('--dry-run')
   const snap = yaml.load(fs.readFileSync(SNAPSHOT, 'utf8'))
   const snapshotIds = new Set(snap.jobs.map(j => j.id))
-  const parts = readParts()
+  // --part <file>：只校验/合并指定分片。subagent 并行时逐片验收用，
+  // 避免某个坏分片阻塞全量 --check；全部收工后仍必须跑一次不带 --part 的全量校验。
+  const partArg = process.argv.indexOf('--part')
+  let parts
+  if (partArg >= 0) {
+    const rel = process.argv[partArg + 1]
+    if (!rel) throw new Error('--part 需要文件路径')
+    const abs = path.isAbsolute(rel) ? rel : path.resolve(ROOT, rel)
+    const items = JSON.parse(fs.readFileSync(abs, 'utf8'))
+    if (!Array.isArray(items)) throw new Error(`${rel} 顶层必须是数组`)
+    parts = [{ file: path.basename(abs), items }]
+  } else {
+    parts = readParts()
+  }
   if (!parts.length) throw new Error('config/decompose-parts/ 下没有 part-*.json 分片')
 
   const normalized = []
@@ -188,8 +206,10 @@ function main() {
 
   base.jobs = jobs
   base.generatedAt = new Date().toISOString()
-  base.model = `混合：${hand} 条 WorkBuddy 手工精拆 + ${fine} 条逐条精拆（LLM 语义判断） + ${rule} 条规则兜底`
-  fs.writeFileSync(DECOMPOSED, JSON.stringify(base, null, 2) + '\n', 'utf8')
+  // 顶层 model 如实统计各来源（共用 tools/decomposed-format.mjs 的 describeSources），
+  // 不写死「手工 + LLM + 规则」三段——真实构成会变，写死会谎报。
+  base.model = describeSources(jobs)
+  fs.writeFileSync(DECOMPOSED, serializeDecomposed(base), 'utf8')
   console.log(`OK: 已写回 ${path.relative(ROOT, DECOMPOSED)}（${(fs.statSync(DECOMPOSED).size / 1024 / 1024).toFixed(2)} MB）`)
 }
 

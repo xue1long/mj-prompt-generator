@@ -66,7 +66,26 @@ for (const p of [exploreYamlPath, decomposedPath, stylesTopPath]) {
 }
 
 const explore = yaml.load(fs.readFileSync(exploreYamlPath, 'utf8'));
-const decomposed = JSON.parse(fs.readFileSync(decomposedPath, 'utf8'));
+/* 派生文件统一写 JSON（见 tools/decompose-explore.ts 的 writeOutput 说明）。
+   这里用容错解析：先按 JSON 读，读不动再退回 YAML。
+   容错不是掩盖格式漂移——漂移会在这里被明确报出来，而不是像原来那样
+   「跑一次 decompose:explore → 构建期 JSON.parse 抛错」，错误现场离原因很远。 */
+const decomposedText = fs.readFileSync(decomposedPath, 'utf8');
+let decomposed;
+try {
+  decomposed = JSON.parse(decomposedText);
+} catch (jsonErr) {
+  try {
+    decomposed = yaml.load(decomposedText);
+    console.warn(
+      `[build-webui-data] 警告：${path.basename(decomposedPath)} 内容是 YAML，` +
+        '已容错读入。但派生文件应统一写 JSON（tools/decompose-explore.ts / ' +
+        'rule-decompose.mjs / merge-fine-parts.mjs），请检查哪个写者没跟上。'
+    );
+  } catch (yamlErr) {
+    must(false, `${path.basename(decomposedPath)} 解析失败（JSON 与 YAML 都不行）：${(jsonErr).message}`);
+  }
+}
 const stylesTop = yaml.load(fs.readFileSync(stylesTopPath, 'utf8'));
 
 must(Array.isArray(explore.jobs) && explore.jobs.length > 0, 'explore.yaml 里没有 jobs');

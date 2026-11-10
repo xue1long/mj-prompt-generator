@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import yaml from 'js-yaml'
+import { describeSources, serializeDecomposed } from './decomposed-format.mjs'
 import type {
   ExploreConfig,
   ExploreDecomposedConfig,
@@ -414,6 +415,7 @@ async function decomposeJob(
 
 // ── 读写派生文件 ────────────────────────────────────────
 
+/** 读真 YAML 配置（如 config/explore.yaml）。 */
 function readYaml<T>(filePath: string): T | null {
   if (!fs.existsSync(filePath)) return null
   try {
@@ -423,7 +425,39 @@ function readYaml<T>(filePath: string): T | null {
   }
 }
 
-/** 原子写：先写同目录临时文件再替换，避免中途失败留下半截 YAML */
+/** 读派生文件（config/explore-decomposed.yaml）。
+ *
+ *  统一写 JSON 后，读方不再靠扩展名猜格式。但派生文件若被别的写者写成 YAML，
+ *  必须直接报错而不是让 js-yaml 静默兼容——格式漂移一旦静默通过，构建期才会
+ *  在 JSON.parse 上炸，而那时错误现场已经离原因很远。 */
+function readDerived<T>(filePath: string): T | null {
+  if (!fs.existsSync(filePath)) return null
+  const text = fs.readFileSync(filePath, 'utf-8')
+  if (!text.trimStart().startsWith('{')) {
+    throw new Error(
+      `派生文件格式漂移 ${filePath}：期望 JSON（以 { 开头），实际是 YAML。` +
+        '所有写者必须统一写 JSON（见 writeOutput 的说明）。'
+    )
+  }
+  try {
+    return (yaml.load(text) as T) ?? null
+  } catch (error) {
+    throw new Error(`解析失败 ${filePath}：${(error as Error).message}`)
+  }
+}
+
+/**
+ * 原子写：先写同目录临时文件再替换，避免中途失败留下半截文件。
+ *
+ * 格式统一（2026-11-10）：本文件写 JSON，不再写 YAML。
+ * 此前本工具用 yaml.dump 写出 YAML，而 rule-decompose.mjs / merge-fine-parts.mjs
+ * 用 JSON.stringify 写出 JSON，构建期 build-webui-data.mjs 又用 JSON.parse 读——
+ * 三个写者格式互斥，跑一次 decompose:explore 就会产出 YAML，让构建链在
+ * JSON.parse 上直接抛错。现统一为 JSON：与另两个写者、与构建期读取、与当前
+ * 数据文件内容全部一致。
+ *
+ * 文件名沿用 .yaml 是既有事实（扩展名与内容不符），不单独改名，避免牵动
+ * 采集链与 git 历史；读方一律走容错解析，格式判定不靠扩展名。 */
 export function writeOutput(
   filePath: string,
   jobs: ExploreJobDecomposition[],
@@ -436,17 +470,8 @@ export function writeOutput(
     model,
     jobs,
   }
-  const header = [
-    '# 生成物 —— 请勿手改。',
-    '# 由 tools/decompose-explore.ts 在构建期调用 LLM 预生成（npm run decompose:explore）。',
-    '# 派生数据，按 jobId 关联 config/explore.yaml；采集脚本覆盖快照不影响本文件。',
-    `# 方法论来源：${SKILL_FILE.replace(/\\/g, '/')} 第二章（${METHODOLOGY_VERSION}）。`,
-    '# 见 docs/adr/0015-explore-lightbox-shows-prompt-decomposition.md。',
-    '',
-  ].join('\n')
-  const body = yaml.dump(config, { noRefs: true, lineWidth: 200, sortKeys: false })
   const tmp = `${filePath}.${process.pid}.tmp`
-  fs.writeFileSync(tmp, header + body, 'utf-8')
+  fs.writeFileSync(tmp, serializeDecomposed(config), 'utf-8')
   if (fs.existsSync(filePath)) fs.rmSync(filePath, { force: true })
   fs.renameSync(tmp, filePath)
 }
@@ -487,7 +512,7 @@ export async function decomposeExplore(options: DecomposeOptions): Promise<Decom
   if (!snapshot?.jobs?.length) {
     throw new Error(`找不到探索榜快照或快照为空：${snapshotPath}。先跑 npm run collect:explore`)
   }
-  const existing = readYaml<ExploreDecomposedConfig>(outputPath)
+  const existing = readDerived<ExploreDecomposedConfig>(outputPath)
   const methodology = loadMethodology(root)
   log(`方法论来源：${SKILL_FILE.replace(/\\/g, '/')} 第二章（${METHODOLOGY_VERSION}）`)
 
@@ -529,7 +554,7 @@ export async function decomposeExplore(options: DecomposeOptions): Promise<Decom
   if (pending.length === 0) {
     // 即便没有新增，也要落一次盘：把窗口外的孤儿从派生文件里清掉
     const ordered = orderedResults(snapshot.jobs, results)
-    writeOutput(outputPath, ordered, existing?.model ?? '')
+    writeOutput(outputPath, ordered, describeSources(ordered))
     summary.written = true
     log(`无需新增分解，已写 ${outputPath}（${ordered.length} 条，清理孤儿完成）`)
     return summary
@@ -549,7 +574,8 @@ export async function decomposeExplore(options: DecomposeOptions): Promise<Decom
 
   /** 每次落盘都按快照顺序输出，保证 diff 稳定且自动清理孤儿 */
   const checkpoint = () => {
-    writeOutput(outputPath, orderedResults(snapshot.jobs, results), llm.model)
+    const ordered = orderedResults(snapshot.jobs, results)
+    writeOutput(outputPath, ordered, describeSources(ordered))
     summary.written = true
   }
 

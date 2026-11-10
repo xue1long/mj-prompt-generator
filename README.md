@@ -86,7 +86,7 @@ MJ Prompt Generator/
 │  ├─ parameters.yaml        参数定义 + 版本兼容关系
 │  ├─ styles.yaml            风格库快照（生成物，勿手改）
 │  ├─ explore.yaml           探索榜作业快照（生成物，957 条 / 7 批次）
-│  ├─ explore-decomposed.yaml  七段拆解（生成物，942 条；15 条待精拆走空态）
+│  ├─ explore-decomposed.yaml  七段拆解（生成物，942 条；15 条待精拆走空态；内容是 JSON）
 │  └─ styles-top.yaml        官方风格榜 200 码（生成物）
 ├─ webui/                  ← 正式前端（静态多页，无编译步骤）
 │  ├─ index.html / gallery.html / style-library.html / explore.html

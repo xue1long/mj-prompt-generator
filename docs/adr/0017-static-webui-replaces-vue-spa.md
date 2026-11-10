@@ -351,6 +351,53 @@
 
 **断言条数变化**：44 → **45**（净增 1 条：sref 筛选端到端回归；1 条旧断言改为分支式，仍算 1 条）。这是修正固化 bug 的断言所必需的增量，非范围蔓延。
 
+### Round 10：拆解输出统一 JSON + 读取容错（2026-11-10）
+
+**问题**：`config/explore-decomposed.yaml`（派生文件）有 **3 个写者**、**2 种格式**：
+
+| 工具 | 修复前写出格式 |
+|---|---|
+| `tools/decompose-explore.ts` | **YAML**（`yaml.dump`） |
+| `tools/rule-decompose.mjs` | JSON（`JSON.stringify`） |
+| `tools/merge-fine-parts.mjs` | JSON（`JSON.stringify`） |
+
+（`tools/fine-decompose.mjs` 只**读**主文件、写的是分片目录 `config/decompose-parts/`，不是主文件写者。）
+
+而构建期 `scripts/build-webui-data.mjs` 用 `JSON.parse` 读它 —— **跑一次 `npm run decompose:explore` 就会产出 YAML，让构建链在 `JSON.parse` 上直接抛错**，且错误现场离原因很远。
+
+**口径更正**：首版《第一性原理校验报告》3.1 节写「4 个工具写同一个文件」，把 `fine-decompose.mjs` 误计为写者，实为 3 个。
+
+**先对齐了「单一写者」的含义**：三个写者**职责互补，不是重复实现** —— LLM 语义判断（`decompose-explore.ts`）、确定性规则兜底（`rule-decompose.mjs`，当前 889 条数据的唯一来源）、人工逐条精拆分片合并（`merge-fine-parts.mjs`）。砍掉任何一个都会丢能力。故本轮**不砍写者，只统一格式与契约**。
+
+**改动**：
+
+| 位置 | 动作 |
+|---|---|
+| `tools/decomposed-format.mjs`（新增） | 派生文件格式契约的**单一来源**：`describeSources()` 如实统计各来源条数；`serializeDecomposed()` 产出**纯 JSON**。配 `decomposed-format.d.ts` |
+| `tools/decompose-explore.ts` | ① 写出从 `yaml.dump` 改 `JSON.stringify`（走共用 `serializeDecomposed`），保留原子写。② 拆出 `readDerived()`：派生文件非 JSON **直接报错**，格式漂移不静默通过；`readYaml()` 保持读真 YAML 的 `config/explore.yaml`。③ 顶层 `model` 不再写 `llm.model`（会把「混合：3 手工 + 50 LLM + 889 规则」冲成一个模型名，等于宣称这批数据全是 LLM 产的），改 `describeSources()` |
+| `tools/rule-decompose.mjs` / `tools/merge-fine-parts.mjs` | 写出改走共用 `serializeDecomposed`（纯 JSON）；顶层 `model` 改走共用 `describeSources` |
+| `scripts/build-webui-data.mjs` | 读取改**容错**：先 JSON.parse，失败退回 yaml.load 并**打印格式漂移告警**，不再直接抛错炸链 |
+| `tools/audit-decomposition.mjs` | 读取同样容错（只读审计工具不该因格式漂移直接崩） |
+
+**为什么是纯 JSON 而不是真 YAML**：当前主文件**本来就是纯 JSON**（942 条，无任何 `//` 行）。JSON 规范里 `//` 注释**不合法** —— 实测给文件加注释头后 `JSON.parse` 直接抛 `Unexpected token '/'`。故任何写者加注释头都会破坏契约，让所有读方（以及编辑器插件、第三方脚本）读不了。文件名沿用 `.yaml` 是历史遗留，**读方一律走容错解析，格式判定看内容不看扩展名**。
+
+**顺带根除的第二个缺陷**：三个写者对顶层 `model` 的措辞各不相同，且都**写死三段式**（真实构成会变，写死即谎报）。现统一为按实际 `model` 值分组的 `describeSources()`。
+
+**验证**：
+
+| 项 | 结果 |
+|---|---|
+| 端到端复现 | 真实派生文件换成 YAML → 跑真实构建脚本 → **退出码 0**（修复前抛错）+ stderr 明确告警 + 拆解仍正确匹配 942 条 + 原文件逐字节还原（sha16 `e7b10a24cd3e6130`） |
+| 三写者真写 | `rule-decompose` 真写后是纯 JSON、可 `JSON.parse`、顶层 `model` 如实列出各来源、无重复前缀；主文件逐字节还原 |
+| `--check` / `--dry-run` | `merge-fine-parts --check`、`rule-decompose --dry-run` 均未改主文件 |
+| `decompose-explore --dry-run` | 「快照 957 条 · 已有有效分解 **942 条** · 待分解 15 条」—— 一条没丢 |
+| `build:webui-data` | JSON 路径无告警，957 / 942 / 200 全对 |
+| `npm test` / `verify` / `--dist` | **135/135** / **45/45** / **45/45** |
+
+**备份**：动前把 `config/explore-decomposed.yaml`（3,612,763 字节 / sha16 `e7b10a24cd3e6130`）复制到 `node_modules/.cache/mj-backup-20261110-step3/explore-decomposed.yaml.bak`；收尾时主文件 sha16 与备份完全一致，**未改动任何 `config/*.yaml` 的内容**。
+
+**未做（属下一轮）**：`package.json` 与 `更新探索榜.bat` 的入口收敛 —— 本轮只统一格式，**入口与 ADR 禁令仍并存**，仍靠人记。
+
 ### 未闭合（登记，不阻断）
 
 1. `CONTEXT.md:91 / :105 / :124` 三处措辞（`mj-session-v1`、恒为两栏、第 9 个页签）仍与实现不符，Q14 冻结未解除。
