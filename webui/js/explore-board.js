@@ -30,6 +30,35 @@ const EXPLORE_BOARD = (() => {
     return FAV_PREFIX + (h >>> 0).toString(36);
   }
 
+  /* ── 稳定引用键（报告 2.1）───────────────────────────────────────────
+     每条作业有一个本项目自有的短标识（如 7b95a9a0-qfxx），供研究结论引用、
+     供 #explore?job=<key> 深链直达灯箱。
+
+     键在**运行时**由 webui/js/job-key.js 算出（算法本体只有那一份，
+     构建期通过 vm 加载同一份做零碰撞断言）—— 前端自己算，不消费产物里的字段，
+     这样改一行前端代码不会引起生成物漂移。
+     构造与理由见 webui/js/job-key.js 的文件头注释。 */
+  const jobKeyOf = (job) => (job && typeof JOB_KEY !== 'undefined') ? JOB_KEY.keyOf(job) : String(job?.id || '').slice(0, 8);
+
+  /** 按稳定键找作业。 */
+  function findByKey(key) {
+    if (!key) return null;
+    const k = String(key).trim().toLowerCase();
+    if (!k) return null;
+    return EXPLORE_JOBS.find((j) => jobKeyOf(j).toLowerCase() === k) || null;
+  }
+
+  /** 这条作业的深链：#explore?job=<key>。
+      用相对 index.html，file:// 与 http:// 下都成立（深链是给人和笔记用的，
+      粘到别的机器上也能开）。 */
+  function jobDeepLink(job) {
+    const key = jobKeyOf(job);
+    const base = location.pathname.endsWith('/')
+      ? 'index.html'
+      : location.pathname.split('/').pop() || 'index.html';
+    return `${base}#explore?job=${encodeURIComponent(key)}`;
+  }
+
   function favRead(prompt) {
     try {
       return localStorage.getItem(favKey(prompt)) === '1';
@@ -357,6 +386,12 @@ const EXPLORE_BOARD = (() => {
               ${job.sref ? `<button class="btn btn-ghost" type="button" data-role="copy-sref" aria-label="复制 --sref ${esc(job.sref)}">${icon('copy')}</button>` : ''}
             </div>
             <p class="dock-hint" style="margin-top:12px">作者 ${esc(job.author)} · 采集于 ${esc(job.batch)} 批次 · 社区成品，不能直接拼进你的提示词</p>
+            <div class="param-chip" style="display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap">
+              <span title="研究结论里引用这条作业时写这个键">引用键</span>
+              <code style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.02em">${esc(jobKeyOf(job))}</code>
+              <button class="btn btn-ghost" type="button" data-role="copy-key" aria-label="复制引用键">${icon('copy')}复制键</button>
+              <button class="btn btn-ghost" type="button" data-role="copy-link" aria-label="复制这条作业的深链">${icon('copy')}复制深链</button>
+            </div>
           </div>
           <div>
             ${d ? `
@@ -391,7 +426,7 @@ const EXPLORE_BOARD = (() => {
             ` : `<p class="dock-hint">这条作业还没有拆解结果。</p>`}
           </div>
         </div>
-      </div>`, { label: '作业详情与提示词拆解' });
+      </div>`, { label: '作业详情与提示词拆解', onClose: () => { if (jobFromHash()) writeJobToHash(null); } });
 
     // 七段逐段送入「主体与环境」：一次委托挂在 backdrop 上，灯箱常开时可连点多段累积。
     // 只写 session.subject，不碰 session.params / session.manual（后者会被 togglePrompt 等清空）。
@@ -430,10 +465,85 @@ const EXPLORE_BOARD = (() => {
     });
     const srefBtn = backdrop.querySelector('[data-role="copy-sref"]');
     if (srefBtn) srefBtn.addEventListener('click', () => copyText(`--sref ${job.sref}`, '风格参考已复制'));
+
+    // 引用键与深链：让研究结论能挂到这条作业上（报告 2.1）
+    const keyBtn = backdrop.querySelector('[data-role="copy-key"]');
+    if (keyBtn) keyBtn.addEventListener('click', () => copyText(jobKeyOf(job), '引用键已复制'));
+    const linkBtn = backdrop.querySelector('[data-role="copy-link"]');
+    if (linkBtn) {
+      linkBtn.addEventListener('click', () => copyText(jobDeepLink(job), '深链已复制'));
+    }
+
     markImageStates(backdrop);
     const closeBtn = backdrop.querySelector('[data-role="close"]');
     if (closeBtn) closeBtn.focus();
   }
 
-  return { headHtml, chipsHtml, toolbarHtml, bodyHtml, wire, wireBody, openJobSheet, state: ui };
+  /* ── 深链直达（报告 2.1）─────────────────────────────────────────────
+     URL 形态：#explore?job=<key>
+
+     与筛选深链（ADR-0010）的区别：筛选深链记的是「当前筛选状态」，
+     这里的 job 参数记的是「正在看哪一条作业」。两者可共存：
+     #explore?job=xxx 会先把页签切到探索榜，再打开那条作业的灯箱。 */
+
+  /** 从 URL 里读出 job 参数（没有就是 null）。 */
+  function jobFromHash() {
+    const h = String(location.hash || '');
+    const q = h.indexOf('?');
+    if (q === -1) return null;
+    const params = new URLSearchParams(h.slice(q + 1));
+    return params.get('job');
+  }
+
+  /** 把 job 参数写进 URL（保持页签是 explore）。不写 query 的其余部分。 */
+  function writeJobToHash(key) {
+    const base = `#explore${key ? `?job=${encodeURIComponent(key)}` : ''}`;
+    if (location.hash !== base) {
+      // 用 replaceState 而不是改 location.hash：改 hash 会触发 hashchange → 重渲染 →
+      // 灯箱被重建关闭。replaceState 只改地址栏，不触发重渲染。
+      try {
+        history.replaceState(null, '', base);
+      } catch {
+        location.hash = base;
+      }
+    }
+  }
+
+  /**
+   * 按稳定键直达灯箱。键找不到时如实提示，不静默失败。
+   * @returns {boolean} 是否命中并打开
+   */
+  function openJobByKey(key) {
+    const job = findByKey(key);
+    if (!job) {
+      const shown = String(key || '').slice(0, 24);
+      toast(shown ? `找不到引用键 ${shown} 对应的作业` : '深链里没有指定作业', 'close');
+      return false;
+    }
+    // 直达时清掉筛选：用户是冲着这一条来的，不该被残留的批次/比例筛选挡住。
+    ui.q = '';
+    ui.batch = '';
+    ui.aspect = '';
+    ui.srefOnly = false;
+    ui.limit = 60;
+    openJobSheet(job.id);
+    writeJobToHash(jobKeyOf(job));
+    return true;
+  }
+
+  return {
+    headHtml,
+    chipsHtml,
+    toolbarHtml,
+    bodyHtml,
+    wire,
+    wireBody,
+    openJobSheet,
+    openJobByKey,
+    findByKey,
+    jobKeyOf,
+    jobDeepLink,
+    jobFromHash,
+    state: ui,
+  };
 })();

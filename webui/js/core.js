@@ -779,7 +779,7 @@ function openPalette() {
 }
 
 /* ── 弹层：对话框语义、焦点陷阱、焦点归还 ─────────────────────────── */
-function mountDialog(html, { label, onMount } = {}) {
+function mountDialog(html, { label, onMount, onClose } = {}) {
   const opener = document.activeElement;
   const backdrop = document.createElement('div');
   backdrop.className = 'sheet-backdrop';
@@ -797,6 +797,7 @@ function mountDialog(html, { label, onMount } = {}) {
     document.removeEventListener('keydown', onKey, true);
     backdrop.remove();
     if (opener && typeof opener.focus === 'function' && document.contains(opener)) opener.focus();
+    if (onClose) onClose();
   };
   const onKey = (e) => {
     if (e.key === 'Escape') { e.preventDefault(); close(); return; }

@@ -33,6 +33,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
+import { jobKeys } from '../tools/job-key.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CFG = path.join(ROOT, 'config');
@@ -95,6 +96,14 @@ must(Array.isArray(stylesTop.entries), 'styles-top.yaml 里没有 entries');
 const decById = new Map(decomposed.jobs.map((j) => [j.jobId, j]));
 const unmatched = explore.jobs.filter((j) => !decById.has(j.id)).length;
 
+/* 稳定引用键（报告 2.1）：构建期一次性算出并断言零碰撞。
+   碰撞是硬错误 —— 键是研究结论引用作业的唯一依据，撞了就等于两条作业互相顶替。 */
+const exploreJobKeys = jobKeys(explore.jobs);
+must(
+  new Set(exploreJobKeys).size === exploreJobKeys.length,
+  '作业引用键不唯一（jobKeys 内部已检测，这里是第二道防线）'
+);
+
 const sampleSets = {
   explore: new Set(fs.readdirSync(path.join(ASSETS, 'explore'))),
   'styles-top': new Set(fs.readdirSync(path.join(ASSETS, 'styles-top'))),
@@ -132,6 +141,9 @@ const jobs = explore.jobs.map((j) => {
   const d = decById.get(j.id);
   return {
     id: j.id,
+    // 注意：这里**不写**稳定引用键（报告 2.1）。键是由 id 与 prompt 推导出来的量，
+    // 不是采集来的事实 —— 烘焙进产物会让「改一行前端代码」变成「6 MB 生成物跟着漂移」。
+    // 键由浏览器端运行时算（webui/js/job-key.js），构建期在此处只做零碰撞断言。
     title: j.title ?? '',
     prompt: j.prompt ?? '',
     author: j.author ?? '',
@@ -246,6 +258,10 @@ for (const out of outputs) {
     // 这里把条数钉死，任何再次丢弃都会在构建期失败。
     const srcSref = explore.jobs.filter((j) => j.sref).length;
     must(r.sref === srcSref, `${out.file} sref 条数与源快照不符：产物 ${r.sref} != 源 ${srcSref}`);
+    // 守门：稳定引用键必须每条都有、且全表唯一。键是研究结论引用作业的唯一依据，
+    // 缺失或重复都会让「结论挂到证据上」这件事失效（报告 2.1）。
+    // 引用键零碰撞已由上面的 exploreJobKeys 断言保证（构建期跑的是浏览器端同一份算法）。
+    // 这里只钉住条数：键不是采集来的事实，不烘焙进产物，由浏览器端运行时算。
   } else {
     must(r.entries === stylesTop.entries.length, `${out.file} 风格码数不符`);
   }

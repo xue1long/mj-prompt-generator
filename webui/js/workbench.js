@@ -28,6 +28,8 @@ const ui = {
   artistCat: 'all',
   facetsOpen: false,
   limit: 48,
+  /** URL 里带来的作业引用键（#explore?job=<key>）；渲染后用它直达灯箱（报告 2.1） */
+  hashJob: null,
 };
 
 /* ── 筛选 ───────────────────────────────────────────────────────────── */
@@ -56,10 +58,15 @@ const tabCount = (t) => {
   return VOCAB_CATEGORIES.find(c => c.id === t.id).groups.reduce((s, g) => s + g.items.length, 0);
 };
 
-/* 深链：#artists / #shutter-speed 直接落到某个分区；无 hash 时默认落在艺术家（与原产品一致） */
+/* 深链：#artists / #shutter-speed 直接落到某个分区；无 hash 时默认落在艺术家（与原产品一致）
+   带参数：#explore?job=<key> —— 页签 id 与 query 参数分开解析（报告 2.1）。
+   此前只把整个 hash 当页签 id 匹配，'explore?job=xxx' 匹配不上任何页签会被丢弃。 */
 function readHash() {
-  const h = location.hash.replace(/^#\/?/, '').trim();
-  ui.tab = (h && TABS.some(t => t.id === h)) ? h : 'artists';
+  const raw = location.hash.replace(/^#\/?/, '').trim();
+  const q = raw.indexOf('?');
+  const id = (q === -1 ? raw : raw.slice(0, q)).trim();
+  ui.tab = (id && TABS.some(t => t.id === id)) ? id : 'artists';
+  ui.hashJob = q === -1 ? null : new URLSearchParams(raw.slice(q + 1)).get('job');
 }
 
 /* ── 片段 ───────────────────────────────────────────────────────────── */
@@ -332,6 +339,14 @@ function render() {
   if (isExplore) {
     EXPLORE_BOARD.wire(page);
     markImageStates(page);
+    // 深链直达：#explore?job=<key> → 打开那条作业的灯箱（报告 2.1）
+    // 只在确实有 key 时触发；openJobByKey 内部用 replaceState 回写地址栏，
+    // 不会触发 hashchange → 不会重渲染 → 不会递归。
+    if (ui.hashJob) {
+      const key = ui.hashJob;
+      ui.hashJob = null;
+      EXPLORE_BOARD.openJobByKey(key);
+    }
   } else {
     updateCount();
     markImageStates(page);

@@ -203,6 +203,26 @@ async function main() {
         }, decomJob);
         check('灯箱七段拆解可用', sheet.rows > 0 && sheet.imgs > 0 && sheet.badgeOk, JSON.stringify(sheet));
 
+        /* 2.1 稳定引用键：灯箱里展示的键必须与数据一致，且能反查到这条作业。
+           键是研究结论引用作业的唯一依据 —— 展示错了或对不上，结论就挂错证据。 */
+        const refKey = await page.evaluate((id) => {
+          const job = typeof EXPLORE_JOBS !== 'undefined'
+            ? EXPLORE_JOBS.find((x) => x.id === id) : null;
+          const expected = job && typeof JOB_KEY !== 'undefined' ? JOB_KEY.keyOf(job) : '';
+          const shown = document.querySelector('.job-sheet code')?.textContent?.trim() || '';
+          return {
+            expected,
+            shown,
+            match: shown && shown === expected,
+            byKey: expected ? EXPLORE_JOBS.filter((j) => JOB_KEY.keyOf(j) === expected).length : -1,
+            hasCopyKey: !!document.querySelector('.job-sheet [data-role="copy-key"]'),
+            hasCopyLink: !!document.querySelector('.job-sheet [data-role="copy-link"]'),
+          };
+        }, decomJob);
+        check('灯箱展示的引用键与数据一致且唯一',
+          refKey.match && refKey.byKey === 1 && refKey.hasCopyKey && refKey.hasCopyLink,
+          JSON.stringify(refKey));
+
         /* 3.1 逐段送入「主体与环境」：空段无按钮 / 单段送入 / 多段追加 / 灯箱常开 */
         const segCase = await page.evaluate((id) => {
           const job = typeof EXPLORE_JOBS !== 'undefined'
@@ -440,6 +460,49 @@ async function main() {
       }));
       check('旧探索榜深链重定向', state.hash === '#explore' && state.active === 'true', JSON.stringify(state));
       await page.close();
+    }
+
+    /* 7b. 作业稳定引用键 + 深链直达（报告 2.1）
+        #explore?job=<key> 应当直接打开那条作业的灯箱 ——
+        这是「研究结论能挂到具体证据上」的技术前提。 */
+    {
+      // 先开一个普通页面取一个带拆解的作业键
+      const anyKey = await (async () => {
+        const { page } = await openPage(browser, 'index.html', '#explore');
+        const k = await page.evaluate(() => {
+          if (typeof EXPLORE_JOBS === 'undefined') return null;
+          const j = EXPLORE_JOBS.find((x) => x.decomposition && x.thumbs.length);
+          return j && typeof JOB_KEY !== 'undefined' ? JOB_KEY.keyOf(j) : null;
+        });
+        await page.close();
+        return k;
+      })();
+
+      if (!anyKey) {
+        check('作业引用键深链直达', false, '数据里找不到带拆解的作业');
+      } else {
+        const { page } = await openPage(browser, 'index.html', `#explore?job=${encodeURIComponent(anyKey)}`);
+        let opened = false;
+        try {
+          await page.waitForSelector('.job-sheet', { timeout: 8000 });
+          opened = true;
+        } catch { /* 超时即失败 */ }
+        const deep = await page.evaluate((k) => ({
+          shownKey: document.querySelector('.job-sheet code')?.textContent?.trim() || '',
+          hash: location.hash,
+          job: k,
+        }), anyKey);
+        check('作业引用键深链直达灯箱',
+          opened && deep.shownKey === anyKey && deep.hash.includes('job='),
+          `键 ${anyKey} / 页面显示 ${deep.shownKey} / hash ${deep.hash}`);
+
+        // 关闭灯箱后 URL 应清掉 job 参数（否则地址栏留着已关掉的引用）
+        await page.evaluate(() => document.querySelector('.job-sheet [data-role="close"]')?.click());
+        await new Promise((r) => setTimeout(r, 300));
+        const afterClose = await page.evaluate(() => location.hash);
+        check('关闭灯箱后 URL 清掉 job 参数', !afterClose.includes('job='), `hash = ${afterClose}`);
+        await page.close();
+      }
     }
 
     /* 8. 旧风格码深链跨页跳转到 style-library.html */
