@@ -688,9 +688,49 @@ FNV 哈希，而实测有 **34 条提示词重复（涉及 74 条作业）** →
 - **对照视图（2.2）** —— 并排比较，属第 8 步。
 - **一级视图只覆盖左右方向键导航** —— 更完整的键盘导航属第 10 步的交互统一。
 
+### Round 15：对照视图 + sref 码筛选 + 提示词短语聚类（2026-11-10）
+
+《第一性原理校验报告》2.2 节的落地 —— 补上「固定变量做归因」这条研究闭环的断点。裁决见 `docs/adr/0021-compare-view-as-top-level.md`。
+
+#### 落地内容
+
+| 项 | 落点 | 说明 |
+| --- | --- | --- |
+| sref 码筛选 | `EXPLORE_FILTER_SOURCE` 新增 `srefCode`（`multi`） | sref 是**空格分隔的多码字符串**（一条作业可挂多码）→ 必须是多选维度 |
+| 提示词短语筛选 | 新增 `phrase`（`multi`）+ 新建 `webui/js/phrase-index.js` | 短语表**运行时现算**，不烘焙进 6 MB 的 `data-explore.js` |
+| 对照视图 | 新建 `webui/js/compare-view.js` + `VIEWS` 第 4 项 | 独立一级视图，URL `#compare?a=<引用键>&b=<引用键>` |
+
+#### 三个技术决策
+
+1. **短语索引为什么运行时算** —— 短语表是**由 prompt 推导出来的量**，不是采集来的事实。烘焙进 `data-explore.js` 会让「改一行筛选算法」变成「6 MB 生成物跟着漂移」，diff 被采集数据的变化淹没。理由同 `job-key.js`。代价是每次冷启动扫 971 条 prompt（实测 55~80 ms），全站共享一份缓存（`PHRASE_INDEX.shared()`）。
+2. **短语怎么切** —— 先按 `[,;|]` 切段，再在段内取 1~3 词连续词组。滑动窗口 n-gram 会跨语义边界拼出 `text no` / `and white` 这类垃圾；先切段是社区 prompt 的真实结构。停用词**只停功能词**，不停任何名词/形容词/副词（停 `background`/`light` 等于把研究对象删了）。收录阈值：多词 df ≥ 8、单词 df ≥ 20。实测 **571 条**（154 多词 + 417 单词），覆盖率 **92.5%**（零命中 73/971）。
+3. **差异怎么算** —— **LCS 最长公共子序列**，按 `[,;|]` 切短语而非按空格切。按空格切会把 `35mm lens` 拆散，差异淹没在噪声里。
+
+#### 四个踩过的坑（都写进了源码注释）
+
+1. **分面计数逐选项计算** → 571 个选项 × 971 条作业 ≈ **55 万次匹配**，首屏被拖到秒级，`toast` 提示（只活 1.9 秒）在断言读到之前就消失 ⇒ verify 的「不支持的参数有提示」**假红**。改成 `facetCounts(dimKey)` 一次算完整张分面表，实测 **1.6 ms**。
+2. **短语选项全内联** → toolbar HTML 达 **176 KB**。改成**懒加载**（`<details>` 展开时注入 DOM），降到 ~1 KB。实测 Chrome 里给 `details.open` 赋值**也会触发 `toggle` 事件**（不必真的点 summary）—— verify 据此写断言。
+3. **逐元素 `addEventListener` 会被 `refresh()` 冲掉** —— `refresh()` 重建 body，逐元素绑定全丢；懒加载注入的 checkbox 更是新元素。必须用**事件委托**（挂在 panel / toolbar 上）。
+4. **`history.replaceState` 不触发 `hashchange`** —— 「去对照」最初用 `replaceState` 写 hash，结果 **hash 正确变成 `#compare?a=…&b=…` 但页面还是样本库**（`ui.view` 没切，`readHash()` 压根没跑）。改用 `location.hash = COMPARE_VIEW.hashFor(a, b)`，走 `hashchange → readHash() → render()` 完整链路。
+
+#### 验证
+
+| 项 | 结果 |
+| --- | --- |
+| `npm run verify` | **88/88**（75 → 88，新增 13 条） |
+| `npx vitest run` | **15 文件 / 278 用例**（230 → 278，新增 2 文件 / 48 用例） |
+| 端到端浏览器探针 | **34/34**（27 → 34） |
+| `npm run build` | 726 文件 / **17 个 JS** / 4 个 HTML |
+
+#### 未做
+
+- **跨作业的统计对比** —— 对照是**两条**的并排。「这批样本里 X% 用了暖色调」这类横向统计属第 10 步。
+- **对照历史 / 三方对照** —— 对照是即席动作，不留历史；两列是并排阅读的上限。
+- **一级视图只覆盖左右方向键导航** —— 更完整的键盘导航属第 10 步的交互统一。
+
 ### 未闭合（登记，不阻断）
 
-1. `CONTEXT.md:91 / :105 / :124` 三处措辞（`mj-session-v1`、恒为两栏、第 9 个页签）仍与实现不符，Q14 冻结未解除。
+1. ~~`CONTEXT.md:91 / :105 / :124` 三处措辞（`mj-session-v1`、恒为两栏、第 9 个页签）仍与实现不符，Q14 冻结未解除。~~ **Round 15 已全部闭合**：「第 9 个页签」随第 7 步升为一级视图而改写；「恒为两栏」本就是对的（现措辞与实现一致）；`mj-session-v1` 已改为 `mj-session-v2`（`v1` 是旧 Vue SPA 的迁移来源键，见 `webui/js/core.js` 的 `LEGACY_SESSION_KEY`）。本轮另把「工作台」条目的一级视图数从三个改为**四个**（新增「对照」，见 ADR-0021）。
 2. ~~15 条 11-08 作业无七段拆解，灯箱走空态。补齐需跑 `decompose:explore`，会抹掉 `config/explore-decomposed.yaml` 的未提交精修 → **`update:explore` / `decompose:explore` / `merge-fine-parts.mjs` 禁令继续生效**。~~ **Round 11 已解除**：禁令理由经复算不成立（原子写 + 版本过滤 942/942 一条不丢），更新链收敛为唯一入口并自带备份/回滚。待补条数随采集推进到 **29 条**（971 - 942），仍需配好 LLM 代理（`.env`）才能补齐。
 3. `mid/` 640px 大图档未接入灯箱（Q9 挂账）。
 4. `dist/` 单独拷走会丢图：探索榜 **3,884 张** + 风格榜 **1,600 张**都在项目根 `public/`（`.gitignore` 排除）。Q2 A 已接受，README 已写明。
@@ -708,3 +748,5 @@ Round 13 的回退：删除 `webui/js/research-store.js` 与 `webui/js/research-
 删掉前端代码不等于删掉浏览器里的库；需要清库用「研究笔记」页签里的清空动作。
 
 Round 14 的回退：删除 `webui/js/filter-engine.js`，把 `webui/index.html`、`webui/style-library.html`、`webui/gallery.html` 里的 `js/filter-engine.js` 脚本标签去掉，把四个数据源里接引擎的 `filter` / `matches` / `counts` 调用改回各自的本地实现，`webui/js/workbench.js` 的 `VIEWS` / `LIBRARY_TABS` 改回单层 `TABS`，`webui/explore.html` 改回空壳页，并回退 `scripts/verify-webui.mjs` 的 14 条新断言。**旧深链兼容不需回退** —— `#explore` → `#samples` 的重定向是纯加法，去掉它只会让第 5 步发出去的深链失效，不会破坏新链。
+
+Round 15 的回退：删除 `webui/js/phrase-index.js` 与 `webui/js/compare-view.js`，把 `webui/index.html` 里这两行脚本标签去掉，从 `webui/js/workbench.js` 的 `VIEWS` 去掉 `compare` 项与渲染分支、去掉 `readHash()` 里 `a`/`b` 的白名单特例，从 `webui/js/explore-board.js` 去掉 `srefCodes` / `phrases` / `compareSel` 三项状态、两个多选下拉、勾选控件与对照条，从 `webui/js/core.js` 去掉 `columns` 图标，并回退 `scripts/verify-webui.mjs` 的 13 条新断言与 `tests/phraseIndex.test.ts` / `tests/compareView.test.ts` 两个测试文件。**数据不受影响** —— 本轮没有任何数据文件改动（短语索引是运行时现算的，不落盘）。

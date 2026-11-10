@@ -25,5 +25,11 @@ export default defineConfig({
   build: {
     // 预览图保持为独立文件，便于在 dist 里直接查看
     assetsInlineLimit: 4096
-  }
+  },
+  // Vitest 的 SSR transform 缓存默认写到系统 Temp 目录。Windows 上那个目录
+  // 常被其它进程占用/清理，写入会抛 EPERM —— 而 vitest 对单个文件的
+  // transform 失败是「跳过该文件」而非「整体报错」，表现为
+  // 「测试文件数忽多忽少、用例数随机少几十个」（实测 6 次里丢 2 次）。
+  // 把缓存固定到项目内，绕开系统 Temp 的竞争。
+  cacheDir: resolve(__dirname, 'node_modules/.cache/vite')
 })

@@ -27,6 +27,7 @@ const VOCAB_TOTAL = VOCAB_CATEGORIES.reduce(
 const VIEWS = [
   { id: 'library', label: '提示词库', hint: '可拼装的片段 —— 你的假设集' },
   { id: 'samples', label: '研究样本库', hint: '社区已做好的成品 —— 证据集' },
+  { id: 'compare', label: '对照', hint: '并排看两条 —— 固定变量再下结论' },
   { id: 'research', label: '研究笔记', hint: '观察记录与结论' },
 ];
 
@@ -85,6 +86,12 @@ const tabCount = (t) => {
 /* 一级视图的计数 */
 const viewCount = (v) => {
   if (v.id === 'samples') return EXPLORE_TOTAL;
+  if (v.id === 'compare') {
+    // 对照视图固定两条 —— 计数就是 2（有对象时）；没对象时 0
+    if (typeof COMPARE_VIEW === 'undefined') return 0;
+    const p = COMPARE_VIEW.readFromHash();
+    return p && p.a && p.b ? 2 : (p && (p.a || p.b) ? 1 : 0);
+  }
   if (v.id === 'research') {
     // 研究笔记的计数来自本机 IndexedDB（异步加载）；未加载时先显示 0
     return typeof RESEARCH_VIEW !== 'undefined' ? (RESEARCH_VIEW.ui.notes.length + RESEARCH_VIEW.ui.conclusions.length) : 0;
@@ -133,6 +140,9 @@ function readHash() {
   if (ignored && ignored.length) {
     const known = new Set([...(filterSourceOf(ui.view) || { dims: [] }).dims.map(d => d.key)]);
     known.add('job');
+    // 对照视图的参数是 a / b（引用键），不是筛选维度 —— 要放进白名单，
+    // 否则 #compare?a=…&b=… 会被当成「不支持的参数」丢掉，对照链接直接失效。
+    if (ui.view === 'compare') { known.add('a'); known.add('b'); }
     const kept = [];
     for (const [k, v] of params.entries()) {
       if (known.has(k)) kept.push([k, v]);
@@ -157,6 +167,23 @@ function readHash() {
    每个数据源声明自己有哪些筛选维度，引擎据此决定「哪些参数允许出现在 URL 里」。
    维度类型：q 自由文本 / enum 单选 / bool 开关 / multi 多选（组内任一）。 */
 
+/* 提示词短语索引（报告 2.2）：全站共用一份，惰性构建。
+   索引由 prompt 现算（webui/js/phrase-index.js），不烘焙进数据产物 ——
+   理由同 job-key.js：改阈值不该让 6 MB 生成物跟着漂移。 */
+let PHRASE_IDX = null;
+function phraseIndex() {
+  if (PHRASE_IDX) return PHRASE_IDX;
+  if (typeof PHRASE_INDEX === 'undefined' || typeof EXPLORE_JOBS === 'undefined') return null;
+  PHRASE_IDX = PHRASE_INDEX.build(EXPLORE_JOBS);
+  return PHRASE_IDX;
+}
+/** 一条作业命中的收录短语（筛选维度的取值来源）。 */
+function phraseIndexOf(job) {
+  const idx = phraseIndex();
+  if (!idx) return [];
+  return idx.byJob.get(String(job?.id ?? '')) || [];
+}
+
 /* 提示词库侧：艺术家分面词 + 主色 + 只看实测 + 搜索 */
 const LIBRARY_FILTER_SOURCE = FILTER_ENGINE.source('library', [
   { key: 'q', type: 'q', matchOf: (a, text) => {
@@ -168,7 +195,8 @@ const LIBRARY_FILTER_SOURCE = FILTER_ENGINE.source('library', [
   { key: 'colours', type: 'multi', valuesOf: (a) => a.colours || [] },
 ]);
 
-/* 研究样本库侧：批次 + 比例 + 只看有 sref + 搜索（报告 2.2 的 sref 码筛选留待第 8 步） */
+/* 研究样本库侧：批次 + 比例 + 只看有 sref + sref 码 + 提示词短语 + 搜索
+   （报告 2.2：后两个维度是本步新增的「按码值筛选」与「按片段聚类」） */
 const EXPLORE_FILTER_SOURCE = FILTER_ENGINE.source('samples', [
   { key: 'q', type: 'q', matchOf: (j, text) => {
     if (String(j.title || '').toLowerCase().includes(text)) return true;
@@ -178,6 +206,10 @@ const EXPLORE_FILTER_SOURCE = FILTER_ENGINE.source('samples', [
   { key: 'batch', type: 'enum', valueOf: (j) => j.batch },
   { key: 'aspect', type: 'enum', valueOf: (j) => j.aspect },
   { key: 'sref', type: 'bool', activeOf: (j) => !!j.sref },
+  // sref 码（报告 2.2）：上游是空格分隔的字符串，一条作业可能挂多个码
+  { key: 'srefCode', type: 'multi', valuesOf: (j) => String(j.sref || '').split(/\s+/).filter(Boolean) },
+  // 提示词短语（报告 2.2）：从 prompt 现算的短语索引，不是烘焙字段
+  { key: 'phrase', type: 'multi', valuesOf: (j) => (typeof PHRASE_INDEX !== 'undefined' ? phraseIndexOf(j) : []) },
 ]);
 
 /* 把 URL 里的筛选参数灌进当前视图的筛选状态 */
@@ -194,10 +226,12 @@ function applyFilterFromQuery(query) {
   ui.tested = !!(st.dims && st.dims.tested);
   ui.terms = new Set(st.dims && st.dims.terms ? st.dims.terms : []);
   ui.colours = new Set(st.dims && st.dims.colours ? st.dims.colours : []);
-  // 探索榜侧：批次 / 比例 / 只看有 sref
+  // 探索榜侧：批次 / 比例 / 只看有 sref / sref 码 / 提示词短语
   if (st.dims && st.dims.batch !== undefined) EXPLORE_BOARD.state.batch = st.dims.batch || '';
   if (st.dims && st.dims.aspect !== undefined) EXPLORE_BOARD.state.aspect = st.dims.aspect || '';
   if (st.dims && st.dims.sref !== undefined) EXPLORE_BOARD.state.srefOnly = !!st.dims.sref;
+  if (st.dims && st.dims.srefCode !== undefined) EXPLORE_BOARD.state.srefCodes = new Set(st.dims.srefCode || []);
+  if (st.dims && st.dims.phrase !== undefined) EXPLORE_BOARD.state.phrases = new Set(st.dims.phrase || []);
   if (ui.view === 'samples') EXPLORE_BOARD.state.q = ui.q;
   ui.ignoredParams = parsed.ignored || [];
   return ui.ignoredParams;
@@ -246,6 +280,8 @@ function currentFilterState() {
         batch: s.batch || '',
         aspect: s.aspect || '',
         sref: !!s.srefOnly,
+        srefCode: [...(s.srefCodes || [])],
+        phrase: [...(s.phrases || [])],
       },
     };
   }
@@ -544,14 +580,18 @@ function render() {
   if (!page) return;
   const isSamples = ui.view === 'samples';
   const isResearch = ui.view === 'research';
+  const isCompare = ui.view === 'compare';
+  // 对照视图的对象从 URL 读（a / b 两个引用键）
+  const cmpPair = isCompare && typeof COMPARE_VIEW !== 'undefined' ? COMPARE_VIEW.readFromHash() : null;
+  const cmpHasBoth = !!(cmpPair && cmpPair.a && cmpPair.b);
   page.innerHTML = `
-    ${isSamples ? EXPLORE_BOARD.headHtml() : isResearch ? RESEARCH_VIEW.headHtml() : headHtml()}
+    ${isSamples ? EXPLORE_BOARD.headHtml() : isResearch ? RESEARCH_VIEW.headHtml() : isCompare ? COMPARE_VIEW.headHtml() : headHtml()}
     ${viewnavHtml()}
     ${catnavHtml()}
-    ${isSamples ? EXPLORE_BOARD.toolbarHtml() : isResearch ? RESEARCH_VIEW.toolbarHtml() : toolbarHtml()}
+    ${isSamples ? EXPLORE_BOARD.toolbarHtml() : isResearch ? RESEARCH_VIEW.toolbarHtml() : isCompare ? COMPARE_VIEW.toolbarHtml(cmpHasBoth) : toolbarHtml()}
     <div class="library-body" id="library-panel" role="tabpanel"
-      aria-labelledby="${isSamples ? 'view-samples' : isResearch ? 'view-research' : `tab-${esc(ui.tab)}`}" tabindex="0">
-      ${isSamples ? EXPLORE_BOARD.bodyHtml() : isResearch ? RESEARCH_VIEW.bodyHtml() : bodyHtml()}
+      aria-labelledby="${isSamples ? 'view-samples' : isResearch ? 'view-research' : isCompare ? 'view-compare' : `tab-${esc(ui.tab)}`}" tabindex="0">
+      ${isSamples ? EXPLORE_BOARD.bodyHtml() : isResearch ? RESEARCH_VIEW.bodyHtml() : isCompare ? COMPARE_VIEW.bodyHtml(cmpPair) : bodyHtml()}
     </div>`;
   wire();
   if (isSamples) {
@@ -565,6 +605,9 @@ function render() {
       ui.hashJob = null;
       EXPLORE_BOARD.openJobByKey(key);
     }
+  } else if (isCompare) {
+    COMPARE_VIEW.wire(page);
+    markImageStates(page);
   } else if (isResearch) {
     // 研究笔记的数据在本机 IndexedDB，是异步的 —— 先渲染骨架，再拉数据后重绘。
     RESEARCH_VIEW.wire(page);
@@ -643,7 +686,14 @@ function wire() {
       ui.q = '';
       ui.limit = 48;
       if (next !== 'library') { ui.terms = new Set(); ui.colours = new Set(); }
-      location.hash = `#${next}`;
+      // 切到对照视图时保留 a / b（它们是对照对象，不是筛选条件）；
+      // 从对照视图切走时也不能把 a / b 带走 —— 那会污染下一个视图的 URL。
+      const cmp = (typeof COMPARE_VIEW !== 'undefined') ? COMPARE_VIEW.readFromHash() : null;
+      if (next === 'compare' && cmp && cmp.a && cmp.b) {
+        location.hash = `#compare?a=${encodeURIComponent(COMPARE_VIEW.keyOf(cmp.a))}&b=${encodeURIComponent(COMPARE_VIEW.keyOf(cmp.b))}`;
+      } else {
+        location.hash = `#${next}`;
+      }
       render();
     });
     btn.addEventListener('keydown', (e) => {

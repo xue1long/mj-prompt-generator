@@ -26,6 +26,8 @@ const ICON_PATHS = {
   arrowRight: '<path d="M4 12h15M13 6l6 6-6 6"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6h.01"/>',
+  // 并排两列（对照视图用）
+  columns: '<rect x="3" y="4" width="7.5" height="16" rx="1.5"/><rect x="13.5" y="4" width="7.5" height="16" rx="1.5"/>',
 };
 function icon(name, cls = 'ic') {
   return `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICON_PATHS[name] || ''}</svg>`;

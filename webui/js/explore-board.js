@@ -12,7 +12,17 @@
    ========================================================================== */
 
 const EXPLORE_BOARD = (() => {
-  const ui = { q: '', batch: '', aspect: '', srefOnly: false, limit: 60, facetsOpen: false };
+  const ui = {
+    q: '', batch: '', aspect: '', srefOnly: false,
+    /** 已选的 sref 码（多选，报告 2.2） */
+    srefCodes: new Set(),
+    /** 已选的 prompt 短语（多选，报告 2.2） */
+    phrases: new Set(),
+    limit: 60,
+    facetsOpen: false,
+    /** 勾选待对照的作业 id（最多 2 条，报告 2.2） */
+    compareSel: [],
+  };
 
   /* ── 卡片操作区 ─────────────────────────────────────────────────────
      收藏键只由提示词正文的哈希决定：同一条提示词在任何筛选条件下状态一致。
@@ -124,6 +134,7 @@ const EXPLORE_BOARD = (() => {
   }
 
   function actionsHtml(j) {
+    const picked = ui.compareSel.includes(j.id);
     return `
       <div class="ex-card__actions">
         <button class="ex-card__actions-btn ex-card__actions-btn--primary" type="button"
@@ -132,6 +143,10 @@ const EXPLORE_BOARD = (() => {
           data-ex-action="copy" data-job-id="${esc(j.id)}" aria-label="复制这条提示词">
           ${ACTION_ICON.copy}<span class="ex-card__actions-label">复制</span></button>
         <span class="ex-card__actions-spacer"></span>
+        <label class="ex-card__cmp" title="勾选后切到「对照」视图并排比较">
+          <input type="checkbox" data-ex-cmp="${esc(j.id)}"${picked ? ' checked' : ''}>
+          <span class="ex-card__cmp-label">${picked ? '已选' : '对比'}</span>
+        </label>
         <button class="ex-card__actions-btn ex-card__actions-btn--fav" type="button"
           data-ex-action="fav" data-job-id="${esc(j.id)}"
           aria-label="收藏这条提示词" aria-pressed="${favRead(j.prompt)}">
@@ -142,6 +157,24 @@ const EXPLORE_BOARD = (() => {
   /* ── 筛选（报告 3.4：统一走 filter-engine.js）─────────────────────
      引擎的白名单由 workbench.js 的 EXPLORE_FILTER_SOURCE 声明；
      这里只提供「怎么取值」，匹配与计数都由引擎做 —— 不再各写各的。 */
+  /* 短语索引（报告 2.2）：全站共享一份（缓存在 phrase-index.js 里）。
+      索引由 prompt 现算，不烘焙进数据产物 ——
+      改阈值不必重建 6 MB 生成物，理由同 job-key.js。 */
+  function index() {
+    if (typeof PHRASE_INDEX === 'undefined') return null;
+    return PHRASE_INDEX.shared(EXPLORE_JOBS);
+  }
+
+  /** 一条作业的 sref 码（上游是空格分隔的字符串，可能一作业多码）。 */
+  const srefCodeList = (j) => String(j?.sref || '').split(/\s+/).filter(Boolean);
+
+  /** 一条作业命中的收录短语。 */
+  function phrasesOfJob(j) {
+    const idx = index();
+    if (!idx) return [];
+    return idx.byJob.get(String(j?.id ?? '')) || [];
+  }
+
   function filterState() {
     return {
       q: ui.q || '',
@@ -149,6 +182,8 @@ const EXPLORE_BOARD = (() => {
         batch: ui.batch || '',
         aspect: ui.aspect || '',
         sref: !!ui.srefOnly,
+        srefCode: [...ui.srefCodes],
+        phrase: [...ui.phrases],
       },
     };
   }
@@ -189,6 +224,85 @@ const EXPLORE_BOARD = (() => {
   const availableBatches = () => availableFrom(EXPLORE_BATCHES, 'batch');
   const availableAspects = () => availableFrom(EXPLORE_ASPECTS, 'aspect');
 
+  /** 某个维度的**完整**分面计数表（一次算完，供多选下拉逐项取用）。
+      与 facetCount 同口径，但只算一次 —— 短语维度有 571 个选项，
+      逐项算就是 571 × 971 次匹配。 */
+  function facetCounts(dimKey) {
+    const src = typeof EXPLORE_FILTER_SOURCE !== 'undefined' ? EXPLORE_FILTER_SOURCE : null;
+    if (!src) return new Map();
+    return FILTER_ENGINE.counts(src, EXPLORE_JOBS, filterState(), dimKey);
+  }
+
+  /* sref 码下拉的选项（报告 2.2）：按出现次数降序。 */
+  function availableSrefCodes() {
+    const counts = new Map();
+    for (const j of EXPLORE_JOBS) {
+      for (const c of srefCodeList(j)) counts.set(c, (counts.get(c) || 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([code, n]) => ({ code, n }))
+      .sort((a, b) => b.n - a.n || a.code.localeCompare(b.code));
+  }
+
+  /* 短语下拉的选项（报告 2.2）：全局短语表，按 df 降序。
+     全部内联进 toolbar 会让 HTML 涨到 177 KB（实测），所以懒加载 —— 见 multiSelectHtml。 */
+  function availablePhrases() {
+    const idx = index();
+    if (!idx) return [];
+    return idx.phrases;
+  }
+
+  /* ── 多选下拉（报告 2.2）─────────────────────────────────────────────
+     纯 HTML 实现（details + checkbox），不引框架。
+     展开时用分面计数显示「选了其它筛选后还剩多少条」——
+     分面计数在其它维度当前筛选下计算，这是经典分面行为。
+
+     性能要点（两条，缺一都会让首屏变慢）：
+     1. 分面计数**一次算完整张表**，不要每个选项算一次。
+        短语维度有 571 个选项，逐个算 = 571 × 971 次匹配 ≈ 55 万次 ——
+        首屏渲染会被拖到秒级，toast 提示都来不及显示就消失了。
+     2. 选项**懒加载**：lazy=true 时不把选项内联进 HTML，
+        等 details 展开（toggle 事件）再注入。
+        571 个短语全内联会让 toolbar 涨到 177 KB。 */
+  function multiSelectHtml({ id, label, options, selected, dimKey, formatName, lazy }) {
+    const sel = selected || [];
+    const count = sel.length;
+    const nameOf = formatName || ((o) => o.label ?? o.value ?? o.phrase ?? o.code);
+    const valueOf = (o) => o.value ?? o.phrase ?? o.code;
+    const counts = facetCounts(dimKey);
+    const rowHtml = (o) => {
+      const v = valueOf(o);
+      const n = counts.get(v) || 0;
+      const on = sel.includes(v);
+      return `
+                <label class="msel-row${n === 0 && !on ? ' is-empty' : ''}">
+                  <input type="checkbox" data-msel-item="${id}" value="${esc(v)}"${on ? ' checked' : ''}>
+                  <span class="msel-name">${esc(nameOf(o))}</span>
+                  <span class="msel-n">${n}</span>
+                </label>`;
+    };
+    const body = lazy
+      ? (sel.length ? options.filter(o => sel.includes(valueOf(o))).map(rowHtml).join('') : '')
+      : options.map(rowHtml).join('');
+    return `
+      <details class="msel" id="${id}" data-msel="${id}"${lazy ? ' data-msel-lazy="1"' : ''}>
+        <summary class="msel-sum">
+          <span class="msel-label">${esc(label)}</span>
+          ${count ? `<span class="msel-badge">${count}</span>` : ''}
+          <span class="msel-caret" aria-hidden="true">▾</span>
+        </summary>
+        <div class="msel-panel" role="group" aria-label="${esc(label)}">
+          <div class="msel-tools">
+            <button class="btn btn-ghost" type="button" data-msel-clear="${id}">清空</button>
+            <span class="dock-hint" style="margin-left:auto">组内任一 · 组间全部</span>
+          </div>
+          <div class="msel-list" data-msel-list="${id}">
+            ${body || (lazy ? '<p class="dock-hint" style="padding:8px 0">展开后加载选项…</p>' : '<p class="dock-hint" style="padding:8px 0">当前数据里没有可筛的项。</p>')}
+          </div>
+        </div>
+      </details>`;
+  }
+
   function chipsHtml() {
     return `
       <span class="param-chip">作业 ${EXPLORE_JOBS.length} / ${totalJobs()}</span>
@@ -207,6 +321,8 @@ const EXPLORE_BOARD = (() => {
   }
 
   function toolbarHtml() {
+    const srefCodes = availableSrefCodes();
+    const phrases = availablePhrases();
     return `
       <div class="toolbar" data-od-id="explore-toolbar">
         <div class="search">
@@ -225,9 +341,69 @@ const EXPLORE_BOARD = (() => {
         ${srefCount()
           ? `<button class="toggle${ui.srefOnly ? ' on' : ''}" type="button" id="ex-sref" aria-pressed="${ui.srefOnly}">只看有 sref <span class="n">${srefCount()}</span></button>`
           : `<span class="param-chip" title="源数据未采集 --sref 字段">源数据未采集 sref</span>`}
+        ${srefCodes.length ? multiSelectHtml({
+          id: 'ex-srefcode',
+          label: 'sref 码',
+          options: srefCodes.map(c => ({ value: c.code, label: c.code })),
+          selected: [...ui.srefCodes],
+          dimKey: 'srefCode',
+        }) : ''}
+        ${phrases.length ? multiSelectHtml({
+          id: 'ex-phrase',
+          label: '提示词短语',
+          options: phrases.map(p => ({ value: p.phrase, label: p.phrase })),
+          selected: [...ui.phrases],
+          dimKey: 'phrase',
+          lazy: true,
+        }) : ''}
         <span class="spacer"></span>
         <span class="dock-count" role="status" aria-live="polite">${matches().length} 条作业（显示 ${Math.min(ui.limit, matches().length)}）</span>
       </div>`;
+  }
+
+  /* ── 勾选对照条（报告 2.2）────────────────────────────────────────
+     勾选两条后浮在卡片流上方：显示已选哪两条 + 「去对照」入口。
+     放在 body 里而不是 toolbar 里 —— body 每次 refresh 都会重建，
+     条上的计数与状态因此天然跟着更新，不用单独同步。 */
+  function compareBarHtml() {
+    if (!ui.compareSel.length) return '';
+    const jobs = ui.compareSel
+      .map(id => EXPLORE_JOBS.find(j => j.id === id))
+      .filter(Boolean);
+    const ready = jobs.length === 2;
+    return `
+      <div class="cmp-bar" data-od-id="cmp-bar">
+        <span class="cmp-bar-label">${icon('columns')}对照</span>
+        ${jobs.map((j, i) => `
+          <span class="cmp-bar-item">
+            <span class="cmp-badge cmp-badge--${i === 0 ? 'a' : 'b'}">${i === 0 ? 'A' : 'B'}</span>
+            <span class="cmp-bar-title">${esc(j.title.slice(0, 28))}</span>
+          </span>`).join('')}
+        ${!ready ? '<span class="dock-hint">再勾一条就能并排比较</span>' : ''}
+        <span class="spacer"></span>
+        <button class="btn btn-ghost" type="button" data-role="cmp-clear-sel">清空</button>
+        <button class="btn btn-primary" type="button" id="ex-go-compare"${ready ? '' : ' disabled'}>
+          ${icon('columns')}去对照
+        </button>
+      </div>`;
+  }
+
+  /* 跳到对照视图：把已勾选的两条写进 URL 再切视图。 */
+  function goCompareNow() {
+    const jobs = ui.compareSel
+      .map(id => EXPLORE_JOBS.find(j => j.id === id))
+      .filter(Boolean);
+    if (jobs.length < 2) {
+      toast('对照需要勾选两条作业', 'close');
+      return;
+    }
+    if (typeof COMPARE_VIEW === 'undefined') return;
+    // 用 location.hash 赋值切视图，**不要**用 writeToHash（它走 replaceState）。
+    // replaceState 不触发 hashchange —— workbench 的 readHash() 就不会跑，
+    // ui.view 还停在 'samples'，render() 渲染的还是样本库。
+    // （实测踩过：hash 正确变成 #compare?a=…&b=…，但页面上还是样本库。）
+    // location.hash 赋值 → hashchange → readHash() → render()，一条链路走完。
+    location.hash = COMPARE_VIEW.hashFor(jobs[0], jobs[1]);
   }
 
   function bodyHtml() {
@@ -236,11 +412,12 @@ const EXPLORE_BOARD = (() => {
     if (!list.length) {
       return stateHtml({
         title: '没有匹配的作业',
-        desc: srefCount() ? '换个关键词，或者把批次、比例与「只看有 sref」的筛选放宽。' : '换个关键词，或者放宽批次与比例筛选。',
+        desc: srefCount() ? '换个关键词，或者把批次、比例、sref 码与短语筛选放宽。' : '换个关键词，或者放宽批次与比例筛选。',
         iconName: 'search',
       });
     }
     return `
+      ${compareBarHtml()}
       <div class="job-grid">
         ${shown.map(j => `
           <div class="ex-card__actions-frame">
@@ -295,6 +472,29 @@ const EXPLORE_BOARD = (() => {
       sref.classList.toggle('on', ui.srefOnly);
       sref.setAttribute('aria-pressed', String(ui.srefOnly));
     }
+    // 多选下拉的勾选态与计数：toolbar 不随 body 重建，这里显式同步。
+    scope.querySelectorAll('[data-msel-item]').forEach(el => {
+      const id = el.dataset.mselItem;
+      const set = id === 'ex-srefcode' ? ui.srefCodes : ui.phrases;
+      el.checked = set.has(el.value);
+    });
+    scope.querySelectorAll('[data-msel]').forEach(det => {
+      const id = det.dataset.msel;
+      const set = id === 'ex-srefcode' ? ui.srefCodes : ui.phrases;
+      const badge = det.querySelector('.msel-badge');
+      if (set.size) {
+        if (badge) badge.textContent = String(set.size);
+        else {
+          const b = document.createElement('span');
+          b.className = 'msel-badge';
+          b.textContent = String(set.size);
+          const lab = det.querySelector('.msel-label');
+          if (lab) lab.after(b);
+        }
+      } else if (badge) {
+        badge.remove();
+      }
+    });
   }
 
   /** 把 toolbar + grid 换到 host 里并接线 */
@@ -335,6 +535,87 @@ const EXPLORE_BOARD = (() => {
       refresh(host);
     });
 
+    /* 多选下拉的懒加载（报告 2.2）：展开 details 时才把 571 条短语注进 DOM。
+       折叠状态下 toolbar 里只有一行摘要 —— 首屏 HTML 从 177 KB 降到 ~1 KB。 */
+    host.querySelectorAll('[data-msel-lazy]').forEach(det => {
+      det.addEventListener('toggle', () => {
+        if (!det.open) return;
+        const list = det.querySelector('[data-msel-list]');
+        if (!list || list.dataset.loaded === '1') return;
+        const id = det.dataset.msel;
+        const opts = id === 'ex-phrase'
+          ? availablePhrases().map(p => ({ value: p.phrase, label: p.phrase }))
+          : availableSrefCodes().map(c => ({ value: c.code, label: c.code }));
+        const counts = facetCounts(id === 'ex-phrase' ? 'phrase' : 'srefCode');
+        const sel = id === 'ex-phrase' ? ui.phrases : ui.srefCodes;
+        list.innerHTML = opts.map(o => {
+          const n = counts.get(o.value) || 0;
+          const on = sel.has(o.value);
+          return `
+                <label class="msel-row${n === 0 && !on ? ' is-empty' : ''}">
+                  <input type="checkbox" data-msel-item="${id}" value="${esc(o.value)}"${on ? ' checked' : ''}>
+                  <span class="msel-name">${esc(o.label)}</span>
+                  <span class="msel-n">${n}</span>
+                </label>`;
+        }).join('');
+        list.dataset.loaded = '1';
+      });
+    });
+
+    /* 多选下拉（报告 2.2）：sref 码 / 提示词短语。
+       用**事件委托**（挂在 toolbar 上）—— 懒加载注入的 checkbox 是新元素，
+       逐元素绑定绑不到它们；且 refresh() 后 body 重建也会丢绑定。 */
+    const toolbar0 = host.querySelector('.toolbar');
+    if (toolbar0 && !toolbar0.dataset.mselDelegated) {
+      toolbar0.dataset.mselDelegated = '1';
+      toolbar0.addEventListener('change', (ev) => {
+        const el = ev.target.closest ? ev.target.closest('[data-msel-item]') : null;
+        if (!el || !toolbar0.contains(el)) return;
+        const id = el.dataset.mselItem;
+        const v = el.value;
+        const set = id === 'ex-srefcode' ? ui.srefCodes : ui.phrases;
+        if (el.checked) set.add(v); else set.delete(v);
+        ui.limit = 60;
+        pushUrl();
+        refresh(host);
+      });
+      // 「清空」也走委托 —— 与上面的 change 同理，保持一处真相源
+      toolbar0.addEventListener('click', (ev) => {
+        const btn = ev.target.closest ? ev.target.closest('[data-msel-clear]') : null;
+        if (!btn || !toolbar0.contains(btn)) return;
+        const id = btn.dataset.mselClear;
+        if (id === 'ex-srefcode') ui.srefCodes.clear(); else ui.phrases.clear();
+        ui.limit = 60;
+        pushUrl();
+        refresh(host);
+      });
+    }
+
+    /* 勾选待对照的作业（报告 2.2）：最多 2 条。
+       走**事件委托**（挂在 panel 上）而不是逐元素绑定 ——
+       refresh() 会重建 body，逐元素绑定每次刷新都会丢。
+       选满 2 条后再勾第 3 条 → 顶掉最早选的那条（先进先出），
+       而不是静默忽略 —— 静默会让用户以为勾上了。 */
+    const panelCmp = panelOf(host);
+    if (panelCmp && !panelCmp.dataset.exCmpDelegated) {
+      panelCmp.dataset.exCmpDelegated = '1';
+      panelCmp.addEventListener('change', (ev) => {
+        const el = ev.target.closest ? ev.target.closest('[data-ex-cmp]') : null;
+        if (!el || !panelCmp.contains(el)) return;
+        const id = el.dataset.exCmp;
+        if (!id) return;
+        if (el.checked) {
+          if (!ui.compareSel.includes(id)) {
+            ui.compareSel.push(id);
+            while (ui.compareSel.length > 2) ui.compareSel.shift();
+          }
+        } else {
+          ui.compareSel = ui.compareSel.filter(x => x !== id);
+        }
+        refresh(panelCmp);
+      });
+    }
+
     wireBody(host);
 
     // 操作区按钮用事件委托：筛选会重建 panel 的 innerHTML，委托挂在 panel 本身才能存活。
@@ -345,6 +626,19 @@ const EXPLORE_BOARD = (() => {
       panel.addEventListener('click', (ev) => {
         const more = ev.target.closest ? ev.target.closest('[data-role="ex-more"]') : null;
         if (more) { ui.limit += 60; refresh(panel); return; }
+        // 对照条：去对照 / 清空勾选（这两个按钮在 body 内，会被 refresh 重建，
+        // 所以走委托而不是逐元素绑定）
+        if (ev.target.closest && ev.target.closest('#ex-go-compare')) {
+          ev.preventDefault();
+          goCompareNow();
+          return;
+        }
+        if (ev.target.closest && ev.target.closest('[data-role="cmp-clear-sel"]')) {
+          ev.preventDefault();
+          ui.compareSel = [];
+          refresh(panel);
+          return;
+        }
         const btn = ev.target.closest ? ev.target.closest('[data-ex-action]') : null;
         if (!btn || !panel.contains(btn)) return;
         const job = EXPLORE_JOBS.find(j => j.id === btn.dataset.jobId);
@@ -613,6 +907,8 @@ const EXPLORE_BOARD = (() => {
     ui.batch = '';
     ui.aspect = '';
     ui.srefOnly = false;
+    ui.srefCodes.clear();
+    ui.phrases.clear();
     ui.limit = 60;
     openJobSheet(job.id);
     writeJobToHash(jobKeyOf(job));
@@ -632,6 +928,10 @@ const EXPLORE_BOARD = (() => {
     jobKeyOf,
     jobDeepLink,
     jobFromHash,
+    srefCodeList,
+    phrasesOfJob,
+    availableSrefCodes,
+    availablePhrases,
     state: ui,
   };
 })();

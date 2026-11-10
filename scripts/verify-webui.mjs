@@ -104,10 +104,13 @@ async function main() {
           `实际 ${tabCounts.subTabs} / 声明 ${tabCounts.declaredSubTabs}`);
 
         // 4.2：探索榜升为一级视图 —— 一级视图里必须有 samples，且二级页签里没有 explore
+        // 2.2：对照视图也是一级视图（用户拍板，见 ADR-0021）
         const viewIds = await page.evaluate(() =>
           [...document.querySelectorAll('[data-view]')].map(b => b.dataset.view));
         check('研究样本库是一级视图',
           viewIds.includes('samples'), viewIds.join(','));
+        check('对照是一级视图',
+          viewIds.includes('compare'), viewIds.join(','));
         check('二级页签里没有「探索榜」（它已升为一级视图）',
           !(await page.evaluate(() => !!document.querySelector('[data-tab="explore"]'))));
 
@@ -191,6 +194,192 @@ async function main() {
         await new Promise((r) => setTimeout(r, 200));
         const afterMore = await page.$$eval('.job-card', (els) => els.length);
         check('加载更多 +60', afterMore === 120, `实际 ${afterMore}`);
+
+        /* ── 2.2 新增：sref 码筛选 + 提示词短语筛选（多选下拉）────────────
+           这两个维度是「按码值筛选」与「按片段聚类」的落点。
+           断言口径：筛出的卡片数 == 源数据里真正含该码/该短语的条数，
+           且 URL 里带上了对应参数（ADR-0010：hash 是筛选的唯一来源）。 */
+        /* 短语下拉是**懒加载**的（报告 2.2：571 条短语全内联会让 toolbar 涨到 177 KB）。
+           展开 <details> 会触发 toggle → 懒加载把选项注进 DOM —— 断言前必须先展开。
+           （实测 Chrome：给 details.open 赋值也会触发 toggle，不必真的点 summary。） */
+        await page.evaluate(() => {
+          const det = document.querySelector('#ex-phrase');
+          if (det) det.open = true;
+        });
+        await new Promise((r) => setTimeout(r, 600));
+
+        const multi = await page.evaluate(() => {
+          const codes = new Map();
+          for (const j of EXPLORE_JOBS) {
+            for (const c of String(j.sref || '').split(/\s+/).filter(Boolean)) {
+              codes.set(c, (codes.get(c) || 0) + 1);
+            }
+          }
+          // 找出现次数最多的码（>1 才有筛选意义）
+          let top = null, topN = 0;
+          for (const [c, n] of codes) if (n > topN) { top = c; topN = n; }
+          const idx = PHRASE_INDEX.build(EXPLORE_JOBS);
+          const p0 = idx.phrases[0];
+          return {
+            topCode: top, topCodeN: topN,
+            topPhrase: p0 ? p0.phrase : '', topPhraseN: p0 ? p0.df : 0,
+            phraseTotal: idx.phrases.length,
+            codeTotal: codes.size,
+            hasSrefMsel: !!document.querySelector('#ex-srefcode'),
+            hasPhraseMsel: !!document.querySelector('#ex-phrase'),
+            mselOptions: document.querySelectorAll('#ex-srefcode .msel-row').length,
+            phraseOptions: document.querySelectorAll('#ex-phrase .msel-row').length,
+          };
+        });
+        check('sref 码下拉存在且列出全部唯一码',
+          multi.hasSrefMsel && multi.mselOptions === multi.codeTotal && multi.codeTotal > 0,
+          `选项 ${multi.mselOptions} / 唯一码 ${multi.codeTotal}`);
+        check('短语下拉存在且列出全部收录短语',
+          multi.hasPhraseMsel && multi.phraseOptions === multi.phraseTotal && multi.phraseTotal > 0,
+          `选项 ${multi.phraseOptions} / 短语表 ${multi.phraseTotal}`);
+
+        /* sref 码筛选：勾选出现最多的那个码，卡片数应等于源数据里含该码的条数 */
+        if (multi.topCode) {
+          const codeFiltered = await page.evaluate(async (code) => {
+            const box = document.querySelector(`#ex-srefcode .msel-row input[value="${code}"]`);
+            if (!box) return { picked: false };
+            document.querySelector('#ex-srefcode').open = true;
+            box.checked = true;
+            box.dispatchEvent(new Event('change', { bubbles: true }));
+            await new Promise((r) => setTimeout(r, 350));
+            const expect = EXPLORE_JOBS.filter((j) =>
+              String(j.sref || '').split(/\s+/).filter(Boolean).includes(code)).length;
+            return {
+              picked: true,
+              count: parseInt(document.querySelector('.toolbar .dock-count')?.textContent || '0', 10),
+              cards: document.querySelectorAll('.job-card').length,
+              expect,
+              hash: location.hash,
+            };
+          }, multi.topCode);
+          check('按 sref 码筛选结果与源数据一致',
+            codeFiltered.picked && codeFiltered.count === codeFiltered.expect,
+            `命中 ${codeFiltered.count} / 期望 ${codeFiltered.expect}`);
+          check('按 sref 码筛选进 URL（srefCode=）',
+            String(codeFiltered.hash || '').includes('srefCode='), codeFiltered.hash);
+          // 复位
+          await page.evaluate(async (code) => {
+            const box = document.querySelector(`#ex-srefcode .msel-row input[value="${code}"]`);
+            if (box) { box.checked = false; box.dispatchEvent(new Event('change', { bubbles: true })); }
+            await new Promise((r) => setTimeout(r, 250));
+          }, multi.topCode);
+        }
+
+        /* 短语筛选：勾选最高频短语，卡片数应等于它的 df */
+        if (multi.topPhrase) {
+          const phraseFiltered = await page.evaluate(async (phrase) => {
+            const det = document.querySelector('#ex-phrase');
+            if (!det) return { picked: false };
+            // 先展开 → 等懒加载把选项注进 DOM → 才找得到 checkbox
+            det.open = true;
+            await new Promise((r) => setTimeout(r, 300));
+            const box = document.querySelector(`#ex-phrase .msel-row input[value="${CSS.escape(phrase)}"]`);
+            if (!box) return { picked: false };
+            box.checked = true;
+            box.dispatchEvent(new Event('change', { bubbles: true }));
+            await new Promise((r) => setTimeout(r, 400));
+            const idx = PHRASE_INDEX.build(EXPLORE_JOBS);
+            const entry = idx.phrases.find((p) => p.phrase === phrase);
+            const expect = entry ? entry.df : 0;
+            return {
+              picked: true,
+              count: parseInt(document.querySelector('.toolbar .dock-count')?.textContent || '0', 10),
+              expect,
+              hash: location.hash,
+            };
+          }, multi.topPhrase);
+          check('按短语筛选结果与 df 一致',
+            phraseFiltered.picked && phraseFiltered.count === phraseFiltered.expect,
+            `命中 ${phraseFiltered.count} / 期望 ${phraseFiltered.expect}`);
+          check('按短语筛选进 URL（phrase=）',
+            String(phraseFiltered.hash || '').includes('phrase='), phraseFiltered.hash);
+          // 复位
+          await page.evaluate(async (phrase) => {
+            const det = document.querySelector('#ex-phrase');
+            if (det) { det.open = true; await new Promise((r) => setTimeout(r, 200)); }
+            const box = document.querySelector(`#ex-phrase .msel-row input[value="${CSS.escape(phrase)}"]`);
+            if (box) { box.checked = false; box.dispatchEvent(new Event('change', { bubbles: true })); }
+            await new Promise((r) => setTimeout(r, 250));
+          }, multi.topPhrase);
+        }
+
+        /* ── 2.2 新增：对照视图（勾选两条 → 并排比较）──────────────────
+           对照视图是独立一级视图；URL 形态 #compare?a=<引用键>&b=<引用键>。 */
+        const cmpPicked = await page.evaluate(async () => {
+          const boxes = [...document.querySelectorAll('.ex-card__cmp input[data-ex-cmp]')].slice(0, 2);
+          if (boxes.length < 2) return { ok: false, reason: '首屏不足两个可勾选卡片' };
+          boxes[0].checked = true;
+          boxes[0].dispatchEvent(new Event('change', { bubbles: true }));
+          await new Promise((r) => setTimeout(r, 250));
+          const boxes2 = [...document.querySelectorAll('.ex-card__cmp input[data-ex-cmp]')].slice(0, 2);
+          boxes2[1].checked = true;
+          boxes2[1].dispatchEvent(new Event('change', { bubbles: true }));
+          await new Promise((r) => setTimeout(r, 250));
+          return {
+            ok: true,
+            bar: !!document.querySelector('[data-od-id="cmp-bar"]'),
+            goBtn: !!document.querySelector('#ex-go-compare'),
+            goDisabled: document.querySelector('#ex-go-compare')?.disabled ?? true,
+          };
+        });
+        check('勾选两条后出现对照条与「去对照」入口',
+          cmpPicked.ok && cmpPicked.bar && cmpPicked.goBtn && !cmpPicked.goDisabled,
+          JSON.stringify(cmpPicked));
+
+        const cmpView = await page.evaluate(async () => {
+          const btn = document.querySelector('#ex-go-compare');
+          if (!btn) return { ok: false, reason: '没有「去对照」按钮' };
+          btn.click();
+          await new Promise((r) => setTimeout(r, 500));
+          return {
+            ok: true,
+            hash: location.hash,
+            isCompareView: !!document.querySelector('[data-od-id="compare-head"]'),
+            sides: document.querySelectorAll('.cmp-side').length,
+            diffToks: document.querySelectorAll('.cmp-tok--only').length,
+            metaRows: document.querySelectorAll('.cmp-meta tbody tr').length,
+            decompRows: document.querySelectorAll('.cmp-decomp tbody tr').length,
+            imgs: document.querySelectorAll('.cmp-side .job-sheet-imgs img').length,
+            aParam: new URLSearchParams(location.hash.split('?')[1] || '').get('a'),
+            bParam: new URLSearchParams(location.hash.split('?')[1] || '').get('b'),
+          };
+        });
+        check('对照视图是独立一级视图',
+          cmpView.ok && cmpView.isCompareView, cmpView.reason || cmpView.hash);
+        check('对照 URL 形态为 #compare?a=…&b=…',
+          String(cmpView.hash || '').startsWith('#compare?') && !!cmpView.aParam && !!cmpView.bParam,
+          cmpView.hash);
+        check('对照视图并排渲染两条',
+          cmpView.sides === 2 && cmpView.imgs > 0, `侧栏 ${cmpView.sides} / 图 ${cmpView.imgs}`);
+        check('对照视图有措辞差异 / 元数据 / 拆解三块',
+          cmpView.metaRows === 5 && cmpView.decompRows === 7,
+          `元数据 ${cmpView.metaRows} 行 / 拆解 ${cmpView.decompRows} 行`);
+
+        /* 对照链接可分享：直接用 URL 打开另一条作业，仍能并排 */
+        const cmpReload = await page.evaluate(async () => {
+          const h = location.hash;
+          location.hash = '#samples';
+          await new Promise((r) => setTimeout(r, 300));
+          location.hash = h;
+          await new Promise((r) => setTimeout(r, 500));
+          return {
+            hash: location.hash,
+            sides: document.querySelectorAll('.cmp-side').length,
+            isCompare: !!document.querySelector('[data-od-id="compare-head"]'),
+          };
+        });
+        check('对照链接可分享（重进 URL 仍并排）',
+          cmpReload.isCompare && cmpReload.sides === 2,
+          `${cmpReload.hash} / 侧栏 ${cmpReload.sides}`);
+
+        // 回样本库，避免影响后续断言
+        await page.evaluate(() => { location.hash = '#samples'; });
+        await new Promise((r) => setTimeout(r, 300));
 
         /* 灯箱：选首屏里有七段拆解的作业（11-08 新增 15 条尚无拆解，另测空态分支） */
         const decomJob = await page.evaluate(() => {
