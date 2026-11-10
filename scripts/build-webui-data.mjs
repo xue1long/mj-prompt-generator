@@ -25,7 +25,8 @@
  *                                                校验两域，但只写 data-explore.js（风格榜产物不动）
  *   node scripts/build-webui-data.mjs --dry-run  只统计不写文件
  *
- * 原则：不杜撰。源数据里没有的字段（如 sref）一律置空，不用样本里推测的值填充。
+ * 原则：不杜撰。源数据里没有的字段一律置空，不用样本里推测的值填充；
+ *      源数据里有的字段（如 sref）如实透传，不因旧结论而丢弃。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -118,8 +119,9 @@ const jobs = explore.jobs.map((j) => {
     aspect: j.aspect ?? '',
     version: j.version ?? '',
     batch: j.batch ?? '',
-    // 源数据（prompt / paramTail / tags）均未采集 sref；原型样本里那 2 个值是杜撰，不继承。
-    sref: null,
+    // 风格参考码：源数据 config/explore.yaml 里真实采集到的字段（上游 prompt.styleRef，
+    // 由 tools/collect-explore.ts 的 styleRefsOf() 提取）。缺失就是缺失，不杜撰、不补默认值。
+    sref: j.sref ?? null,
     time: j.enqueueTime ?? null,
     thumbs,
     decomposition: d
@@ -220,6 +222,11 @@ for (const out of outputs) {
   if (r.jobs !== undefined) {
     must(r.jobs === explore.jobs.length, `${out.file} 作业数不符：${r.jobs} != ${explore.jobs.length}`);
     must(r.withDecomp === explore.jobs.length - unmatched, '拆解数据条数不符');
+    // 守门：sref 必须与源快照条数一致。历史事故——构建期把 j.sref 硬编码成 null，
+    // 而源数据实际有值，导致「只看有 sref」筛选恒空、界面误报「源数据未采集 sref」。
+    // 这里把条数钉死，任何再次丢弃都会在构建期失败。
+    const srcSref = explore.jobs.filter((j) => j.sref).length;
+    must(r.sref === srcSref, `${out.file} sref 条数与源快照不符：产物 ${r.sref} != 源 ${srcSref}`);
   } else {
     must(r.entries === stylesTop.entries.length, `${out.file} 风格码数不符`);
   }
@@ -251,7 +258,7 @@ console.log(`  配图来源：探索榜 ${modeFor('explore')} / 风格榜 ${mode
 console.log(`  探索榜 ${line('', EXPLORE_IMAGE_STATS)}`);
 console.log(`  批次 ${explore.batches.length} / 比例 ${explore.aspects.length} / 拆解匹配 ${explore.jobs.length - unmatched}（未匹配 ${unmatched}）`);
 console.log(`  风格榜 ${line('', STYLES_TOP_IMAGE_STATS)}`);
-console.log(`  sref：源数据未采集，全部为 null（不继承原型样本里的 2 个杜撰值）`);
+console.log(`  sref：源数据 ${jobs.filter((j) => j.sref).length} 条带真实风格参考码（透传，不杜撰）`);
 if (mode !== 'sample') {
   console.log('  注意：../public/ 相对路径只在项目根内有效，单独分发 dist/ 会丢图。');
 }

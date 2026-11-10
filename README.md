@@ -5,12 +5,14 @@
 
 纯前端应用，**不需要后端、不需要联网**，构建产物双击即用。
 
+> **当前实现状态（2026-11-10）**：正式前端是 `webui/` 下的静态多页 WebUI（原 Vue SPA 仅以 `legacy:*` 保留）；探索榜 957 条 / 7 批次、官方风格榜 200 组；`dist/` 720 文件 / 19.25 MB。**配图引用项目根 `public/`，`dist/` 必须在项目根内打开，单独拷走会丢图。** 下文部分章节仍描述 Vue 时代实现，已在相应处标注；权威决策见 [ADR-0017](docs/adr/0017-static-webui-replaces-vue-spa.md)。
+
 ---
 
 ## ✨ 功能特性
 
 - 🎨 **摄影提示词库** —— 5 个一级分类 / 22 个二级分类 / **156 条**中英双语摄影提示词
-- 🔭 **探索榜** —— 独立页面 `#/explore`：浏览 Midjourney 社区的作业成图（**942 条作业 / 3,768 张图**，来自隔壁仓存量导入 + 每日自采，保留最近 14 天），按日期 / 宽高比 / 有无风格参考码筛选，看中哪条就一键填进「主体与环境」或 `--sref`
+- 🔭 **探索榜** —— 工作台的第 6 个页签（深链 `#explore`）：浏览 Midjourney 社区的作业成图（**957 条作业 / 3,828 张缩略档图**，来自隔壁仓存量导入 + 每日自采，保留最近 14 天），按日期 / 宽高比 / 搜索词筛选，看中哪条就一键填进「主体与环境」；其中 **81 条带真实 `--sref` 风格参考码**，可用「只看有 sref」筛出来并一键填进 `--sref` 参数
 - 🖼️ **预览图** —— 156 张示例图，悬停标签即可预览，并附上当初生成它的提示词供参考
 - 🖼️ **提示词画廊** —— 浏览所有带预览图的提示词，一键取用
 - 🖌️ **风格库** —— **4,322 位**艺术家（画家 / 插画师 / 摄影师 / 设计师…）并入「艺术家/摄影师」分类；**4,638 个**风格参考码在「风格参考码」页签里搜名字查码，一键填进 `--sref` 参数
@@ -34,16 +36,18 @@ npm install
 npm run dev
 ```
 
-浏览器会自动打开 <http://localhost:5173>。
+`dev` 是 Node 内置 http 静态服务（非 Vite），监听 <http://127.0.0.1:5173/>，**不会自动打开浏览器**，需手动访问。
 
 ### 打包成一个"双击即用"的版本
 
 ```bash
+npm run build:webui-data   # 可选：从 config/*.yaml 重建数据产物（默认 public，两域全量配图）
 npm run build
 ```
 
-产物在 `dist/`。**直接双击 `dist/index.html` 就能用**，不需要起服务器，也不需要装 Node。
-把整个 `dist/` 文件夹拷给谁，谁就能直接打开（预览图是相对路径，整个文件夹一起拷即可）。
+产物在 `dist/`。**直接在项目根内双击 `dist/index.html` 就能用**，不需要起服务器，也不需要装 Node。
+
+> ⚠️ **不要只拷 `dist/` 文件夹**：探索榜与风格榜的配图以 `../public/...` 引用项目根 `public/`，单独拷走会丢图。要分发需连同项目根 `public/` 一起，或单独排期把图复制进 `dist/`。
 
 ```bash
 npm run preview     # 用本地服务器预览 dist/（可选）
@@ -66,11 +70,10 @@ npm run verify    # 冒烟验证：用本机 Chrome/Edge 真实渲染（需已 n
 - **风格库数据** —— 风格条目与风格参考码的形状、码形如 `--sref <数字>`、风格条目并入词库时不与手写条目重名、风格参考码不进词库
 - **筛选** —— 筛选引擎的语义（组内任一、组间全部、主色并集、计数口径）与 URL 契约（白名单、非法参数丢弃、往返一致）
 
-冒烟验证（`npm run verify`）会真实打开应用，检查：应用挂载、参数区展开、参数数量、版本联动是否正确置灰、
-最终提示词是否正确组装、刷新后会话是否恢复。开发服务器没启动时它会自动跳过，只验证 `dist/`。
+冒烟验证（`npm run verify`）用本机 Chrome/Edge 以 `file://` 真实打开 `webui/` 下的四个页面，默认**不依赖 dev server**；加 `--dist`（`node scripts/verify-webui.mjs --dist`）才校验构建产物。当前共 45 项断言，覆盖渲染、全量数据契约（阈值取自产物统计对象，采集后无需改数字）、分页与空态降级、**sref 如实透传与「只看有 sref」端到端可用**、会话 / 主题 / 旧 hash 迁移、参数折叠态、窄屏基线。
 它需要本机装有 Chrome 或 Edge，并已安装 `puppeteer-core`（已在 devDependencies 中）。
 
-截图会写到 `docs/screenshots/`。
+`docs/screenshots/` 下 4 张是 Vue 时代截图，已与现行静态 WebUI 不符，重拍留待单独视觉轮次。
 
 ---
 
@@ -78,36 +81,27 @@ npm run verify    # 冒烟验证：用本机 Chrome/Edge 真实渲染（需已 n
 
 ```
 MJ Prompt Generator/
-├─ config/                 ← 配置（构建期内联进产物）
+├─ config/                 ← 配置与数据快照（构建期读取）
 │  ├─ prompts.yaml           提示词词库（手写）
-│  ├─ styles.yaml            风格库快照（**生成物，勿手改**）
-│  └─ parameters.yaml        参数定义 + 版本兼容关系
-├─ skills/                 ← 配套的 Agent 技能包（源码）
-│  └─ midjourney-prompt-writing/
-├─ tools/                  ← 项目自有工具
-│  ├─ export-vocab.ts        词库 → 技能包的导出脚本
-│  ├─ build-styles.ts        Midlibrary manifest → config/styles.yaml
-│  └─ sync-style-images.ts   Midlibrary 缩略图 → public/preview-images/midlibrary/
-├─ evals/                  ← 技能包冒烟样例与断言
-├─ docs/
-│  ├─ 参数事实表.md           每个参数的官方出处、取值范围与官方文档的矛盾登记
-│  ├─ Midlibrary筛选规则分析.md  上游风格库的筛选规则（实测口径见文首）
-│  ├─ 风格库筛选方案.md         本项目风格库筛选的分档方案（A/B/C 档）
-│  ├─ sources/               官方文章的离线快照
-│  └─ adr/                   决策记录
-├─ public/preview-images/  ← 预览图（midlibrary/ 子目录是生成物，见 .gitignore）
-├─ scripts/
-│  ├─ yamlConfigPlugin.ts    把 config/*.yaml 在构建期内联的 Vite 插件
-│  └─ convert-images.js      PNG → WebP 转换脚本
-├─ src/
-│  ├─ components/            界面组件
-│  ├─ stores/                Pinia 状态
-│  ├─ types/                 类型定义
-│  └─ utils/                 组装器、版本兼容、会话持久化
-├─ tests/                   vitest 测试
-├─ CONTEXT.md               术语表
-├─ NOTICE.md                第三方内容与授权条件
-└─ vite.config.ts
+│  ├─ parameters.yaml        参数定义 + 版本兼容关系
+│  ├─ styles.yaml            风格库快照（生成物，勿手改）
+│  ├─ explore.yaml           探索榜作业快照（生成物，957 条 / 7 批次）
+│  ├─ explore-decomposed.yaml  七段拆解（生成物，942 条；15 条待精拆走空态）
+│  └─ styles-top.yaml        官方风格榜 200 码（生成物）
+├─ webui/                  ← 正式前端（静态多页，无编译步骤）
+│  ├─ index.html / gallery.html / style-library.html / explore.html
+│  ├─ js/                    会话、词库、参数、探索榜、风格库 + data-*.js（生成物）
+│  ├─ css/app.css
+│  └─ assets/               抽样图（入库；默认 public 模式下不参与）
+├─ public/                 ← 全量图（生成物，.gitignore 排除）：explore/thumbs 320px、
+│                            explore/mid 640px、preview-images/midjourney-styles-top
+├─ scripts/                ← 静态服务 / 构建 / 数据生成 / 冒烟校验（.mjs）
+├─ src/ + vite.config.ts   ← 退役的 Vue SPA 源码（回退点，legacy:* 可重建）
+├─ tools/                  ← 采集、导出、拆解等 TypeScript 工具
+├─ skills/                 ← 配套 Agent 技能包
+├─ evals/ / tests/ / docs/adr/
+├─ CONTEXT.md              术语表（只定义领域语言）
+└─ NOTICE.md               第三方内容与授权条件
 ```
 
 ---
@@ -138,7 +132,7 @@ categories:
 - `preview` 相对于 `public/preview-images/`
 - `generationPrompt` 只用于展示，不参与组装
 
-开发模式下保存 YAML 会自动整页刷新；发布版本需要重新 `npm run build`。
+静态 WebUI 不监听 YAML：改完 `config/*.yaml` 需依次跑 `npm run build:webui-data`（重建 `webui/js/data-*.js`）与 `npm run build`（同步 `dist/`）。Vue 时代的 Vite HMR 只在 `npm run legacy:dev` 下有效。
 
 ---
 
@@ -176,24 +170,27 @@ npm run sync:style-images   # → public/preview-images/midlibrary/
 
 ## 🔭 探索榜（Midjourney Explore）
 
-顶部的「探索榜」是一个**独立页面**（`#/explore`），不是提示词库里的页签：它占满整屏，用来看社区最近做出了什么。
+「探索榜」是工作台提示词库的**第 6 个页签**（深链 `#explore`），左栏会话 Dock 常驻，右栏只切换内容；旧链接 `#/explore?...` 会自动重定向到 `#explore`。
 
 | 内容 | 数量（当前快照） | 说明 |
 | --- | ---: | --- |
-| 作业 | **942 条** | 一条社区生成 = 一条原始提示词 + 四格成图 + 作者名 |
-| 成图 | **3,768 张 × 2 档** | `thumbs/` 320px WebP（63 MB，网格与缩略图条）+ `mid/` 640px WebP（429 MB，灯箱与下载） |
-| 批次 | 每天一份（当前 6 份） | 只保留最近 **14 天**，旧的连图一起清 |
+| 作业 | **957 条** | 一条社区生成 = 一条原始提示词 + 四格成图 + 作者名 |
+| 配图 | **3,828 张 × 2 档** | `thumbs/` 320px WebP（网格与灯箱，**当前唯一接入的档位**）+ `mid/` 640px WebP（大图档，**代码尚未接入**，见 ADR-0017 Round 8） |
+| 七段拆解 | 942 条 | 11-08 新增的 15 条暂无拆解，灯箱走空态，不杜撰 |
+| 批次 | 每天一份（当前 7 份） | 只保留最近 **14 天**，旧的连图一起清 |
 
-**网格上一张卡 = 一条作业**（不是一张图）：主图按作业自己的宽高比显示、不裁切，下面是标题（提示词前 81 字）+ 作者 / 日期 / 版本 + 宽高比与 sref 标签，最底下一排**四格缩略图条**——点哪一格就换哪一格当主图，点主图开灯箱。灯箱里是同一套「大图 + 缩略图条」，并且**打开时停在你刚看的那一格**。每张卡和灯箱都有下载按钮（下载当前那一格的 640px 档）。
+**拆解结果分三种来源，灯箱会如实标注**：`手工精拆 · 已验收基准`（3 条）、`LLM 逐条精拆`（50 条）、`规则解析 · 未精拆`（889 条）。
+规则解析是确定性关键词匹配、**从未经过 LLM**，每段只保留前 3 个短语、note 多为模板句，所以看起来「没拆完」不是模型偷懒；15 条无拆解的作业走空态、不显示徽章。判断一条拆解是否可靠，先看灯箱顶部的来源徽章。可复现的只读审计见 `node tools/audit-decomposition.mjs --top 20`。
+**网格上一张卡 = 一条作业**（不是一张图）：主图按作业自己的宽高比显示、不裁切，下面是标题（提示词前 81 字）+ 作者 / 日期 / 版本 + 宽高比与 sref 标签，最底下一排**四格缩略图条**——点哪一格就换哪一格当主图，点主图开灯箱。灯箱里是同一套「大图 + 缩略图条」，并且**打开时停在你刚看的那一格**。当前未实现下载按钮；640px 大图档 `mid/` 也尚未接入灯箱（见上表）。
 
 数据有两条来路：
 
 1. **一次性导入隔壁仓的存量**（`ai-video-imge-prompts` 已采的 6 天榜单，1016 条作业 / 4064 张图）→ 320px 重编码 + 640px 直接拷贝；
-2. **此后每天由本项目自己采**：打上游匿名接口取当天的榜单 → 下载两档图 → 写快照 `config/explore.yaml`（构建期内联）。
+2. **此后每天由本项目自己采**：打上游匿名接口取当天的榜单 → 下载两档图 → 写快照 `config/explore.yaml`（构建期由 `build:webui-data` 读取）。
 
 两条来路按**作业 id** 合并；同一个作业跨天上榜时，批次取**第一次采集到的那天**，历史批次才不会随每天重采而搬家。**采集失败即中止，保留上一份快照与旧图**，宁可给旧数据也不让页面开天窗。
 
-> ⚠️ 两档图都进 `dist/`（保证双击 `index.html` 离线可用），所以 `dist/` 约 **700 MB**。如果只想要轻量版，删掉 `public/explore/mid/` 后重构建——灯箱会退回 320px 档。
+> ⚠️ 配图**不复制进 `dist/`**：静态 WebUI 以 `../public/...` 引用项目根的全量图，`dist/` 只有 720 文件 / **19.25 MB**。代价是 `dist/` 脱离项目根单独分发会丢图（裁决与取舍见 ADR-0017 Round 8）。`public/` 下的图由采集链生成、不进版本库。
 
 ```bash
 npm run collect:explore     # 只采集（写 config/explore.yaml 与 public/explore/{thumbs,mid}/）
@@ -205,7 +202,7 @@ Windows 上要每天自动更新，可以把仓库根目录的 `更新探索榜.
 
 **作业不是提示词条目。** 一条作业是别人写好的**整条**成品提示词，不是能拼进提示词的片段，所以它不进「已选提示词」；点「填入主体与环境」把它整条放进你手写的那一栏（已有内容时会让你选覆盖还是追加），点「填入 --sref」则把风格参考码放进参数框。
 
-筛选条件（日期 / 宽高比 / 有无 sref / 搜索词）写在 URL hash 里（`#/explore?ar=9:16`），可后退、可分享、可刷新复现。筛选粒度是**作业**（一条作业四格一起命中或一起排除）。
+筛选由工具条控制（日期 / 宽高比 / 搜索词）；旧 `#/explore?...` 深链重定向到 `#explore` 页签，查询参数不保证保留。筛选粒度是**作业**（一条作业四格一起命中或一起排除）。
 
 授权与署名见 [NOTICE.md](NOTICE.md)，设计取舍见 [ADR-0013](docs/adr/0013-explore-board-is-its-own-page-collected-daily.md) 与 [ADR-0014](docs/adr/0014-explore-cards-are-jobs-with-grid-switcher.md)。
 
@@ -294,7 +291,7 @@ skills-manager-cli skills deploy midjourney-prompt-writing --agent deepseek_harn
 
 | 方面 | 上游 | 本项目 |
 |---|---|---|
-| 配置加载 | 运行时 `fetch` 读 `public/config/*.yaml` | 构建期内联成虚拟模块，运行时零请求，产物可双击打开 |
+| 配置加载 | 运行时 `fetch` 读 `public/config/*.yaml` | `build:webui-data` 预生成 `webui/js/data-*.js`，运行时零请求，产物可双击打开 |
 | 参数数量 | 13 个（含 `--stop`、`--style original`、`--cref` 等已失效项） | 24 个，覆盖官方现行图片类参数 |
 | 版本兼容 | 无，所有参数对所有版本可见 | 按官方兼容矩阵联动，不支持的参数置灰并说明原因 |
 | 会话持久化 | 只写了参数值，且从未读回；选中的提示词一刷新就没 | 已选提示词 + 主体环境 + 参数值一起存取 |

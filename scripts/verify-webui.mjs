@@ -30,6 +30,16 @@ const fileUrl = (name) => pathToFileURL(path.join(WEBUI, name)).href;
 const DESKTOP = { width: 1440, height: 900 };
 const NARROW = { width: 800, height: 600 };
 
+/* sref 的期望条数：直接数源快照 config/explore.yaml，不写死数字。
+   采集后条数会变，断言跟着变 —— 这正是原来写死 0 会把 bug 固化下来的教训。 */
+function expectedSrefCount() {
+  const src = path.join(ROOT, 'config', 'explore.yaml');
+  if (!fs.existsSync(src)) return -1;
+  const text = fs.readFileSync(src, 'utf8');
+  return (text.match(/^\s*sref\s*:/gm) || []).length;
+}
+const EXPECT_SREF = expectedSrefCount();
+
 const results = [];
 function check(name, ok, detail = '') {
   results.push({ name, ok: !!ok, detail });
@@ -101,7 +111,9 @@ async function main() {
           `有拆解 ${data.decomp} / 待精拆 ${data.noDecomp} / 共 ${data.jobs}`);
         check('探索榜配图为 public 全量', data.imageMode === 'public' && data.withImages === data.total,
           `${data.imageMode} / ${data.withImages} / ${data.total}`);
-        check('sref 未杜撰（源数据未采集）', data.sref === 0, `实际 ${data.sref}`);
+        // sref 如实透传：源快照有值就有值，无值就是 null。历史事故——构建期硬编码 null，
+        // 断言也跟着写成 0，等于把 bug 固化成验收标准。现改为与源数据条数比对。
+        check('sref 如实透传（非杜撰、非丢弃）', data.sref === EXPECT_SREF, `实际 ${data.sref} / 期望 ${EXPECT_SREF}`);
 
         /* 3. 探索榜页签：分页、筛选、占位、灯箱 */
         await page.click('#tab-explore');
@@ -129,8 +141,30 @@ async function main() {
           board.chips);
         check('批次 / 比例下拉与数据源一致', board.batches === data.batches && board.aspects === data.aspects,
           `${board.batches} / ${board.aspects}`);
-        check('无 sref 时不显示假开关', !board.srefBtn && board.srefNote);
+        // sref 控件按数据实际情况二选一：有值 → 可用筛选按钮；无值 → 提示「源数据未采集」。
+        // 历史事故——构建期把 sref 丢弃成 null，前端只剩提示语；断言却写成「不该有按钮」，
+        // 等于把断链固化成验收标准。现改为与实际数据一致的分支断言。
+        check('sref 控件与数据一致',
+          EXPECT_SREF > 0 ? (board.srefBtn && !board.srefNote) : (!board.srefBtn && board.srefNote),
+          `源 sref ${EXPECT_SREF} 条 / 有按钮 ${board.srefBtn} / 有提示 ${board.srefNote}`);
         check('无破图 img', board.badImgs === 0, `实际 ${board.badImgs}`);
+
+        /* sref 筛选端到端可用：点按钮后命中数 == 源数据条数，且展示的每张卡片都带 sref 标记。
+           这条是断链事故的直接回归防线——数据被丢弃时，按钮要么不出现、要么点了筛不出东西。 */
+        if (EXPECT_SREF > 0 && board.srefBtn) {
+          await page.click('#ex-sref');
+          await new Promise((r) => setTimeout(r, 250));
+          const srefFiltered = await page.evaluate(() => ({
+            count: parseInt(document.querySelector('.toolbar .dock-count')?.textContent || '0', 10),
+            cards: document.querySelectorAll('.job-card').length,
+            tagged: document.querySelectorAll('.job-card .sref').length,
+          }));
+          check('「只看有 sref」筛选可用且结果正确',
+            srefFiltered.count === EXPECT_SREF && srefFiltered.tagged === srefFiltered.cards,
+            `命中 ${srefFiltered.count} / 期望 ${EXPECT_SREF} / 卡片 ${srefFiltered.cards} / 带 sref 标记 ${srefFiltered.tagged}`);
+          await page.click('#ex-sref'); // 复位，避免影响后续筛选断言
+          await new Promise((r) => setTimeout(r, 200));
+        }
 
         await page.click('[data-role="ex-more"]');
         await new Promise((r) => setTimeout(r, 200));
