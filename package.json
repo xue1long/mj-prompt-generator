@@ -7,7 +7,7 @@
     "dev": "node scripts/serve-webui.mjs",
     "build": "node scripts/build-webui.mjs",
     "preview": "node scripts/serve-webui.mjs --dist",
-    "build:webui-data": "node scripts/build-webui-data.mjs --images=public",
+    "build:webui-data": "node scripts/build-webui-data.mjs",
     "legacy:dev": "vite",
     "legacy:build": "vue-tsc && vite build",
     "legacy:preview": "vite preview",

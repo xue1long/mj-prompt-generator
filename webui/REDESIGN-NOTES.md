@@ -68,9 +68,14 @@ js/explore-board.js   探索榜面板（可复用组件：head / toolbar / body 
 js/gallery.js         画廊
 js/style-library.js   风格库
 js/data-*.js          从项目真实 YAML 抽出的数据（词库 / 参数 / 艺术家 / 风格码 / 官方榜 / 探索榜）
-assets/               从项目 public/ 复制并压缩的真实预览图（701 张，12.4MB）
 audits/               Lighthouse 审计摘要
 ```
+
+> **配图位置（2026-11-11 第 9 步起变更）**：`webui/assets/` 已删除，配图统一走项目根 `public/`，
+> 路径一律 `../public/…`（`dist/` 与 `webui/` 同构，同一前缀）。原先 `assets/` 里的
+> 701 张是 `public/` 的副本（其中 133 张词库图为缩略版、448 张艺术家/风格码图为字节相同的副本），
+> 现已迁入 `public/preview-images/thumbs/`（词库缩略图）与 `public/preview-images/tracked/`
+> （前端实际引用的艺术家/风格码图，入库，clone 后直接可用）。详见 ADR-0017 Round 16。
 
 ## 5. 数据说明
 

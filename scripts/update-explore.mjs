@@ -140,7 +140,7 @@ if (skipDecompose) {
 }
 
 /* ── 3. 烘焙 ─────────────────────────────────────────────────────────── */
-const bake = run('3/4 烘焙数据产物', node, ['scripts/build-webui-data.mjs', '--images=public']);
+const bake = run('3/4 烘焙数据产物', node, ['scripts/build-webui-data.mjs']);
 if (bake.code !== 0) {
   fatal(`烘焙失败（退出码 ${bake.code}）。产物会与源数据不一致，已中止，不更新 dist/。`);
 }

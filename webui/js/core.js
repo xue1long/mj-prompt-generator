@@ -37,6 +37,44 @@ const esc = (s) => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;');
 
+/* ── 配图路径：单一命名空间（报告 3.2 / ADR-0017 Round 16）─────────────
+   全部配图统一走项目根 public/preview-images/ 与 public/explore/，
+   不再从 webui/assets/ 走第二条路径。
+
+   为什么：此前同一套 UI 混用两套图片来源 —— 艺术家 / 风格码 / 词库走
+   webui/assets/（随前端代码入库），探索榜缩略图与官方榜配图走 ../public/
+   （采集链生成物，多数不在版本库）。两套体系让「dist/ 拷走能不能用」
+   这个问题没有确定答案。现在只有一套：**图都在 public/，代码都在 webui/。
+
+   代价（明确承担）：dist/ 必须在项目根内使用，单独拷走会丢图。
+   这不是缺陷而是事实 —— public/ 里 19,928 张图是采集链产物、本就不入库，
+   任何「拷走即用」方案都得先把这批图纳入版本库或随包分发。
+   ADR-0017 Round 4 裁决的「webui/assets/ 维持入库」至此被本条取代。
+
+   相对路径前缀：webui/ 与 dist/ 同构，都位于项目根下一层，故同为 ../public/。 */
+const PREVIEW_ROOT = '../public/preview-images/';
+const EXPLORE_ROOT = '../public/explore/';
+
+/** 词库预览图路径（缩略图，460×258）。
+ *  it.preview 存的是 <分类>/<文件名>（相对 public/preview-images/）；
+ *  实际指向 public/preview-images/thumbs/<分类>/ —— 缩略图在 thumbs/ 下，
+ *  大图（1456×816）在 public/preview-images/<分类>/ 下，两者用途不同：
+ *  卡片与画廊网格用缩略图（CSS 渲染宽度约 300 px），大图留给放大查看。 */
+function vocabPreviewPath(it) {
+  return PREVIEW_ROOT + 'thumbs/' + it.preview;
+}
+
+/** 艺术家 / 风格码预览图路径（320×320）。
+ *
+ *  数据层存的是 config/styles.yaml 的规范值 midlibrary/<id>.webp —— 那是
+ *  「全量 8,960 张采集物」的路径，该目录是生成物、不入库。
+ *  前端真正引用的是其中 448 张，它们另存于 public/preview-images/tracked/（入库），
+ *  这样 git clone 后不跑 sync:style-images 也有图。
+ *  映射只在这一处做：数据层保持与源一致，路径差异由渲染层收敛。 */
+function midlibraryPreviewPath(preview) {
+  return PREVIEW_ROOT + 'tracked/' + String(preview).replace(/^midlibrary\//, '');
+}
+
 /* ── 主题 ───────────────────────────────────────────────────────────── */
 function initTheme() {
   // 偏好优先：新键 → 旧 Vue SPA 的 theme 键 → HTML 上的 data-theme（默认 dark）

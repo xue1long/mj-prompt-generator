@@ -4,7 +4,13 @@
  * 与旧 Vue 构建的区别：
  *   - 不再跑 vue-tsc / vite，无编译期数据内联；数据由 build:webui-data 预先生成。
  *   - dist/ 是纯静态目录，双击 dist/index.html 或任意静态服务器即可用。
- *   - public/ 下 18,216 张图保持不动（不复制、不删除），它们是数据生产链的源。
+ *   - public/ 下的图保持不动（不复制、不删除），它们是数据生产链的源。
+ *
+ * dist/ 的职责（报告 3.2 / ADR-0017 Round 16）：**只放代码**。
+ *   dist/ 与 webui/ 同构（都在项目根下一层），所以两边的配图路径都写 ../public/…，
+ *   指向同一个 public/ —— 复制时无需改写路径。
+ *   代价：dist/ 必须在项目根内使用；单独拷走会丢图（public/ 是数据源，
+ *   20,087 张里 19,928 张是采集链生成物、本就不入库）。
  *
  * 运行：npm run build   （等价于 node scripts/build-webui.mjs）
  * 回退：npm run legacy:build 会重建旧 Vue 产物。
@@ -65,7 +71,29 @@ if (out.files !== srcStat.files || out.bytes !== srcStat.bytes) {
   fail(`复制不完整：源 ${srcStat.files}/${srcStat.bytes} 产物 ${out.files}/${out.bytes}`);
 }
 
+/* 单一图片命名空间守门（报告 3.2 / ADR-0017 Round 16）：
+   产物里不允许再出现指向 assets/ 的图片引用。历史上前端混用两套图片来源
+   （webui/assets/ 与 ../public/），导致「dist/ 拷走能不能用」没有确定答案。
+   这条断言把「只有一套命名空间」变成构建期的硬不变量 —— 违反即构建失败。 */
+const assetRefs = [];
+for (const f of fs.readdirSync(path.join(DIST, 'js'))) {
+  if (!f.endsWith('.js')) continue;
+  const text = fs.readFileSync(path.join(DIST, 'js', f), 'utf8');
+  const m = text.match(/["'`](assets\/[a-z0-9_\-]+\/)/gi);
+  if (m) assetRefs.push(f + ' → ' + [...new Set(m)].join(', '));
+}
+if (assetRefs.length) {
+  fail('产物里仍有 assets/ 图片引用（单一命名空间被破坏）：\n    ' + assetRefs.join('\n    '));
+}
+/* 反向守门：产物里必须有 ../public/ 引用，否则说明配图路径被整体改坏。 */
+const publicRefs = fs
+  .readdirSync(path.join(DIST, 'js'))
+  .filter((f) => f.endsWith('.js'))
+  .some((f) => fs.readFileSync(path.join(DIST, 'js', f), 'utf8').includes('../public/'));
+if (!publicRefs) fail('产物里找不到 ../public/ 配图引用 —— 配图路径可能被整体改坏');
+
 console.log(
   `[build-webui] 完成 → dist/：${out.files} 文件 / ${(out.bytes / 1048576).toFixed(2)} MB / ${jsCount} 个 JS / 4 个 HTML`
 );
-console.log('[build-webui] 双击 dist/index.html 即可使用；或 npm run preview');
+console.log('[build-webui] 单一图片命名空间检查通过（产物无 assets/ 引用，配图统一走 ../public/）');
+console.log('[build-webui] dist/ 必须在项目根内使用（配图指向 ../public/）；双击 dist/index.html 即用，或 npm run preview');

@@ -115,7 +115,7 @@ function galleryBodyHtml() {
         ${items.map(it => `
           <article class="gal-card" data-od-id="gal-${esc(it.id)}">
             <div class="gal-img">
-              <img src="assets/vocab/${esc(it.cat.id)}/${esc(it.id)}.webp" alt="${esc(it.zh)} 的示例图" loading="lazy" decoding="async">
+              <img src="${esc(vocabPreviewPath(it))}" alt="${esc(it.zh)} 的示例图" loading="lazy" decoding="async">
             </div>
             <div class="gal-body">
               <div class="gal-name">${esc(it.zh)}</div>

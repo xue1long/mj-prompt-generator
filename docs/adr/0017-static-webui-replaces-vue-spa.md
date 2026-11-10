@@ -5,6 +5,10 @@
 > **编年提示（数据入库，2026-11-10）**：三份真实采集数据已入库 —— `config/explore.yaml` 942 → **971 条**（新增 11-08 / 11-10 两批，老作业零改动）、`config/explore-decomposed.yaml` **25 条从规则兜底升级为 LLM 精拆**（其余 917 条逐字节一致）、`config/styles-top.yaml` **200 码全量换新**（旧码是坏数据：采集器两个缺陷导致 —— headless Chrome 未设 UA 被 Cloudflare 挡 + 构建 YAML 未接收本次采集的码清单；两个缺陷已修，见 commit `f66a8d3`）。顺带关闭一条长期未确认项：**styles-top 200 码与 `styles.yaml` 4,638 码交集 0/200，不是子集**，两者是独立语料。
 >
 > **编年提示（Round 8，2026-11-10）**：上文 Q13 / Round 5 关于「不启用 public 引用、保持 942 条、禁跑 `build:webui-data`」的裁决已被用户新裁决推翻；文中 942 条、Round 4「不启用 `--images=public`」等均为历史记录。**现行口径以本 ADR 末尾「Round 8」为准**。`CONTEXT.md` 仍按 Q14 冻结，本 ADR 不代批。
+>
+> **编年提示（Round 16，2026-11-11）**：配图口径已再次变更并**取代 Round 4 的第 13、14 条** —— 全部配图统一走 `../public/`（唯一命名空间），`webui/assets/` **整个目录删除**（701 张），`--images=sample` / `--images=explore-public` / `--images=public` 三个开关**全部废弃**（配图模式恒为 public）。`webui/` 与 `dist/` 均 726 → **25 文件 / 19.4 → 6.99 MB**。**现行口径以本 ADR 末尾「Round 16」为准**。
+>
+> **关于 `CONTEXT.md`**：Q14 冻结（措辞修订需用户先处理仓库未提交改动）**本轮未正式解除**。本轮为让新术语有定义处，在 `CONTEXT.md` 的「素材」节新增了「配图命名空间」「配图来源目录」两条**新增**术语（不改动既有措辞，不触碰冻结项）。**既有措辞的三处修订仍待用户批准**。
 
 ## 背景
 
@@ -43,8 +47,8 @@
 10. **URL 契约兼容**：旧 `#/artists?...`、`#/explore?d/ar/sref/q` 重定向为 `#artists` / `#explore`；旧 `#/style-codes`、`#/styles-top`、`#/gallery` 跳到对应独立 HTML 页。迁移在 `core.js` 顶层执行，早于 `workbench.js` 的 `readHash()`。
 11. **信息架构以原型为准**：工作台 6 个页签（4 个摄影分类 + 艺术家 + 探索榜），画廊与风格库提为顶栏独立页，会话 Dock 跨屏常驻。**这与 ADR-0013 / `CONTEXT.md:124` 的「探索榜是提示词库第 9 个页签」冲突**——以本 ADR 为准；`CONTEXT.md` 措辞修订由用户批准后单独落盘，本 ADR 不代批。
 12. **校验**：`scripts/verify-webui.mjs` 共 **43 项断言**（Round 6 增 2 项、Round 7 增 4 项），支持 `--dist` 切换校验目标；覆盖四屏渲染、全量数据契约、分页、无图占位、筛选无假空态、会话 / 主题 / 旧 hash 迁移、「展开全部参数」折叠态双向回归、灯箱拆解段逐段送入左栏（送入 / 追加 / 空段无按钮 / 灯箱常开且零错误）、窄屏基线。窄屏 800×600 只断言渲染与零错误，遮挡作为 `NOTE` 登记、不计失败（Q11）。
-13. **`webui/assets/` 维持入库，不加 `.gitignore` 忽略规则**（Q12=A，Round 4 已裁决）：Q4 原推荐「图片可由 `public/` 复现」经核实不成立，见「考虑过的选项」。要改成忽略，必须先补 sharp 压缩生成链，单独排期，本轮不做。
-14. **`--images=public` 保持默认关闭**（Q13，Round 4 已裁决）：`build-webui-data.mjs` 的开关保留但不在构建链中启用；只有确认 `dist/` 需要脱离项目根独立分发时才启用，且需同时把 63.3 MB `public/explore/thumbs` + 216.7 MB `public/preview-images/midjourney-styles-top` 复制进 `dist/`。单独一轮做。
+13. ~~**`webui/assets/` 维持入库，不加 `.gitignore` 忽略规则**（Q12=A，Round 4 已裁决）~~ —— **Round 16 已取代**：该裁决的前提（「抽样图是压缩产物，`public/` 复现不了」）经本轮 sha256 逐文件比对**证伪**（artists 328 + codes 120 与 `public/` 字节完全一致；vocab 133 张是缩略图 vs 大图之别）。现 `webui/assets/` **整个目录已删除**，被引用的 448 张与词库缩略图 133 张分别迁入 `public/preview-images/tracked/` 与 `public/preview-images/thumbs/`（均入库）——「clone 后不缺图」达成，且只留一套图片命名空间。详见 Round 16。
+14. ~~**`--images=public` 保持默认关闭**（Q13，Round 4 已裁决）~~ —— **Round 16 已取代**：该开关与 `--images=sample` / `--images=explore-public` **一并废弃**，配图模式恒为 `public`（唯一模式），`package.json` 的 `build:webui-data` 不再带该参数。
 15. **窄屏遮挡与过期截图留待视觉轮次**（Q15，Round 4 已裁决）：不改 `css/app.css`；窄屏基线只作为 `verify-webui.mjs` 的 `NOTE`，遮挡不计失败。`docs/screenshots/` 4 张 Vue 时代截图保持原样，与新前端的视觉契约不符，重拍并入视觉轮次。
 
 ## 考虑过的选项
@@ -59,7 +63,7 @@
 | 把 `webui/` 内容提到项目根覆盖根 `index.html`（Q8=C） | Vite dev/build 行为会变，且无法与 legacy 源码共存。 |
 | 一次性渲染全部 942 张探索卡 | Chrome headless 实测 3.9 s，交互不可接受；改分页。 |
 | 沿用原型样本里的 2 个 sref 值 | **（2026-11-10 更正：否决理由不成立）** 首版记为「三个真实数据源都无此字段，属杜撰」，但实测这两个码（`3808026652` / `3414761933`）**就在 `config/explore.yaml` 里**。真实源头有 81 条 sref，原型样本取的是真值而非杜撰，应如实继承。 |
-| 给 `webui/assets/` 加忽略规则（Q4 原推荐） | 抽样图是**压缩产物**，不是 `public/` 的直接副本（`webui/assets/explore` 72 张 1.4 MB vs `public/explore/thumbs` 3768 张 63.3 MB；`assets/styles-top` 48 张 0.8 MB vs 1600 张 216.7 MB）。忽略后 clone 仓库缺 701 张图：`build-webui-data.mjs` 读目录会失败、`dist/` 少图、`verify` 的配图断言全红。必须先有 sharp 生成链才能忽略。 |
+| 给 `webui/assets/` 加忽略规则（Q4 原推荐） | **（2026-11-11 更正：否决理由的前提已被证伪）** 首版记为「抽样图是压缩产物，不是 `public/` 的直接副本」，但 Round 16 实测 sha256 逐文件比对：**artists 328 + codes 120 与 `public/` 的同名物字节完全一致**（是纯副本，不是压缩产物）；vocab 133 张的差异是 460×258 缩略图 vs 1456×816 大图，也不是压缩产物之别。故该否决理由不成立。现已采用该方向：`webui/assets/` 整个删除，被引用的图迁入 `public/preview-images/tracked/`（入库），clone 后不缺图。 |
 | 把 `TMP/TEMP` 覆盖写进 `package.json` 的 test 脚本 | WorkBuddy fs shim 的 `%TEMP%` 限制是**环境**问题，不是项目问题；按用户「单次命令覆盖、不改全局配置」的既有约定，不固化进仓库。 |
 
 ## 后果
@@ -733,8 +737,8 @@ FNV 哈希，而实测有 **34 条提示词重复（涉及 74 条作业）** →
 1. ~~`CONTEXT.md:91 / :105 / :124` 三处措辞（`mj-session-v1`、恒为两栏、第 9 个页签）仍与实现不符，Q14 冻结未解除。~~ **Round 15 已全部闭合**：「第 9 个页签」随第 7 步升为一级视图而改写；「恒为两栏」本就是对的（现措辞与实现一致）；`mj-session-v1` 已改为 `mj-session-v2`（`v1` 是旧 Vue SPA 的迁移来源键，见 `webui/js/core.js` 的 `LEGACY_SESSION_KEY`）。本轮另把「工作台」条目的一级视图数从三个改为**四个**（新增「对照」，见 ADR-0021）。
 2. ~~15 条 11-08 作业无七段拆解，灯箱走空态。补齐需跑 `decompose:explore`，会抹掉 `config/explore-decomposed.yaml` 的未提交精修 → **`update:explore` / `decompose:explore` / `merge-fine-parts.mjs` 禁令继续生效**。~~ **Round 11 已解除**：禁令理由经复算不成立（原子写 + 版本过滤 942/942 一条不丢），更新链收敛为唯一入口并自带备份/回滚。待补条数随采集推进到 **29 条**（971 - 942），仍需配好 LLM 代理（`.env`）才能补齐。
 3. `mid/` 640px 大图档未接入灯箱（Q9 挂账）。
-4. `dist/` 单独拷走会丢图：探索榜 **3,884 张** + 风格榜 **1,600 张**都在项目根 `public/`（`.gitignore` 排除）。Q2 A 已接受，README 已写明。
-5. `webui/assets/styles-top/` 抽样图仍是 6 个旧码：public 默认模式下不影响；手动跑 sample 现在会被上述守门**中止且不留半成品**，不再静默产出 0/200。抽样图 basename 不匹配本身仍未修，恢复 sample 能力需重做抽样图（未排期）。
+4. `dist/` 单独拷走会丢图：探索榜 **3,884 张** + 风格榜 **1,600 张**都在项目根 `public/`（`.gitignore` 排除）。Q2 A 已接受，README 已写明。**Round 16 已明确定调**：配图一律走 `../public/`，`dist/` 只放代码，代价就是「必须在项目根内使用」—— README 的「双击即用」已改为「在项目根内双击即用」，矛盾消除。
+5. ~~`webui/assets/styles-top/` 抽样图仍是 6 个旧码~~ **Round 16 已闭合**：sample 模式整体废弃（`--images=sample` / `--images=explore-public` 两个分支移除，配图模式恒为 `public`），`webui/assets/` 整个目录删除，该问题不复存在。
 6. 窄屏页签遮挡（Q15）、`docs/screenshots/` 4 张 Vue 时代过期截图、剩余未提交改动 —— 维持原状。**2026-11-10 更新**：三份真实采集数据（`config/explore.yaml` 971 条 / `config/explore-decomposed.yaml` 942 条 / `config/styles-top.yaml` 200 码）已入库（commits `084ac2d` / `f66a8d3` / `065438b`），备份在 `node_modules/.cache/backup-20261110/`（sha256 校验一致）。`src/` 下 34 个 Vue 时代的改动、`config/decompose-parts/`、`tools/build-fine-queue.mjs` 等仍未提交 —— 属退役前端与第 13 步的范围。
 
 ### 回退
@@ -750,3 +754,80 @@ Round 13 的回退：删除 `webui/js/research-store.js` 与 `webui/js/research-
 Round 14 的回退：删除 `webui/js/filter-engine.js`，把 `webui/index.html`、`webui/style-library.html`、`webui/gallery.html` 里的 `js/filter-engine.js` 脚本标签去掉，把四个数据源里接引擎的 `filter` / `matches` / `counts` 调用改回各自的本地实现，`webui/js/workbench.js` 的 `VIEWS` / `LIBRARY_TABS` 改回单层 `TABS`，`webui/explore.html` 改回空壳页，并回退 `scripts/verify-webui.mjs` 的 14 条新断言。**旧深链兼容不需回退** —— `#explore` → `#samples` 的重定向是纯加法，去掉它只会让第 5 步发出去的深链失效，不会破坏新链。
 
 Round 15 的回退：删除 `webui/js/phrase-index.js` 与 `webui/js/compare-view.js`，把 `webui/index.html` 里这两行脚本标签去掉，从 `webui/js/workbench.js` 的 `VIEWS` 去掉 `compare` 项与渲染分支、去掉 `readHash()` 里 `a`/`b` 的白名单特例，从 `webui/js/explore-board.js` 去掉 `srefCodes` / `phrases` / `compareSel` 三项状态、两个多选下拉、勾选控件与对照条，从 `webui/js/core.js` 去掉 `columns` 图标，并回退 `scripts/verify-webui.mjs` 的 13 条新断言与 `tests/phraseIndex.test.ts` / `tests/compareView.test.ts` 两个测试文件。**数据不受影响** —— 本轮没有任何数据文件改动（短语索引是运行时现算的，不落盘）。
+
+### Round 16：dist/ 单一化 —— 单一图片命名空间（2026-11-11）
+
+> **背景**：报告 3.2 节把病灶描述为「`dist/` 与 `webui/` 双份」，给出「dist 只放代码 / 图复制进 dist」二选一。本轮实测发现**真病灶是「同一套 UI 混用两套图片命名空间」** —— 艺术家 / 风格码 / 词库走 `webui/assets/`，探索榜缩略图与官方榜配图走 `../public/`。两套体系让「dist/ 拷走能不能用」没有确定答案，这才是 P0 的根因。
+
+#### 决定
+
+1. **单一图片命名空间**：全部配图一律 `../public/…`。`dist/` 与 `webui/` 同构（都在项目根下一层），同一前缀，`fs.cpSync` 复制时无需改写路径。
+2. **`dist/` 只放代码**：图不复制进 `dist/`。代价明确承担 —— `dist/` 必须在项目根内使用，单独拷走会丢图。这不是缺陷而是事实：`public/` 20,087 张里 19,928 张是采集链生成物、本就不入库，任何「拷走即用」方案都得先解决它们。
+3. **`webui/assets/` 整个目录删除**（701 张）：
+
+   | 原位置 | 张数 | 处置 | 新位置 |
+   |---|---:|---|---|
+   | `assets/explore/` | 72 | 删（零引用） | — |
+   | `assets/styles-top/` | 48 | 删（零引用） | — |
+   | `assets/artists/` | 328 | 删（与 public 字节相同） | `public/preview-images/tracked/`（入库） |
+   | `assets/codes/` | 120 | 删（与 public 字节相同） | `public/preview-images/tracked/`（入库） |
+   | `assets/vocab/` | 133 | 删（460×258 缩略图） | `public/preview-images/thumbs/<分类>/`（入库） |
+
+4. **sample 模式废弃**：`build-webui-data.mjs` 移除 `sampleSets` / `sampleDirs` / `--images=sample` / `--images=explore-public`，配图模式恒为 `public`（唯一模式）；`package.json` 的 `build:webui-data` 去掉已无意义的 `--images=public` 参数。
+5. **数据层契约修正**：`data-artists.js` / `data-stylecodes.js` 的 `preview` 原本被加过 `assets/` 前缀，与源 `config/styles.yaml`（`midlibrary/<id>.webp`）不一致。改回**与源一致**（实测 328/328、120/120 全等），路径映射只在渲染层 `core.js` 的 `midlibraryPreviewPath()` 一处做。
+6. **新增两条构建期硬不变量**（`scripts/build-webui.mjs`）：产物里出现 `assets/` 引用即构建失败；产物里找不到 `../public/` 引用即构建失败。
+
+#### 与 Round 4 的关系（裁决取代）
+
+Round 4 裁决「`webui/assets/` 维持入库」，理由是「抽样图是压缩产物，不是 `public/` 的直接副本；忽略后 clone 仓库缺 701 张图」。**该理由的前提已被本轮实测证伪**：artists 328 + codes 120 与 `public/` 的同名物 **sha256 字节完全一致**（是纯副本，不是压缩产物）；vocab 133 张的差异性质也不同（460×258 缩略图 vs 1456×816 大图，非压缩产物之别）。
+
+「clone 后不缺图」这个目标本轮以更干净的方式达成：被引用的 448 张迁入 `public/preview-images/tracked/`（入库），词库缩略图迁入 `public/preview-images/thumbs/`（入库）。代价是仓库增 10.2 MB。换来的是「只有一套图片命名空间」这个更强的不变量。
+
+#### 落地的内容
+
+| 文件 | 改动 |
+|---|---|
+| `webui/js/core.js` | 新增 `PREVIEW_ROOT` / `EXPLORE_ROOT` / `vocabPreviewPath()` / `midlibraryPreviewPath()`；配图路径收敛的唯一入口 |
+| `webui/js/gallery.js` | 词库图路径改走 `vocabPreviewPath()` |
+| `webui/js/workbench.js` | 词库图路径改走 `vocabPreviewPath()`；艺术家图（2 处）改走 `midlibraryPreviewPath()` |
+| `webui/js/style-library.js` | 风格码图（2 处）改走 `midlibraryPreviewPath()` |
+| `webui/js/data-artists.js` | 328 处 `preview` 改回与 `config/styles.yaml` 一致 |
+| `webui/js/data-stylecodes.js` | 120 处同上 |
+| `scripts/build-webui-data.mjs` | 废弃 sample 模式；配图路径恒为 `../public/` |
+| `scripts/build-webui.mjs` | 新增两条构建期硬不变量守门 |
+| `scripts/verify-webui.mjs` | 新增 6 条断言（88 → 94） |
+| `.gitignore` | `public/preview-images/tracked/` 与 `thumbs/` 入库；`midlibrary/` 仍整目录忽略 |
+| `webui/assets/` | **整个目录删除**（701 张） |
+| `webui/REDESIGN-NOTES.md` | 配图位置说明改为新口径 |
+
+#### 新增断言（第 8 步 → 第 9 步的关键增量）
+
+原断言只查「`src` 不是 `undefined`」—— 抓不到路径写错（src 是合法字符串时照样破图）。新判据直接问浏览器「这张图真加载出来了吗」：
+
+| 断言 | 判据 | 实测 |
+|---|---|---|
+| 配图真实加载（无加载失败） | `img.complete && img.naturalWidth === 0` 的数量为 0 | 三屏真破图 **0** |
+| 配图路径全在 `../public/` 命名空间 | `src` 不以 `../public/` 开头的数量为 0 | 越界 **0** 张 |
+
+（`complete === false` 是懒加载未进视口，不是破图 —— 断言用 `complete && naturalWidth === 0` 精确区分。）
+
+#### 验证记录
+
+| 项 | 结果 |
+|---|---|
+| `npm run verify`（源码） | **94/94 通过** |
+| `node scripts/verify-webui.mjs --dist`（产物） | **94/94 通过** |
+| `npm test` | 15 文件 / **278 用例**（收集守卫确认完整） |
+| `npm run build` | `webui/` 与 `dist/` 均 **726 → 25 文件 / 19.4 → 6.99 MB** |
+| 构建期守门反向注入 | 注入 `assets/artists/x.webp` 后构建失败并定位到 `core.js` ✅ |
+| 数据层与源一致性 | `data-artists.js` 328/328、`data-stylecodes.js` 120/120 与 `config/styles.yaml` 全等 |
+
+#### 未做
+
+- 把 `public/` 全量 1,133.5 MB 纳入版本库；
+- 把 `dist/` 做成真正可单独分发的自包含包（需 +278.8 MB / 5,484 张）；
+- `public/preview-images/` 下 4 个词库分类目录的**大图版**（1456×816 / 16.53 MB）—— 前端只用缩略图，大图保留但当前无消费者。
+
+#### 回退
+
+Round 16 的回退：把 `webui/js/core.js` 的 `vocabPreviewPath()` / `midlibraryPreviewPath()` 改回拼 `assets/vocab/` 与直接用 `preview`，把 `gallery.js` / `workbench.js` / `style-library.js` 的 5 处调用改回，`data-artists.js` / `data-stylecodes.js` 的 `preview` 改回 `assets/artists/` / `assets/codes/` 前缀，`git checkout` 恢复 `webui/assets/`（该目录在本轮前已在版本库），把 `scripts/build-webui-data.mjs` 的 sample 分支与 `scripts/build-webui.mjs` 的两条守门删掉，并回退 `scripts/verify-webui.mjs` 的 6 条新断言。**已入库的 `public/preview-images/tracked/` 与 `thumbs/` 可保留**（无消费者不影响），也可一并删除。

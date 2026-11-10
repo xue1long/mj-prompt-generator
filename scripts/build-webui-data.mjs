@@ -5,25 +5,23 @@
  *   config/explore.yaml              957 条作业 / 7 批次 + source / batches / aspects
  *   config/explore-decomposed.yaml   942 条七段拆解（文件扩展名是 .yaml，内容是 JSON）；缺的走灯箱空态
  *   config/styles-top.yaml           200 个官方风格码 × 8 题材
- *   webui/assets/explore|styles-top  抽样图（决定 sample 模式下哪些卡片有配图）
+ *   public/explore/thumbs             探索榜缩略图（配图源，路径写进产物）
+ *   public/preview-images/…          官方榜配图（配图源，路径写进产物）
  *
  * 输出（覆盖生成）：
  *   webui/js/data-explore.js
  *   webui/js/data-stylestop.js
  *
  * 用法：
- *   npm run build:webui-data                      默认 public：两域全量（package.json 已带 --images=public）
- *   node scripts/build-webui-data.mjs            不带 flag = sample，两域都用 webui/assets 抽样；
- *                                                styles-top 抽样图已与现行 200 码不匹配，会被覆盖率守门中止
- *                                                （dry-run / --only 旁路只告警，不中止）
- *   node scripts/build-webui-data.mjs --images=explore-public
- *                                                只把探索榜配图改为 ../public/ 全量（风格榜仍 sample）
- *   node scripts/build-webui-data.mjs --images=public
- *                                                两域都改为 ../public/ 相对路径（不复制文件、零体积增长，
- *                                                但 dist/ 脱离项目根后图片会失效）
+ *   npm run build:webui-data                      两域全量配图（唯一模式）
  *   node scripts/build-webui-data.mjs --only=explore
  *                                                校验两域，但只写 data-explore.js（风格榜产物不动）
  *   node scripts/build-webui-data.mjs --dry-run  只统计不写文件
+ *
+ * 配图模式（报告 3.2 / ADR-0017 Round 16）：**只有一种** —— 全部走 ../public/ 相对路径，
+ * 不复制文件、零体积增长。原先的 --images=sample（webui/assets 抽样图）与 --images=explore-public
+ * 两路分支已废弃：抽样图零引用，且两套图片命名空间让「dist/ 拷走能不能用」没有确定答案。
+ * 代价明确承担：产物依赖项目根 public/，dist/ 脱离项目根单独分发会丢图。
  *
  * 原则：不杜撰。源数据里没有的字段一律置空，不用样本里推测的值填充；
  *      源数据里有的字段（如 sref）如实透传，不因旧结论而丢弃。
@@ -38,18 +36,14 @@ import { jobKeys } from '../tools/job-key.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CFG = path.join(ROOT, 'config');
 const OUT_DIR = path.join(ROOT, 'webui', 'js');
-const ASSETS = path.join(ROOT, 'webui', 'assets');
 
 const args = process.argv.slice(2);
-const mode = args.includes('--images=public')
-  ? 'public'
-  : args.includes('--images=explore-public') ? 'explore-public' : 'sample';
 const dryRun = args.includes('--dry-run');
 /** --only=<域>：校验照跑，但只写该域的数据产物，避免重建另一个域时带上无关变更。 */
 const only = args.find((a) => a.startsWith('--only='))?.slice('--only='.length);
-/** 按域决定配图来源：explore-public 只让探索榜走 ../public 全量，风格榜维持抽样。 */
-const publicFor = (kind) => mode === 'public' || (mode === 'explore-public' && kind === 'explore');
-const modeFor = (kind) => (publicFor(kind) ? 'public' : 'sample');
+/** 配图模式：单一命名空间后恒为 public（报告 3.2 / ADR-0017 Round 16）。
+ *  --images=sample 与 --images=explore-public 已随抽样模式一并废弃。 */
+const mode = 'public';
 
 function must(cond, msg) {
   if (!cond) {
@@ -104,20 +98,17 @@ must(
   '作业引用键不唯一（jobKeys 内部已检测，这里是第二道防线）'
 );
 
-const sampleSets = {
-  explore: new Set(fs.readdirSync(path.join(ASSETS, 'explore'))),
-  'styles-top': new Set(fs.readdirSync(path.join(ASSETS, 'styles-top'))),
-};
-const sampleDirs = { explore: 'assets/explore', 'styles-top': 'assets/styles-top' };
-
-/** 把源 YAML 里的相对图片路径，转成 webui/ 下可用的路径；sample 模式下取不到就返回 null。 */
+/** 把源 YAML 里的相对图片路径，转成 webui/ 下可用的路径。
+ *
+ *  单一命名空间（报告 3.2 / ADR-0017 Round 16）：配图只走项目根 public/。
+ *  原先还有一路「sample 抽样模式」——从 webui/assets/explore|styles-top 取图。
+ *  该模式已于第 9 步废弃：抽样图零引用（当前产物一条都不引它们），
+ *  且它让「图片来源」出现两套命名空间，无法回答「dist/ 拷走能不能用」。
+ *  现在图片路径一律是 ../public/…，唯一例外是没有图的条目（取不到就返回 null）。
+ */
 function pickImage(raw, kind) {
-  const base = path.basename(raw);
-  if (publicFor(kind)) {
-    const prefix = kind === 'explore' ? '../public/explore/' : '../public/preview-images/';
-    return prefix + raw.split(path.sep).join('/');
-  }
-  return sampleSets[kind].has(base) ? `${sampleDirs[kind]}/${base}` : null;
+  const prefix = kind === 'explore' ? '../public/explore/' : '../public/preview-images/';
+  return prefix + raw.split(path.sep).join('/');
 }
 
 /** 路径相对 webui/ 解析，验证图片确实存在。 */
@@ -171,7 +162,7 @@ const jobs = explore.jobs.map((j) => {
 });
 
 const EXPLORE_IMAGE_STATS = {
-  mode: modeFor('explore'),
+  mode,
   withImages: jobs.filter((j) => j.thumbs.length > 0).length,
   total: jobs.length,
   imageFiles: jobs.reduce((s, j) => s + j.thumbs.length, 0),
@@ -193,7 +184,7 @@ const entries = stylesTop.entries.map((e) => {
 });
 
 const STYLES_TOP_IMAGE_STATS = {
-  mode: modeFor('styles-top'),
+  mode,
   withImages: entries.filter((e) => Object.keys(e.images).length > 0).length,
   total: entries.length,
   imageFiles: entries.reduce((s, e) => s + Object.keys(e.images).length, 0),
@@ -209,7 +200,7 @@ function render(pairs) {
   const banner = [
     '// 生成物 —— 请勿手改。',
     '// 由 scripts/build-webui-data.mjs 从 config/*.yaml 生成（npm run build:webui-data）。',
-    `// 配图模式：${mode}（探索榜 ${modeFor('explore')} / 风格榜 ${modeFor('styles-top')}；public 依赖项目根，单独分发 dist/ 会丢图）`,
+    `// 配图模式：${mode}（唯一模式；public 依赖项目根，单独分发 dist/ 会丢图）`,
     `// 生成时间：${new Date().toISOString()}`,
     '',
   ].join('\n');
@@ -240,7 +231,7 @@ const outputs = [
 ];
 
 /* 两阶段：先把全部产物校验完，再统一落盘。
-   否则 sample 模式下第二个产物校验失败时，第一个坏文件已经写进去了。 */
+   否则第二个产物校验失败时，第一个坏文件已经写进去了。 */
 const pending = [];
 for (const out of outputs) {
   new vm.Script(out.text, { filename: out.file }); // 语法自检
@@ -269,12 +260,13 @@ for (const out of outputs) {
   const willWrite = !dryRun && (!only || out.file === `data-${only}.js`);
   const s = r.stats;
   must(s && s.total > 0, `${out.file} 统计缺失或条目数为 0`);
-  // 逆向防护：sample 抽样图与源快照 basename 全不匹配时，会静默产出 0/N 的坏数据。
-  // 只在「真要写这个文件」时中止；dry-run 与 --only 旁路仅告警，保留诊断能力。
-  if (s.mode === 'sample' && s.withImages === 0) {
-    const msg = `${out.file}：sample 模式下 0/${s.total} 条有配图 —— webui/assets 抽样图与当前源快照 basename 全不匹配。改跑 --images=public，或先重做抽样图`;
-    if (willWrite) must(false, msg);
-    else console.warn(`[build-webui-data] 警告（不写该文件，未中止）：${msg}`);
+  // 逆向防护：0/N 的配图一定是坏数据（源快照本就带图，抽不到说明链路断了）。
+  // 只告警不中止 —— 上面的逐条 imageExists 硬校验已经拦住了「引用了不存在的文件」，
+  // 这里拦的是「一条都没引用上」这种上游整体缺失的情况，保留诊断能力而非阻断构建。
+  if (s.withImages === 0) {
+    console.warn(
+      `[build-webui-data] 警告：${out.file} 0/${s.total} 条有配图 —— 检查 public/ 下的图是否还在（采集链产物不入版本库，git clone 后需先跑采集）`
+    );
   }
   if (willWrite) pending.push(out);
 }
@@ -288,15 +280,13 @@ if (!dryRun) {
 const line = (label, s) =>
   `${label}：${s.total} 条 / 有配图 ${s.withImages} 条 / 引用 ${s.imageFiles} 张（源 ${s.sourceFiles} 张）`;
 
-console.log(`[build-webui-data] 模式 ${mode}${dryRun ? '（dry-run，未写文件）' : ''}`);
-console.log(`  配图来源：探索榜 ${modeFor('explore')} / 风格榜 ${modeFor('styles-top')}`);
+console.log(`[build-webui-data] 配图模式 ${mode}（唯一模式）${dryRun ? '（dry-run，未写文件）' : ''}`);
+console.log(`  配图来源：探索榜 ../public/explore/ / 风格榜 ../public/preview-images/`);
 console.log(`  探索榜 ${line('', EXPLORE_IMAGE_STATS)}`);
 console.log(`  批次 ${explore.batches.length} / 比例 ${explore.aspects.length} / 拆解匹配 ${explore.jobs.length - unmatched}（未匹配 ${unmatched}）`);
 console.log(`  风格榜 ${line('', STYLES_TOP_IMAGE_STATS)}`);
 console.log(`  sref：源数据 ${jobs.filter((j) => j.sref).length} 条带真实风格参考码（透传，不杜撰）`);
-if (mode !== 'sample') {
-  console.log('  注意：../public/ 相对路径只在项目根内有效，单独分发 dist/ 会丢图。');
-}
+console.log('  注意：../public/ 相对路径只在项目根内有效，单独分发 dist/ 会丢图。');
 if (!dryRun) {
   const written = outputs.filter((o) => !only || o.file === `data-${only}.js`)
     .map((o) => 'webui/js/' + o.file).join('、');

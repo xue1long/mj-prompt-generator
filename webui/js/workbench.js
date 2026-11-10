@@ -425,7 +425,7 @@ function vocabBodyHtml() {
               data-zh="${esc(it.zh)}" data-en="${esc(it.en)}"
               aria-pressed="${isSelected(it.id)}"
               data-position="${esc(cat.position)}" data-category="${esc(cat.name)}"
-              ${it.preview ? `data-preview="assets/vocab/${esc(cat.id)}/${esc(it.id)}.webp" data-gen="${esc(it.gen || '')}"` : ''}>
+              ${it.preview ? `data-preview="${esc(vocabPreviewPath(it))}" data-gen="${esc(it.gen || '')}"` : ''}>
               ${esc(it.zh)}<span class="en">${esc(it.en)}</span>
             </button>`).join('')}
         </div>
@@ -437,7 +437,7 @@ function artistCardHtml(a) {
   // 有参考图的给照片，没有的落回排版版位（生产环境按需取图，取不到也是这个结果）
   const media = a.preview
     ? `<span class="artist-thumb" data-plate-name="${esc(a.name)}">
-         <img src="${esc(a.preview)}" alt="${esc(a.name)} 的风格预览图" loading="lazy" decoding="async">
+         <img src="${esc(midlibraryPreviewPath(a.preview))}" alt="${esc(a.name)} 的风格预览图" loading="lazy" decoding="async">
          ${a.tested ? '<span class="badge">实测</span>' : ''}
          ${a.pick ? '<span class="badge pick">精选</span>' : ''}
        </span>`
@@ -524,7 +524,7 @@ function openArtistSheet(id) {
       <div class="artist-sheet-grid">
         <div>
           ${a.preview
-      ? `<img src="${esc(a.preview)}" alt="${esc(a.name)} 的风格预览图">`
+      ? `<img src="${esc(midlibraryPreviewPath(a.preview))}" alt="${esc(a.name)} 的风格预览图">`
       : `<div class="artist-thumb is-plate" style="aspect-ratio:4/3;border-radius:8px;border:1px solid var(--border)"><span class="plate-name">${esc(a.name)}</span></div>`}
           <div class="btn-row" style="margin-top:12px">
             <button class="btn ${isSelected(a.id) ? 'btn-secondary' : 'btn-primary'}" type="button" data-role="pick" style="flex:1">

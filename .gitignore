@@ -40,6 +40,10 @@ preview_prompt.json
 public/preview-images/midlibrary/
 # 官方风格榜缩略图（生成物：由 npm run sync:styles-top-images 从隔壁仓复制，约 217 MB）
 public/preview-images/midjourney-styles-top/
+# 注：public/preview-images/tracked/（前端实际引用的 448 张）与
+#     public/preview-images/thumbs/（词库缩略图 133 张）**入库**——
+#     它们是前端运行必需的资产，clone 后不跑采集链也必须有图。
+#     同一父目录下的兄弟目录忽略，git 的「已跟踪优先」规则保证例外生效。
 
 # 探索榜缩略图（生成物：由 npm run collect:explore 下载并重编码，每天约 200 条作业 / 800 张图）
 public/explore/thumbs/

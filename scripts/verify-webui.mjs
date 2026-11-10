@@ -649,6 +649,45 @@ async function main() {
       await page.close();
     }
 
+    /* 5a. 配图真实加载（报告 3.2 / ADR-0017 Round 16：单一图片命名空间）
+       此前只断言了「src 不是 undefined」，那抓不到路径写错 —— src 是个合法字符串时，
+       破图照样发生。改造后图片一律走 ../public/…，这里直接问浏览器「这张图真的加载出来了吗」。
+
+       判据用 `complete && naturalWidth === 0`：complete 为 false 是懒加载还没进视口，
+       不是破图；complete 为 true 而 naturalWidth 为 0 才是真的加载失败。 */
+    for (const name of ['index.html', 'gallery.html', 'style-library.html']) {
+      const { page } = await openPage(browser, name);
+      // 滚一遍触发懒加载，让视口外的图也进入加载判定
+      await page.evaluate(async () => {
+        const h = document.body.scrollHeight;
+        for (let y = 0; y < h; y += 500) {
+          window.scrollTo(0, y);
+          await new Promise((r) => setTimeout(r, 30));
+        }
+        window.scrollTo(0, 0);
+      });
+      await new Promise((r) => setTimeout(r, 2000));
+      const imgs = await page.evaluate(() => {
+        const all = [...document.querySelectorAll('img')];
+        const broken = all.filter((i) => i.complete && i.naturalWidth === 0);
+        return {
+          total: all.length,
+          broken: broken.length,
+          samples: broken.slice(0, 3).map((i) => i.getAttribute('src')),
+          // 全部图片都应指向 ../public/ —— 不允许再有第二条图片命名空间
+          offNamespace: all.filter((i) => {
+            const s = i.getAttribute('src') || '';
+            return s && !s.startsWith('../public/');
+          }).length,
+        };
+      });
+      check(`${name} 配图真实加载（无加载失败）`, imgs.broken === 0,
+        `共 ${imgs.total} 张 / 失败 ${imgs.broken}${imgs.samples.length ? ' · ' + imgs.samples.join(', ') : ''}`);
+      check(`${name} 配图路径全在 ../public/ 命名空间`, imgs.offNamespace === 0,
+        `越界 ${imgs.offNamespace} 张`);
+      await page.close();
+    }
+
     /* 6. 旧独立页 explore.html 跳转到研究样本库一级视图（报告 4.2） */
     {
       const { page } = await openPage(browser, 'explore.html');

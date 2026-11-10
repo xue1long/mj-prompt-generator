@@ -149,7 +149,7 @@ function styleCodesBodyHtml() {
             <button class="code-pick" type="button" data-copy-sref="${esc(c.code)}"
               title="点击复制 --sref ${esc(c.code)}${c.tested ? '（已实测）' : ''}">
               ${c.preview
-      ? `<span class="thumb" data-plate-name="${esc(c.name)}"><img src="${esc(c.preview)}" alt="${esc(c.name)} 的风格预览图" loading="lazy" decoding="async"></span>`
+      ? `<span class="thumb" data-plate-name="${esc(c.name)}"><img src="${esc(midlibraryPreviewPath(c.preview))}" alt="${esc(c.name)} 的风格预览图" loading="lazy" decoding="async"></span>`
       : `<span class="thumb is-plate" data-plate-name="${esc(c.name)}"><span class="plate-code">${esc(c.code)}</span></span>`}
               <span class="code-info">
                 <span class="code-name">${esc(c.name)}</span>
@@ -187,7 +187,7 @@ function openCodeSheet(id) {
       <div class="artist-sheet-grid">
         <div>
           ${c.preview
-      ? `<img src="${esc(c.preview)}" alt="${esc(c.name)} 的风格预览图">`
+      ? `<img src="${esc(midlibraryPreviewPath(c.preview))}" alt="${esc(c.name)} 的风格预览图">`
       : `<div class="artist-thumb is-plate" style="aspect-ratio:4/3;border-radius:8px;border:1px solid var(--border)"><span class="plate-code" style="font-size:20px">${esc(c.code)}</span></div>`}
           <div class="btn-row" style="margin-top:12px">
             <button class="btn btn-primary" type="button" data-role="copy" style="flex:1">${icon('copy')}复制 --sref ${esc(c.code)}</button>

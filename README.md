@@ -3,9 +3,9 @@
 一个**本地运行**的 Midjourney 提示词生成器，专为摄影爱好者和设计师打造。
 点选摄影术语、光线方案与艺术家风格，实时拼出一条可直接粘贴到 Midjourney 的提示词。
 
-纯前端应用，**不需要后端、不需要联网**，构建产物双击即用。
+纯前端应用，**不需要后端、不需要联网**，构建产物**在项目根内**双击即用。
 
-> **当前实现状态（2026-11-10）**：正式前端是 `webui/` 下的静态多页 WebUI（原 Vue SPA 仅以 `legacy:*` 保留）；探索榜 971 条 / 8 批次（每条带可引用的短键）、官方风格榜 200 组；`dist/` 726 文件 / 19.4 MB。**配图引用项目根 `public/`，`dist/` 必须在项目根内打开，单独拷走会丢图。** 下文部分章节仍描述 Vue 时代实现，已在相应处标注；权威决策见 [ADR-0017](docs/adr/0017-static-webui-replaces-vue-spa.md)。
+> **当前实现状态（2026-11-11）**：正式前端是 `webui/` 下的静态多页 WebUI（原 Vue SPA 仅以 `legacy:*` 保留）；探索榜 971 条 / 8 批次（每条带可引用的短键）、官方风格榜 200 组；`dist/` **25 文件 / 6.99 MB**（只放代码）。**全部配图统一走项目根 `public/`，`dist/` 必须在项目根内打开，单独拷走会丢图**（`public/` 里 20,087 张图是数据生产链的源，其中 19,928 张是采集链生成物、本就不入库）。下文部分章节仍描述 Vue 时代实现，已在相应处标注；权威决策见 [ADR-0017](docs/adr/0017-static-webui-replaces-vue-spa.md)。
 
 ---
 
@@ -43,13 +43,17 @@ npm run dev
 ### 打包成一个"双击即用"的版本
 
 ```bash
-npm run build:webui-data   # 可选：从 config/*.yaml 重建数据产物（默认 public，两域全量配图）
+npm run build:webui-data   # 可选：从 config/*.yaml 重建数据产物（配图统一走 ../public/，唯一模式）
 npm run build
 ```
 
-产物在 `dist/`。**直接在项目根内双击 `dist/index.html` 就能用**，不需要起服务器，也不需要装 Node。
+产物在 `dist/`（**只放代码**：25 文件 / 6.99 MB）。**在项目根内双击 `dist/index.html` 就能用**，不需要起服务器，也不需要装 Node。
 
-> ⚠️ **不要只拷 `dist/` 文件夹**：探索榜与风格榜的配图以 `../public/...` 引用项目根 `public/`，单独拷走会丢图。要分发需连同项目根 `public/` 一起，或单独排期把图复制进 `dist/`。
+> ⚠️ **不要只拷 `dist/` 文件夹**：全部配图（艺术家 328 / 风格码 120 / 词库 133 / 探索榜 3,884 / 官方榜 1,600）统一以 `../public/...` 引用项目根 `public/`，**只有一套图片命名空间**。单独拷走 `dist/` 会丢图。
+>
+> 这是**明确承担**的代价，不是待修的缺陷 —— `public/` 20,087 张图是数据生产链的源，其中 19,928 张是采集链生成物、本就不入库；任何「拷走即用」方案都得先解决它们（复制进 `dist/` 需 +278.8 MB / 5,484 张，或把它们纳入版本库）。
+>
+> 另：`public/preview-images/tracked/`（448 张）与 `public/preview-images/thumbs/`（133 张）是**入库**的 —— git clone 后不跑采集链也有完整配图。
 
 ```bash
 npm run preview     # 用本地服务器预览 dist/（可选）
@@ -75,7 +79,7 @@ npm run verify    # 冒烟验证：用本机 Chrome/Edge 真实渲染（需已 n
 - **筛选** —— 筛选引擎的语义（组内任一、组间全部、主色并集、计数口径）与 URL 契约（白名单、非法参数丢弃、往返一致）
 - **短语索引与对照** —— 短语怎么切、什么算噪声、收录阈值（`tests/phraseIndex.test.ts`）；词级差异、元数据对照、七段拆解对照（`tests/compareView.test.ts`）
 
-冒烟验证（`npm run verify`）用本机 Chrome/Edge 以 `file://` 真实打开 `webui/` 下的四个页面，默认**不依赖 dev server**；加 `--dist`（`node scripts/verify-webui.mjs --dist`）才校验构建产物。当前共 **88 项断言**，覆盖渲染、全量数据契约（阈值取自产物统计对象，采集后无需改数字）、分页与空态降级、**sref 如实透传与「只看有 sref」端到端可用**、**风格参考码与提示词短语多选筛选（URL 往返）**、**对照视图（并排渲染 / 三块对照 / 链接可分享）**、会话 / 主题 / 旧 hash 迁移、参数折叠态、窄屏基线。
+冒烟验证（`npm run verify`）用本机 Chrome/Edge 以 `file://` 真实打开 `webui/` 下的四个页面，默认**不依赖 dev server**；加 `--dist`（`node scripts/verify-webui.mjs --dist`）才校验构建产物。当前共 **94 项断言**，覆盖渲染、全量数据契约（阈值取自产物统计对象，采集后无需改数字）、分页与空态降级、**sref 如实透传与「只看有 sref」端到端可用**、**风格参考码与提示词短语多选筛选（URL 往返）**、**对照视图（并排渲染 / 三块对照 / 链接可分享）**、**配图真实加载（判据 `complete && naturalWidth === 0`，能抓到路径写错）+ 配图路径全在 `../public/` 命名空间**、会话 / 主题 / 旧 hash 迁移、参数折叠态、窄屏基线。
 它需要本机装有 Chrome 或 Edge，并已安装 `puppeteer-core`（已在 devDependencies 中）。
 
 `docs/screenshots/` 下 4 张是 Vue 时代截图，已与现行静态 WebUI 不符，重拍留待单独视觉轮次。
@@ -98,9 +102,12 @@ MJ Prompt Generator/
 │  ├─ js/                    会话、词库、参数、探索榜、风格库、对照视图、短语索引
 │  │                         + 筛选引擎 + data-*.js（生成物）
 │  ├─ css/app.css
-│  └─ assets/               抽样图（入库；默认 public 模式下不参与）
-├─ public/                 ← 全量图（生成物，.gitignore 排除）：explore/thumbs 320px、
-│                            explore/mid 640px、preview-images/midjourney-styles-top
+│  └─ （配图统一走 ../public/，webui/assets/ 已删除）
+├─ public/                 ← 全量图（配图唯一来源，前端一律 ../public/ 引用）
+│  ├─ explore/thumbs 320px、explore/mid 640px
+│  ├─ preview-images/midjourney-styles-top、preview-images/midlibrary（生成物，.gitignore 排除）
+│  ├─ preview-images/tracked/   ← 前端实际引用的 448 张（入库）
+│  └─ preview-images/thumbs/    ← 词库缩略图 133 张（入库）
 ├─ scripts/                ← 静态服务 / 构建 / 数据生成 / 冒烟校验（.mjs）
 ├─ src/ + vite.config.ts   ← 退役的 Vue SPA 源码（回退点，legacy:* 可重建）
 ├─ tools/                  ← 采集、导出、拆解等 TypeScript 工具
@@ -196,7 +203,7 @@ npm run sync:style-images   # → public/preview-images/midlibrary/
 
 两条来路按**作业 id** 合并；同一个作业跨天上榜时，批次取**第一次采集到的那天**，历史批次才不会随每天重采而搬家。**采集失败即中止，保留上一份快照与旧图**，宁可给旧数据也不让页面开天窗。
 
-> ⚠️ 配图**不复制进 `dist/`**：静态 WebUI 以 `../public/...` 引用项目根的全量图，`dist/` 只有 720 文件 / **19.25 MB**。代价是 `dist/` 脱离项目根单独分发会丢图（裁决与取舍见 ADR-0017 Round 8）。`public/` 下的图由采集链生成、不进版本库。
+> ⚠️ 配图**不复制进 `dist/`**：静态 WebUI 以 `../public/...` 引用项目根的全量图（**唯一图片命名空间**），`dist/` 只有 **25 文件 / 6.99 MB**。代价是 `dist/` 脱离项目根单独分发会丢图 —— 这是明确承担的代价：`public/` 下的图由采集链生成、不进版本库（裁决与取舍见 ADR-0017 Round 16）。
 
 ```bash
 npm run collect:explore     # 只采集（写 config/explore.yaml 与 public/explore/{thumbs,mid}/）
