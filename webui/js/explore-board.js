@@ -392,6 +392,12 @@ const EXPLORE_BOARD = (() => {
               <button class="btn btn-ghost" type="button" data-role="copy-key" aria-label="复制引用键">${icon('copy')}复制键</button>
               <button class="btn btn-ghost" type="button" data-role="copy-link" aria-label="复制这条作业的深链">${icon('copy')}复制深链</button>
             </div>
+            <div class="param-chip" style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+              <span title="你对这条作业写下的观察与依据它写下的结论">研究记录</span>
+              <span data-role="note-count">观察 0 · 结论 0</span>
+              <button class="btn btn-ghost" type="button" data-role="write-note" aria-label="写下你对这条作业的观察">${icon('pencil')}写观察</button>
+            </div>
+            <div data-role="note-list" style="margin-top:8px"></div>
           </div>
           <div>
             ${d ? `
@@ -474,8 +480,61 @@ const EXPLORE_BOARD = (() => {
       linkBtn.addEventListener('click', () => copyText(jobDeepLink(job), '深链已复制'));
     }
 
-    markImageStates(backdrop);
+    // 研究记录（报告 2.3）：把「观察记录」挂到这条作业上。
+    // 数据存在本机 IndexedDB —— 观察记录是一等数据，不再是 localStorage 里那个
+    // 「只能标个布尔」的收藏位（收藏位基于提示词哈希，还有 34 组同提示词互相覆盖的 bug）。
+    const writeBtn = backdrop.querySelector('[data-role="write-note"]');
+    if (writeBtn) {
+      writeBtn.addEventListener('click', () => {
+        if (typeof RESEARCH_VIEW === 'undefined') { toast('研究笔记模块未加载', 'close'); return; }
+        RESEARCH_VIEW.writeNoteFor(jobKeyOf(job));
+      });
+    }
+    // 已有记录：数量 + 列表（结论也要能看到 —— 结论的依据集合可能包含这条作业）
+    const noteCountEl = backdrop.querySelector('[data-role="note-count"]');
+    const noteListEl = backdrop.querySelector('[data-role="note-list"]');
+    const paintResearch = async () => {
+      if (typeof RESEARCH_DB === 'undefined') return;
+      const key = jobKeyOf(job);
+      try {
+        const [notes, conclusions] = await Promise.all([
+          RESEARCH_DB.notesByJob(key),
+          RESEARCH_DB.conclusionsByJob(key),
+        ]);
+        if (noteCountEl) noteCountEl.textContent = `观察 ${notes.length} · 结论 ${conclusions.length}`;
+        if (!noteListEl) return;
+        if (!notes.length && !conclusions.length) {
+          noteListEl.innerHTML = '<p class="dock-hint" style="margin:6px 0 0">还没有针对这条作业的观察或结论。</p>';
+          return;
+        }
+        noteListEl.innerHTML = [
+          ...notes.map((n) => `
+            <div class="term-row" style="margin-top:6px">
+              <span class="term">观察</span>
+              <span style="flex:1;min-width:0">${esc(n.body)}</span>
+              ${(n.tags || []).length ? n.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('') : ''}
+            </div>`),
+          ...conclusions.map((c) => `
+            <div class="term-row" style="margin-top:6px">
+              <span class="term">结论</span>
+              <span style="flex:1;min-width:0">${esc(c.title ? c.title + '：' : '')}${esc(c.body)}</span>
+            </div>`),
+        ].join('');
+      } catch (e) {
+        if (noteListEl) noteListEl.innerHTML = `<p class="dock-hint" style="margin:6px 0 0">读取研究记录失败：${esc((e && e.message) || e)}</p>`;
+      }
+    };
+    paintResearch();
+    // 研究数据变化时重绘计数与列表。
+    // 不能靠「点击保存按钮」冒泡 —— 保存发生在**嵌套**的观察记录弹层里，
+    // 事件不会冒泡到外层 backdrop。用全局 researchchange 事件才可靠。
+    const onResearchChange = () => paintResearch();
+    document.addEventListener('researchchange', onResearchChange);
+    // 灯箱关闭时摘掉监听（否则每次开灯箱都多一个监听器）
     const closeBtn = backdrop.querySelector('[data-role="close"]');
+    if (closeBtn) closeBtn.addEventListener('click', () => document.removeEventListener('researchchange', onResearchChange));
+
+    markImageStates(backdrop);
     if (closeBtn) closeBtn.focus();
   }
 

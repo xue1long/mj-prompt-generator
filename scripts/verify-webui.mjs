@@ -87,8 +87,13 @@ async function main() {
       check(`${name} 渲染`, info.appbar > 0 && info.dock > 0 && info.pageEl > 0, JSON.stringify(info));
 
       if (name === 'index.html') {
-        const tabs = await page.$$eval('[role="tab"]', (els) => els.length);
-        check('工作台 6 个页签', tabs === 6, `实际 ${tabs}`);
+        const tabs = await page.evaluate(() => document.querySelectorAll('[role="tab"]').length);
+        // 页签数不写死：断言「DOM 里的页签数 == TABS 声明的页签数」。
+        // 写死数字会把「加一个页签」变成「改一处断言」——那正是原写法的毛病。
+        const declaredTabs = await page.evaluate(() => (typeof TABS !== 'undefined' ? TABS.length : -1));
+        check('工作台页签数与声明一致',
+          tabs === declaredTabs && tabs > 0,
+          `实际 ${tabs} / 声明 ${declaredTabs}`);
 
         /* 2. 全量数据契约（config/*.yaml → js/data-*.js） */
         // 单一真相源：产物自带的统计对象与数组长度；采集后无需改任何数字。
@@ -501,6 +506,165 @@ async function main() {
         await new Promise((r) => setTimeout(r, 300));
         const afterClose = await page.evaluate(() => location.hash);
         check('关闭灯箱后 URL 清掉 job 参数', !afterClose.includes('job='), `hash = ${afterClose}`);
+        await page.close();
+      }
+    }
+
+    /* 7c. 研究记录与结论落盘（报告 2.3 / 第 6 步）——
+       观察记录与结论存在本机 IndexedDB：一条样本 ↔ 多条观察（可打标签），
+       结论单独一层、指向它依据的样本集合。断言覆盖：
+         · 灯箱能写观察记录，且记录真的落库
+         · 研究视图能看到记录、按标签聚合
+         · 结论能建、能挂样本
+         · 灯箱里能看到这条样本的观察与结论
+         · 存储不可用时如实提示，不静默
+       注意：断言跑完会清空本机研究库（这是测试数据，不是用户数据）。 */
+    {
+      const { page } = await openPage(browser, 'index.html', '#explore');
+      const key = await page.evaluate(() => {
+        if (typeof EXPLORE_JOBS === 'undefined' || typeof JOB_KEY === 'undefined') return null;
+        const j = EXPLORE_JOBS.find((x) => x.decomposition && x.thumbs.length);
+        return j ? JOB_KEY.keyOf(j) : null;
+      });
+
+      if (!key) {
+        check('研究记录：数据里找不到带拆解的作业', false, '无法取到引用键');
+      } else {
+        // 清场：断言用固定样本，不能污染用户已有的研究数据
+        await page.evaluate(async () => {
+          try { await RESEARCH_DB.clearAll(); } catch { /* 忽略 */ }
+        });
+
+        // 存储可用性
+        const storeStatus = await page.evaluate(() => RESEARCH_DB.status());
+        check('研究数据层可用（IndexedDB）', storeStatus.available === true, JSON.stringify(storeStatus));
+
+        // 走完整 UI 路径：灯箱 → 写观察 → 保存
+        await page.evaluate((k) => { location.hash = `#explore?job=${encodeURIComponent(k)}`; }, key);
+        let sheetOk = false;
+        try {
+          await page.waitForSelector('.job-sheet [data-role="write-note"]', { timeout: 8000 });
+          sheetOk = true;
+        } catch { /* 超时即失败 */ }
+        check('灯箱有「写观察」入口', sheetOk, `引用键 ${key}`);
+
+        await page.evaluate(() => document.querySelector('.job-sheet [data-role="write-note"]')?.click());
+        let dialogOk = false;
+        try {
+          await page.waitForSelector('[data-od-id="note-sheet"] #rv-note-body', { timeout: 8000 });
+          dialogOk = true;
+        } catch { /* 超时即失败 */ }
+        check('观察记录弹层可打开', dialogOk);
+
+        await page.evaluate(() => {
+          const b = document.querySelector('#rv-note-body');
+          const t = document.querySelector('#rv-note-tags');
+          if (b) b.value = 'verify 断言写入的观察';
+          if (t) t.value = '断言标签';
+        });
+        await page.evaluate(() => document.querySelector('[data-od-id="note-sheet"] [data-role="save"]')?.click());
+        await new Promise((r) => setTimeout(r, 700));
+
+        const stored = await page.evaluate(async (k) => {
+          const rows = await RESEARCH_DB.notesByJob(k);
+          return { n: rows.length, body: rows[0]?.body || '', tags: rows[0]?.tags || [] };
+        }, key);
+        check('观察记录真的落库且挂在该样本上',
+          stored.n === 1 && stored.body.includes('verify 断言写入的观察') && stored.tags.includes('断言标签'),
+          JSON.stringify({ n: stored.n, tags: stored.tags }));
+
+        // 灯箱里的计数与列表要跟着刷新（保存发生在嵌套弹层里，靠 researchchange 事件同步）
+        const inSheet = await page.evaluate(() => ({
+          count: document.querySelector('.job-sheet [data-role="note-count"]')?.textContent || '',
+          list: document.querySelector('.job-sheet [data-role="note-list"]')?.textContent || '',
+        }));
+        check('灯箱显示该样本的观察记录',
+          /观察 1/.test(inSheet.count) && inSheet.list.includes('verify 断言写入的观察'),
+          inSheet.count.trim());
+
+        // 研究视图：能看到记录 + 标签聚合
+        await page.evaluate(() => { location.hash = '#research'; });
+        await new Promise((r) => setTimeout(r, 900));
+        const rv = await page.evaluate(() => ({
+          head: document.querySelector('[data-od-id="research-head"]')?.textContent || '',
+          cards: document.querySelectorAll('[data-rv-note]').length,
+          tags: [...document.querySelectorAll('[data-rv-tag]')].map((b) => b.textContent.trim()),
+          body: document.querySelector('[data-od-id="research-notes"]')?.textContent || '',
+        }));
+        check('研究视图显示观察记录',
+          rv.cards === 1 && rv.body.includes('verify 断言写入的观察') && /观察记录 1 条/.test(rv.head),
+          `卡片 ${rv.cards} / 标签 ${JSON.stringify(rv.tags)}`);
+        check('研究视图按标签聚合',
+          rv.tags.some((t) => t.includes('断言标签')),
+          JSON.stringify(rv.tags));
+
+        // 结论：能建、能挂样本
+        await page.evaluate(() => document.querySelector('[data-rv-new-conclusion]')?.click());
+        let cOk = false;
+        try {
+          await page.waitForSelector('[data-od-id="conclusion-sheet"] #rv-c-body', { timeout: 8000 });
+          cOk = true;
+        } catch { /* 超时即失败 */ }
+        check('结论弹层可打开', cOk);
+
+        await page.evaluate((k) => {
+          const body = document.querySelector('#rv-c-body');
+          const keys = document.querySelector('#rv-c-keys');
+          const title = document.querySelector('#rv-c-title');
+          if (title) title.value = 'verify 断言结论';
+          if (body) body.value = 'verify 断言写入的结论';
+          if (keys) keys.value = k;
+        }, key);
+        await page.evaluate(() => document.querySelector('[data-od-id="conclusion-sheet"] [data-role="save"]')?.click());
+        await new Promise((r) => setTimeout(r, 700));
+
+        const cons = await page.evaluate(async (k) => {
+          const all = await RESEARCH_DB.allConclusions();
+          const byJob = await RESEARCH_DB.conclusionsByJob(k);
+          return { total: all.length, byJob: byJob.length, keys: all[0]?.jobKeys || [] };
+        }, key);
+        check('结论落库并挂上依据的样本',
+          cons.total === 1 && cons.byJob === 1 && cons.keys[0] === key,
+          JSON.stringify(cons.keys));
+
+        // 结论视图
+        await page.evaluate(() => document.querySelector('[data-rv-section="conclusions"]')?.click());
+        await new Promise((r) => setTimeout(r, 600));
+        const cView = await page.evaluate(() => ({
+          n: document.querySelectorAll('[data-rv-conclusion]').length,
+          text: document.querySelector('[data-od-id="research-conclusions"]')?.textContent || '',
+        }));
+        check('结论视图显示结论与其依据样本',
+          cView.n === 1 && /依据 1 条样本/.test(cView.text),
+          `结论 ${cView.n} 条`);
+
+        // 统计
+        const st = await page.evaluate(async () => await RESEARCH_DB.stats());
+        check('研究数据统计正确',
+          st.notes === 1 && st.conclusions === 1 && st.jobs === 1,
+          JSON.stringify(st));
+
+        // 导出
+        const exp = await page.evaluate(() => {
+          try {
+            const o = JSON.parse(RESEARCH_VIEW.exportJson());
+            return { ok: true, notes: o['观察记录'].length, cons: o['结论'].length };
+          } catch (e) { return { ok: false, err: String(e && e.message || e) }; }
+        });
+        check('研究数据可导出为 JSON',
+          exp.ok && exp.notes === 1 && exp.cons === 1,
+          JSON.stringify(exp));
+
+        // 灯箱里能看到结论（依据集合包含这条样本的结论）
+        await page.evaluate((k) => { location.hash = `#explore?job=${encodeURIComponent(k)}`; }, key);
+        await new Promise((r) => setTimeout(r, 900));
+        const sheetAll = await page.evaluate(() => document.querySelector('[data-role="note-list"]')?.textContent || '');
+        check('灯箱同时显示该样本的观察与结论',
+          sheetAll.includes('verify 断言写入的观察') && sheetAll.includes('verify 断言写入的结论'),
+          sheetAll.replace(/\s+/g, ' ').trim().slice(0, 90));
+
+        // 清场：断言数据不留给用户
+        await page.evaluate(async () => { try { await RESEARCH_DB.clearAll(); } catch { /* 忽略 */ } });
         await page.close();
       }
     }

@@ -559,6 +559,78 @@ Round 9/10 对 `decompose:explore` 下禁令的理由是「会抹掉 `config/exp
 引用键现在能指认一条作业、能在灯箱里看到、能深链直达，但「写下观察记录并把它挂到这条作业上」
 还没有载体。属第 6 步。
 
+### Round 13：观察记录与结论落盘（IndexedDB）（2026-11-10）
+
+#### 问题
+
+Round 12 给每条样本配了引用键，但**引用键本身不是数据** —— 它能指认一条作业，
+却没有地方挂「我为什么关注它」「我从中看到了什么」。
+
+收藏机制撑不住这件事，有确证的语义 bug：`explore-board.js` 的收藏键基于**提示词正文**的
+FNV 哈希，而实测有 **34 条提示词重复（涉及 74 条作业）** → 同一条提示词的两次收藏会互相覆盖。
+
+#### 决定
+
+研究数据落到**本机 IndexedDB**，两类实体：
+
+- **观察记录**：挂在**一条**样本上的笔记 / 假设 / 判断，带标签
+- **结论**：一段文字 + 它**依据的样本集合**（`jobKeys[]`），不归属任何单条样本
+
+#### 存储选型：先实测，再选
+
+选型前用**真浏览器**量了四件事（不是查文档）：
+
+| 能力 | 实测 |
+| --- | --- |
+| `file://` 下 IndexedDB | 建表 / 读写 / 索引全部可用，`isSecureContext = true` |
+| IndexedDB 容量 | 20,000 条 1KB 记录（20 MB）未触顶 |
+| localStorage 容量 | 实测 5042 KB ≈ 4.9 MB 即 `QuotaExceededError` |
+| `file://` 跨目录 | 不同路径共享同一个库（origin 都是 `file://`） |
+
+选 IndexedDB 的理由不是"更大"，而是**第 10 步要在同一个库上扩展**作业/拆解的查询下沉、
+增量与导出 —— 塞进 localStorage 会在第 10 步被推翻重写。
+
+#### 改动
+
+| 位置 | 改动 |
+| --- | --- |
+| `webui/js/research-store.js`（新增） | 数据层唯一实现：库 `mj-research`（版本 1），store `notes` + `conclusions`，索引 byJob / byTs / byTag(multiEntry) |
+| `webui/js/research-view.js`（新增） | 「研究笔记」视图：观察区段 / 结论区段 / 标签聚合 / 导出 JSON |
+| `webui/js/explore-board.js` | 灯箱「写观察」入口 + 计数与列表 |
+| `webui/js/workbench.js` | 第 7 个页签「研究笔记」+ 计数同步 |
+| `webui/index.html` | 脚本加载顺序 |
+| `scripts/verify-webui.mjs` | 新增 **13 条断言**（48 → 61） |
+| 	ests/researchStore.test.ts`（新增） | **18 个单元测试**（159 → 177） |
+
+#### 三个实现细节值得记
+
+1. **IndexedDB 事务不能跨 `await`** —— 规范允许浏览器在 await 让出微任务后自动提交事务，
+   后续 `put` 会抛 `TransactionInactiveError`。所以更新走**「读事务 → 写事务」两步**，
+   每个事务内部同步完成，不依赖脆弱时序。
+2. **`researchchange` 用全局事件而不是冒泡** —— 观察记录弹层是**嵌套**在灯箱里的
+   `mountDialog`，保存按钮的点击**不会冒泡到外层 backdrop**。改用
+   `document.addEventListener('researchchange', ...)` 同步，灯箱关闭时移除监听。
+3. **"页签数"断言不能写死** —— 旧断言写死"6 个页签"，加页签就得改断言。改为动态断言
+   "DOM 页签数 == `TABS` 声明数"，以后加页签不用动断言。
+
+#### 验证
+
+| 项 | 结果 |
+| --- | --- |
+| `npm run build:webui-data` | 通过 |
+| `npm run build` | 723 文件 / 19.31 MB / 14 个 JS / 4 个 HTML |
+| `npm run verify` / `--dist` | **61/61** / **61/61** |
+| 
+px vitest run` | **12 文件 / 177 用例**（新增 18） |
+| 数据层浏览器探针 | **18/18** |
+| 端到端浏览器探针 | **24/24** |
+
+#### 未做
+
+- **对照视图（2.2）** —— 并排比较、sref 码筛选，属第 8 步。
+- **作业 / 拆解的查询下沉、增量、导出（4.1 完整版）** —— 第 10 步在同一个库 `mj-research` 上扩展。
+- **跨作业对比分析** —— 结论可建、可挂作业、可看，但横向统计属第 8 步。
+
 ### 未闭合（登记，不阻断）
 
 1. `CONTEXT.md:91 / :105 / :124` 三处措辞（`mj-session-v1`、恒为两栏、第 9 个页签）仍与实现不符，Q14 冻结未解除。
@@ -571,3 +643,9 @@ Round 9/10 对 `decompose:explore` 下禁令的理由是「会抹掉 `config/exp
 ### 回退
 
 Round 11 的回退：`package.json` 的 `update:explore` 改回 `npm run collect:explore && npm run decompose:explore && npm run build:webui-data && npm run build`（或原三步版），删除 `scripts/update-explore.mjs`、`更新探索榜.bat` 恢复原三步展开。本 ADR 章节与 README 修订一并回退。ADR-0017 是**未跟踪文件**，禁止用 `git checkout --` 回退。
+
+Round 13 的回退：删除 `webui/js/research-store.js` 与 `webui/js/research-view.js`，
+把 `webui/index.html` 的两行脚本标签去掉，从 `webui/js/workbench.js` 去掉第 7 个页签与
+渲染分支，从 `webui/js/explore-board.js` 去掉灯箱里的研究记录区块，并回退
+`scripts/verify-webui.mjs` 的 13 条新断言。**`mj-research` 库里的用户数据不会被删除** ——
+删掉前端代码不等于删掉浏览器里的库；需要清库用「研究笔记」页签里的清空动作。

@@ -16,6 +16,9 @@ const TABS = [
   { id: 'artists', label: '艺术家 / 摄影师', kind: 'artists' },
   // 探索榜是提示词库的一个页签，不是独立页面（沿用原项目 ADR-0013）
   { id: 'explore', label: '探索榜', kind: 'explore' },
+  // 研究笔记（报告 2.3）：观察记录与结论 —— 研究闭环的「记录」一段。
+  // 计数是异步的（数据在本机 IndexedDB），空时显示 0。
+  { id: 'research', label: '研究笔记', kind: 'research' },
 ];
 const EXPLORE_TOTAL = EXPLORE_BATCHES.reduce((s, b) => s + b.jobs, 0);
 
@@ -55,6 +58,10 @@ const catName = (id) => ARTIST_CATEGORIES.find(c => c.id === id)?.name || id;
 const tabCount = (t) => {
   if (t.kind === 'artists') return ARTIST_TOTAL;
   if (t.kind === 'explore') return EXPLORE_TOTAL;
+  if (t.kind === 'research') {
+    // 研究笔记的计数来自本机 IndexedDB（异步加载）；未加载时先显示 0
+    return typeof RESEARCH_VIEW !== 'undefined' ? (RESEARCH_VIEW.ui.notes.length + RESEARCH_VIEW.ui.conclusions.length) : 0;
+  }
   return VOCAB_CATEGORIES.find(c => c.id === t.id).groups.reduce((s, g) => s + g.items.length, 0);
 };
 
@@ -328,12 +335,13 @@ function render() {
   const page = document.getElementById('page');
   if (!page) return;
   const isExplore = ui.tab === 'explore';
+  const isResearch = ui.tab === 'research';
   page.innerHTML = `
-    ${isExplore ? EXPLORE_BOARD.headHtml() : headHtml()}
+    ${isExplore ? EXPLORE_BOARD.headHtml() : isResearch ? RESEARCH_VIEW.headHtml() : headHtml()}
     ${catnavHtml()}
-    ${isExplore ? EXPLORE_BOARD.toolbarHtml() : toolbarHtml()}
+    ${isExplore ? EXPLORE_BOARD.toolbarHtml() : isResearch ? RESEARCH_VIEW.toolbarHtml() : toolbarHtml()}
     <div class="library-body" id="library-panel" role="tabpanel" aria-labelledby="tab-${esc(ui.tab)}" tabindex="0">
-      ${isExplore ? EXPLORE_BOARD.bodyHtml() : bodyHtml()}
+      ${isExplore ? EXPLORE_BOARD.bodyHtml() : isResearch ? RESEARCH_VIEW.bodyHtml() : bodyHtml()}
     </div>`;
   wire();
   if (isExplore) {
@@ -341,12 +349,19 @@ function render() {
     markImageStates(page);
     // 深链直达：#explore?job=<key> → 打开那条作业的灯箱（报告 2.1）
     // 只在确实有 key 时触发；openJobByKey 内部用 replaceState 回写地址栏，
-    // 不会触发 hashchange → 不会重渲染 → 不会递归。
+    // 不会触发 hashchange → 不会重渲染 → 不递归。
     if (ui.hashJob) {
       const key = ui.hashJob;
       ui.hashJob = null;
       EXPLORE_BOARD.openJobByKey(key);
     }
+  } else if (isResearch) {
+    // 研究笔记的数据在本机 IndexedDB，是异步的 —— 先渲染骨架，再拉数据后重绘。
+    RESEARCH_VIEW.wire(page);
+    RESEARCH_VIEW.load().then(() => {
+      if (ui.tab !== 'research') return;
+      render();
+    });
   } else {
     updateCount();
     markImageStates(page);
@@ -358,7 +373,7 @@ function updateCount() {
   if (!el) return;
   if (ui.tab === 'artists') {
     el.textContent = `${filteredArtists().length.toLocaleString('zh-CN')} 条匹配`;
-  } else if (ui.tab !== 'explore') {
+  } else if (ui.tab !== 'explore' && ui.tab !== 'research') {
     const cat = VOCAB_CATEGORIES.find(c => c.id === ui.tab);
     const total = cat ? cat.groups.reduce((s, g) => s + g.items.length, 0) : 0;
     el.textContent = ui.q ? `${total} 条中匹配` : `${total} 条`;
@@ -516,6 +531,18 @@ function wireBody() {
 
 window.addEventListener('scroll', hidePop, true);
 window.addEventListener('hashchange', () => { readHash(); render(); });
+
+// 研究数据变化（灯箱里写了观察 / 研究视图里改了记录）→ 页签计数与列表同步刷新。
+// 只在研究页签或探索榜页签时重绘，避免在别的页签上做无谓的整页渲染。
+document.addEventListener('researchchange', () => {
+  if (ui.tab === 'research') render();
+  else {
+    const el = document.querySelector('#tab-research .n');
+    if (el && typeof RESEARCH_VIEW !== 'undefined') {
+      el.textContent = String(RESEARCH_VIEW.ui.notes.length + RESEARCH_VIEW.ui.conclusions.length);
+    }
+  }
+});
 
 readHash();
 boot('index.html');
