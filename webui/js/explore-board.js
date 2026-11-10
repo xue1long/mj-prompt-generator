@@ -358,7 +358,62 @@ const EXPLORE_BOARD = (() => {
         }) : ''}
         <span class="spacer"></span>
         <span class="dock-count" role="status" aria-live="polite">${matches().length} 条作业（显示 ${Math.min(ui.limit, matches().length)}）</span>
+        ${exportMenuHtml()}
       </div>`;
+  }
+
+  /* ── 导出（报告 4.1 / 第 10 步）────────────────────────────────────
+     一个按钮 + 一个格式下拉。为什么不是一个「导出」按钮直接下载：
+     两种格式的用途不同（JSON 给工具、Markdown 给人读），让用户每次
+     都要猜就失去了导出的意义。
+
+     导出的条数是**当前筛选命中的全部**，不是当前显示的 60 条 ——
+     页面分页，导出只覆盖已渲染部分会静默丢数据。 */
+  function exportMenuHtml() {
+    return `
+      <details class="msel" data-od-id="export-menu">
+        <summary class="msel-label" title="把当前筛选命中的样本导出为独立文件">
+          ${icon('external')}导出
+        </summary>
+        <div class="msel-panel" role="group" aria-label="导出格式">
+          <div class="msel-list">
+            <button class="btn btn-ghost" type="button" data-export-format="json">JSON（给工具消费）</button>
+            <button class="btn btn-ghost" type="button" data-export-format="markdown">Markdown（给人读）</button>
+          </div>
+          <p class="dock-hint" style="padding:8px 10px">导出的是<b>当前筛选命中的全部样本</b>，不只是屏幕上显示的那些。</p>
+        </div>
+      </details>`;
+  }
+
+  /** 执行导出。格式之外的逻辑全在 webui/js/sample-export.js。 */
+  function doExport(format) {
+    if (typeof SAMPLE_EXPORT === 'undefined') {
+      toast('导出模块未加载', 'close');
+      return;
+    }
+    const jobs = SAMPLE_EXPORT.currentJobs();
+    if (!jobs.length) {
+      toast('当前筛选没有命中任何样本', 'close');
+      return;
+    }
+    try {
+      if (format === 'markdown') {
+        SAMPLE_EXPORT.download(
+          SAMPLE_EXPORT.toMarkdown(jobs),
+          SAMPLE_EXPORT.filename('md'),
+          'text/markdown;charset=utf-8',
+        );
+      } else {
+        SAMPLE_EXPORT.download(
+          SAMPLE_EXPORT.toJson(jobs),
+          SAMPLE_EXPORT.filename('json'),
+          'application/json;charset=utf-8',
+        );
+      }
+      toast(`已导出 ${jobs.length} 条样本`);
+    } catch (e) {
+      toast('导出失败：' + ((e && e.message) || e), 'close');
+    }
   }
 
   /* ── 勾选对照条（报告 2.2）────────────────────────────────────────
@@ -582,12 +637,24 @@ const EXPLORE_BOARD = (() => {
       // 「清空」也走委托 —— 与上面的 change 同理，保持一处真相源
       toolbar0.addEventListener('click', (ev) => {
         const btn = ev.target.closest ? ev.target.closest('[data-msel-clear]') : null;
-        if (!btn || !toolbar0.contains(btn)) return;
-        const id = btn.dataset.mselClear;
-        if (id === 'ex-srefcode') ui.srefCodes.clear(); else ui.phrases.clear();
-        ui.limit = 60;
-        pushUrl();
-        refresh(host);
+        if (btn && toolbar0.contains(btn)) {
+          const id = btn.dataset.mselClear;
+          if (id === 'ex-srefcode') ui.srefCodes.clear(); else ui.phrases.clear();
+          ui.limit = 60;
+          pushUrl();
+          refresh(host);
+          return;
+        }
+        // 导出（报告 4.1 / 第 10 步）：同样走委托 —— toolbar 每次 render 都重建，
+        // 逐元素绑定会丢。点击后收起下拉，否则面板一直挂在页面上。
+        const expBtn = ev.target.closest ? ev.target.closest('[data-export-format]') : null;
+        if (expBtn && toolbar0.contains(expBtn)) {
+          ev.preventDefault();
+          doExport(expBtn.dataset.exportFormat);
+          const det = expBtn.closest('details');
+          if (det) det.open = false;
+          return;
+        }
       });
     }
 
@@ -932,6 +999,10 @@ const EXPLORE_BOARD = (() => {
     phrasesOfJob,
     availableSrefCodes,
     availablePhrases,
+    /** 当前筛选命中的全部作业（全量，非分页后的显示部分）。
+        导出功能（webui/js/sample-export.js）用它取数 —— 保证导出的是
+        筛选命中的全部，而不是屏幕上已渲染的那 60 条。 */
+    matches,
     state: ui,
   };
 })();

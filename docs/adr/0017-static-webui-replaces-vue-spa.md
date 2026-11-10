@@ -8,7 +8,9 @@
 >
 > **编年提示（Round 16，2026-11-11）**：配图口径已再次变更并**取代 Round 4 的第 13、14 条** —— 全部配图统一走 `../public/`（唯一命名空间），`webui/assets/` **整个目录删除**（701 张），`--images=sample` / `--images=explore-public` / `--images=public` 三个开关**全部废弃**（配图模式恒为 public）。`webui/` 与 `dist/` 均 726 → **25 文件 / 19.4 → 6.99 MB**。**现行口径以本 ADR 末尾「Round 16」为准**。
 >
-> **关于 `CONTEXT.md`**：Q14 冻结（措辞修订需用户先处理仓库未提交改动）**本轮未正式解除**。本轮为让新术语有定义处，在 `CONTEXT.md` 的「素材」节新增了「配图命名空间」「配图来源目录」两条**新增**术语（不改动既有措辞，不触碰冻结项）。**既有措辞的三处修订仍待用户批准**。
+> **编年提示（Round 17，2026-11-11）**：报告 4.1 的「本地数据层」重构**范围经实测收敛** —— 原设想的「作业落 IndexedDB + 筛选下沉」被证伪（采集链是 14 天滚动窗口，条数封顶 971 条；且 `file://` 下 `fetch` / `XHR` / 动态 `import()` 全部被 CORS 拦截，落库只能变成「复制一份」）。只做真缺口：**按当前筛选导出研究样本集**（JSON / Markdown 双格式）。新增 `webui/js/sample-export.js`；verify 断言 **94 → 100**，测试 **278 → 295**（16 文件）。**裁决见 `docs/adr/0022-sample-export-and-data-layer-verdict.md`，实施编年以本 ADR 末尾「Round 17」为准**。
+>
+> **关于 `CONTEXT.md`**：Q14 冻结（措辞修订需用户先处理仓库未提交改动）**本轮未正式解除**。本轮为让新术语有定义处，在 `CONTEXT.md` 的「素材」节新增了「配图命名空间」「配图来源目录」两条**新增**术语（不改动既有措辞，不触碰冻结项）。**既有措辞的三处修订仍待用户批准**。Round 17 又在「研究」节新增「生成日期」「导出样本集」两条**新增**术语，同样不改动既有措辞。
 
 ## 背景
 
@@ -831,3 +833,66 @@ Round 4 裁决「`webui/assets/` 维持入库」，理由是「抽样图是压�
 #### 回退
 
 Round 16 的回退：把 `webui/js/core.js` 的 `vocabPreviewPath()` / `midlibraryPreviewPath()` 改回拼 `assets/vocab/` 与直接用 `preview`，把 `gallery.js` / `workbench.js` / `style-library.js` 的 5 处调用改回，`data-artists.js` / `data-stylecodes.js` 的 `preview` 改回 `assets/artists/` / `assets/codes/` 前缀，`git checkout` 恢复 `webui/assets/`（该目录在本轮前已在版本库），把 `scripts/build-webui-data.mjs` 的 sample 分支与 `scripts/build-webui.mjs` 的两条守门删掉，并回退 `scripts/verify-webui.mjs` 的 6 条新断言。**已入库的 `public/preview-images/tracked/` 与 `thumbs/` 可保留**（无消费者不影响），也可一并删除。
+
+
+### Round 17：4.1 本地数据层 —— 范围经实测收敛为「样本导出」（2026-11-11）
+
+> 完整裁决见 `docs/adr/0022-sample-export-and-data-layer-verdict.md`；本节只记实施编年。
+
+#### 背景
+
+报告 4.1 是执行序里唯一的 P0 级「重构」，原设想三件事：作业/拆解落 IndexedDB、筛选下沉到数据层、结论与证据可导出。实施前逐条实测。
+
+#### 实测结论
+
+| 报告原文 | 实测 | 判定 |
+|---|---|---|
+| 每天 +200 条 → 230 MB | 采集链是 **14 天滚动窗口**（`tools/collect-explore.ts:62` `DEFAULT_WINDOW_DAYS = 14`），条数封顶 971 | **✕ 前提不成立** |
+| localStorage 存研究笔记必然触顶 5 MB | localStorage 只存主题 / 会话参数 / 收藏位；研究笔记第 6 步已落 IndexedDB | **✕ 事实错误** |
+| 3.07 MB 单文件、无索引 | 2.49 MB / 971 条；全文筛 **1.22 ms**、分面计数 **0.31 ms**、首屏 **267 ms**、堆 **23.4 MB** | **△ 「无索引」不是瓶颈** |
+| 一次性全量载入、无增量 | 成立 | **✓** |
+| 结论与证据可导出 JSON / Markdown | 笔记已能导出 JSON；**样本集不可导出**，且**无 Markdown** | **△ 真缺口** |
+
+另测出一条原报告未测的**硬约束**：`file://` 下 origin 为 `null`，`fetch` / `XHR` / 动态 `import()` **全部被 CORS 拦截**（Chrome 实测三种都 `net::ERR_FAILED`）。⇒ 作业落 IndexedDB 只能变成「复制一份到 IndexedDB」（零查询收益），筛选下沉在 1.22 ms 的现状上纯属变慢。
+
+#### 落地内容
+
+| 位置 | 改动 |
+|---|---|
+| `webui/js/sample-export.js`（新增） | 导出模块：JSON（给工具）/ Markdown（给人读）双格式；取数走 `EXPLORE_BOARD.matches()` 全量；每条带引用键、提示词、**真实生成日期**（`time` 字段换算）、拆解来源与七段拆解 |
+| `webui/js/explore-board.js` | toolbar 加「导出」下拉（`data-export-format`）；事件委托绑定（toolbar 每次 render 都重建，逐元素绑定会丢）；`matches()` 对外暴露 |
+| `webui/index.html` | 加载 `js/sample-export.js`（在 `explore-board.js` 之前） |
+| `scripts/verify-webui.mjs` | 新增「5b. 研究样本导出」6 条断言 |
+| `tests/sampleExport.test.ts`（新增） | 17 个用例：格式契约 + 边界（空结果 / 缺拆解 / 非法时间戳 / 竖线转义 / 拆解来源白名单） |
+| `CONTEXT.md` | 新增「生成日期」「导出样本集」两条术语（既有措辞未动，Q14 冻结项仍不动） |
+| `docs/adr/0022-…`（新增） | 裁决与证伪记录 |
+| `docs/第一性原理校验报告.md` | 4.1 节原地加「实测复核」块（原文保留）；执行序第 10 步状态更新；文首进度块更新 |
+| `README.md` | 新增「导出样本集」小节；断言数 94 → 100；测试覆盖项 5 → 6 件事；`dist/` 数字更新 |
+
+#### 关键设计决定
+
+- **导出的是筛选命中的全量，不是分页后显示的 60 条。** 页面默认渲染 60 条，只导已渲染部分会**静默丢数据** —— 那比不导出更危险。已写成 verify 断言。
+- **导出必须带引用键** —— 否则外部拿到的是无法回指的孤立文本。回工作台用 `#samples?job=<引用键>` 直达。
+- **生成日期与采集批次两个口径都给** —— 批次是「首次采到的那天」，生成日期是 `time` 字段换算的「实际生成日」。实测真实日期跨 **34 天**（2026-10-06 ~ 2026-11-08），批次 `2026-11-05` 内含 `10-06` 的作业（跨 28 天）—— 报告 2.7 的现象在 971 条上依旧成立。
+- **不复刻筛选逻辑** —— 取数直接调 `EXPLORE_BOARD.matches()`，导出与界面显示必然一致。
+
+#### 验证记录
+
+| 项 | 结果 |
+|---|---|
+| `npm run verify`（源码） | **100/100 通过**（94 → 100） |
+| `node scripts/verify-webui.mjs --dist` | **100/100 通过** |
+| `npm test` | 16 文件 / **295 用例**（278 → 295，收集守卫确认完整） |
+| `npm run build` | `dist/` **26 文件 / 7.00 MB / 18 个 JS**；单一命名空间守门通过 |
+| 端到端探针 | 全量 971 条（页面仅显示 60 条）✓ / 批次筛选联动 187 条 ✓ / sref 筛选联动 82 条 ✓ / Markdown 详情段数 = 命中数 ✓ / 点击真实触发 `blob:` 下载 ✓ / 空结果降级 ✓ / **运行时错误 0** ✓ |
+
+#### 未做
+
+- 作业/拆解落 IndexedDB —— 实测证明零收益；
+- 筛选下沉到数据层 —— 实测证明净变慢；
+- 按真实生成日期的筛选 —— 留给第 13 步与批次口径一并改；
+- 「按时间做 diff」—— 采集链按 14 天窗口滚动替换、历史不留存 ⇒ 无 diff 可做（此前提原报告未复核）。
+
+#### 回退
+
+删 `webui/js/sample-export.js` 与 `tests/sampleExport.test.ts`，从 `webui/index.html` 移除对应 `<script>`，从 `webui/js/explore-board.js` 移除 `exportMenuHtml()` / `doExport()` 与 `matches` 的对外暴露、从 `scripts/verify-webui.mjs` 移除 5b 段，并回退 README / CONTEXT.md / 报告的对应段落。**无数据迁移、无存储格式变更** —— 导出是只读操作，不写任何持久化数据。

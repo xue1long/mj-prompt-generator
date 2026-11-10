@@ -688,6 +688,69 @@ async function main() {
       await page.close();
     }
 
+    /* 5b. 研究样本导出（报告 4.1 / 第 10 步）
+       断言的不是「按钮存在」，而是导出的**内容**对不对 ——
+       关键一条：导出的是筛选命中的**全部**，不是屏幕上分页后显示的那些。
+       页面默认只渲染 60 条，若导出只覆盖已渲染部分，会静默丢数据 ——
+       那比不导出更危险，所以这条必须断言。 */
+    {
+      const { page } = await openPage(browser, 'index.html', '#samples');
+      await page.waitForSelector('[data-od-id="export-menu"]', { timeout: 8000 });
+
+      const ex = await page.evaluate(() => {
+        const jobs = SAMPLE_EXPORT.currentJobs();
+        const shown = document.querySelectorAll('[data-job]').length;
+        const j = JSON.parse(SAMPLE_EXPORT.toJson(jobs));
+        const md = SAMPLE_EXPORT.toMarkdown(jobs);
+        const first = j['样本'][0] || {};
+        return {
+          formats: [...document.querySelectorAll('[data-export-format]')].map((b) => b.dataset.exportFormat).sort(),
+          matched: jobs.length,
+          shown,
+          jsonHit: j['命中条数'],
+          jsonLen: j['样本'].length,
+          hasKey: !!first['引用键'],
+          hasPrompt: !!first['提示词'],
+          hasDate: /^\d{4}-\d{2}-\d{2}$/.test(String(first['生成日期'] || '')),
+          mdHeader: md.startsWith('# 研究样本导出'),
+          mdRows: (md.match(/^### \d+\./gm) || []).length,
+          mdHasKey: md.includes(first['引用键']),
+          mdHasPrompt: md.includes(String(first['提示词'] || '').slice(0, 40)),
+        };
+      });
+
+      check('研究样本库有 JSON 与 Markdown 两种导出格式',
+        ex.formats.length === 2 && ex.formats.includes('json') && ex.formats.includes('markdown'),
+        JSON.stringify(ex.formats));
+      check('导出条数 = 筛选命中全量（不是分页后显示的部分）',
+        ex.matched === ex.jsonHit && ex.jsonLen === ex.matched && ex.shown < ex.matched,
+        `命中 ${ex.matched} / 导出 ${ex.jsonLen} / 页面显示 ${ex.shown}`);
+      check('导出内容含引用键与提示词（可回指、可读）',
+        ex.hasKey && ex.hasPrompt && ex.mdHasKey && ex.mdHasPrompt,
+        `key=${ex.hasKey} prompt=${ex.hasPrompt}`);
+      check('导出含真实生成日期（与采集批次区分）',
+        ex.hasDate, `生成日期=${ex.hasDate}`);
+      check('Markdown 详情段数与命中条数一致',
+        ex.mdHeader && ex.mdRows === ex.matched,
+        `MD ${ex.mdRows} 段 / 命中 ${ex.matched}`);
+
+      // 筛选联动：加一个批次筛选后，导出条数必须随之变化
+      const filtered = await page.evaluate(() => {
+        const before = SAMPLE_EXPORT.currentJobs().length;
+        EXPLORE_BOARD.state.batch = '2026-11-01';
+        const after = SAMPLE_EXPORT.currentJobs().length;
+        const j = JSON.parse(SAMPLE_EXPORT.toJson());
+        EXPLORE_BOARD.state.batch = '';
+        const restored = SAMPLE_EXPORT.currentJobs().length;
+        return { before, after, restored, summary: j['筛选条件'], jsonLen: j['样本'].length };
+      });
+      check('导出随筛选变化（导出的是筛选结果，不是全表）',
+        filtered.after < filtered.before && filtered.jsonLen === filtered.after && filtered.restored === filtered.before,
+        JSON.stringify(filtered));
+
+      await page.close();
+    }
+
     /* 6. 旧独立页 explore.html 跳转到研究样本库一级视图（报告 4.2） */
     {
       const { page } = await openPage(browser, 'explore.html');
