@@ -195,10 +195,28 @@ npm run sync:style-images   # → public/preview-images/midlibrary/
 ```bash
 npm run collect:explore     # 只采集（写 config/explore.yaml 与 public/explore/{thumbs,mid}/）
 npm run collect:explore -- --import   # 从隔壁仓导入存量数据（首次安装时跑一次）
-npm run update:explore      # 采集 + 重新构建（dist 永远是新的）
+npm run update:explore      # 【唯一入口】采集 → 分解 → 烘焙 → 构建，dist 永远是新的
 ```
 
-Windows 上要每天自动更新，可以把仓库根目录的 `更新探索榜.bat` 挂到计划任务。
+**更新链只有这一条入口**（`scripts/update-explore.mjs`），四步固定顺序：
+
+| 步骤 | 做什么 | 失败后果 |
+| --- | --- | --- |
+| 1 采集 | 写快照 `config/explore.yaml` + 下载配图 | **致命**，旧快照与旧图保留 |
+| 2 分解 | 写 `config/explore-decomposed.yaml`（要 LLM 代理） | **只告警、不阻断** —— 新作业走灯箱空态，其余数据照常更新 |
+| 3 烘焙 | `config/*.yaml` → `webui/js/data-*.js` | **致命**，中止，不更新 `dist/` |
+| 4 构建 | `webui/` → `dist/` | **致命** |
+
+没配 LLM 代理时用下面两个开关：
+
+```bash
+npm run update:explore:no-decompose   # 跳过分解（其余三步照跑）
+npm run update:explore:collect-only  # 只采集，不烘焙不构建
+```
+
+分解步骤会自动备份派生文件到 `node_modules/.cache/mj-update-backup/`，失败时自动回滚 —— 942 条精拆成果不会被抹掉。
+
+Windows 上要每天自动更新，可以把仓库根目录的 `更新探索榜.bat` 挂到计划任务。它只是 `npm run update:explore` 的**薄包装**（流程只定义在一处，改流程不用动它）。
 
 **作业不是提示词条目。** 一条作业是别人写好的**整条**成品提示词，不是能拼进提示词的片段，所以它不进「已选提示词」；点「填入主体与环境」把它整条放进你手写的那一栏（已有内容时会让你选覆盖还是追加），点「填入 --sref」则把风格参考码放进参数框。
 

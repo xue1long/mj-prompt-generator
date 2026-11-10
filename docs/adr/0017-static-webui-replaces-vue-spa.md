@@ -142,6 +142,8 @@
 - 不跑 `npm run build:webui-data`：15 条新作业会输出 `decomposition: null`，而 `webui/js/explore-board.js:316/347` 直接 `d.segments.map(...)` → 灯箱 TypeError；`scripts/verify-webui.mjs` 的「942 条」断言为硬编码，重建后会红。
 
 > **Round 8 后状态**：A 已解除。灯箱空态（`explore-board.js:374`）与动态断言已落地，`build:webui-data` 现为**默认可执行**（`package.json:10` 带 `--images=public`）。但 `update:explore` / `decompose:explore` / `merge-fine-parts.mjs` **仍禁**：`tools/decompose-explore.ts:450` 的 `rmSync` 会抹掉 `config/explore-decomposed.yaml` 里用户未提交的精修。
+>
+> **Round 11 后状态（2026-11-10）**：**该禁令已解除**。复算证明「`rmSync` 抹掉精修」是误判 —— `writeOutput` 实为标准原子写（tmp → 删旧 → rename），失败不留半成品；保留逻辑按 `schemaVersion` + `methodologyVersion` 过滤，实测 **942/942 条一条不丢**。且更新链已收敛为唯一入口 `scripts/update-explore.mjs`，分解步骤自带**备份 + 失败自动回滚**两道护栏。详见 Round 11。
 - `npm run build` 安全（只是把现有 942 条复制到 `dist/`）。
 
 **从 A 切走的触发判据**（满足其一才动）：
@@ -398,10 +400,90 @@
 
 **未做（属下一轮）**：`package.json` 与 `更新探索榜.bat` 的入口收敛 —— 本轮只统一格式，**入口与 ADR 禁令仍并存**，仍靠人记。
 
+### Round 11：更新链收敛为唯一入口（2026-11-10）
+
+#### 问题
+
+更新流程有**两处定义**，且各漏一步：
+
+| 入口 | 展开的步骤 | 漏了什么 |
+| --- | --- | --- |
+| `package.json:20` `update:explore` | 采集 → 分解 → `build:webui-data` → `build`（**4 步**） | — |
+| `更新探索榜.bat:9/16/24` | 采集 → 分解 → `build`（**3 步**） | **漏 `build:webui-data`（烘焙）** |
+
+`build:webui-data` 是**唯一**把 `config/*.yaml` 烘焙成 `webui/js/data-*.js` 的步骤。漏了它，新采集的数据进了 `config/explore.yaml` 却进不了产物 → **页面一直是旧数据，且无任何报错**（静默失败）。
+
+这个坑在 HEAD 里**有实证**：已提交态的 `config/explore.yaml` 是 **942 条 / 6 批次**，而已提交的 `webui/js/data-explore.js` 是 **957 条** —— 两者本就不一致，正是「采集了但没烘焙」的产物。
+
+同时，`.bat` 第 2 步调的 `decompose:explore` 是 Round 9/10 反复声明**禁用**的入口 —— 禁令写在 ADR 里、入口却开在 `.bat` 里，**靠人记**。
+
+#### 决定
+
+1. **新增唯一入口 `scripts/update-explore.mjs`**：采集 → 分解 → 烘焙 → 构建，四步固定顺序，失败分级。
+2. **`package.json` 的 `update:explore` 改为调它**；新增 `update:explore:no-decompose`（无 LLM 代理时）与 `update:explore:collect-only`（只采集，不动产物）。
+3. **`更新探索榜.bat` 降为薄包装**：只 `call npm run update:explore`。流程改动只改一处。
+4. **解除 `update:explore` / `decompose:explore` 禁令**，但**加安全网**（见下）。
+
+#### 为什么必须用编排脚本而不是 `&&` 链
+
+| 需求 | `&&` 能不能表达 |
+| --- | --- |
+| 分解失败不阻断采集链 | **不能** —— `&&` 遇非零退出就短路，后面的烘焙与构建全不跑 |
+| 失败按步骤分级（采集/烘焙/构建致命，分解只警告） | **不能** —— 只有一个退出码，区分不出是哪一步、该多严重 |
+| 分解失败时回滚派生文件 | **不能** —— `&&` 没有「失败后做清理」的语义 |
+
+#### 失败分级
+
+| 步骤 | 失败后果 | 处置 |
+| --- | --- | --- |
+| 1 采集 | 没有新快照，后面全无意义 | **致命**，退出码 1，旧快照与旧图保留 |
+| 2 分解 | 新作业走灯箱空态（既有机制，29 条待补） | **警告，不阻断**，继续往下跑 |
+| 3 烘焙 | 产物会与源数据不一致 | **致命**，中止，不更新 `dist/` |
+| 4 构建 | `dist/` 不完整 | **致命** |
+
+分解失败时若命中 `MJ_DECOMPOSE_(BASE_URL|API_KEY|MODEL)`，额外提示「复制 `.env.example` 为 `.env`」。
+
+#### 安全网：为什么解除禁令前先加备份/回滚
+
+Round 9/10 对 `decompose:explore` 下禁令的理由是「会抹掉 `config/explore-decomposed.yaml` 里的未提交精修」。该理由**经复算已不成立**：
+
+- `writeOutput` 是标准**原子写**（写 tmp → 删旧 → rename），失败不留半成品、零损坏；
+- 保留逻辑按 `schemaVersion` + `methodologyVersion` 过滤，实测 **942/942 条一条不丢**（3 手工 + 50 LLM + 889 规则全在）。
+
+但「实测没出事」不等于「敢放进每日默认链」。故本轮加两道护栏：
+
+- 分解前自动备份到 `node_modules/.cache/mj-update-backup/`（被 `.gitignore` 忽略，不污染仓库）；
+- 分解失败**自动回滚**到备份。
+
+实测：分解失败后主文件 sha16 `e7b10a24cd3e6130`、942 条、**与备份逐字节一致**。
+
+#### 改动
+
+| 位置 | 改动 |
+| --- | --- |
+| `scripts/update-explore.mjs`（新增） | 四步编排 + 失败分级 + 备份/回滚 + `--skip-decompose` / `--collect-only` 两个开关 |
+| `package.json` | `update:explore` 指向编排脚本；新增 `update:explore:no-decompose`、`update:explore:collect-only` |
+| `更新探索榜.bat` | 重写为薄包装，只调 `npm run update:explore` |
+
+#### 验证
+
+| 项 | 结果 |
+| --- | --- |
+| 完整四步（`npm run update:explore`） | 采集 971 条 / 分解因缺 `.env` 失败 → **自动回滚** → **不阻断** → 烘焙 971/942/200 → 构建 720 文件 → **退出码 0** |
+| `--skip-decompose` | 跳过分解，照常烘焙构建，退出码 0 |
+| `--collect-only` | 只采集；`data-explore.js` / `data-stylestop.js` sha16 **前后完全一致**（`ee92f425870ed9bb` / `92bf0f052cdf481a`） |
+| 回滚完整性 | 派生文件 sha16 `e7b10a24cd3e6130`、942 条、顶层 `model` 完整、**与备份逐字节一致** |
+| `npm run verify` / `--dist` | **45/45** / **45/45**（采集后 sref 81→82、比例 35→36，动态断言自动跟随，无需改数字） |
+| `npm test` | 10 文件全跑、**135 用例**；1 个 `EPERM` unhandled error 经 HEAD 对照跑出**同一形态**（`1 failed | 117 passed` + 同 1 error）→ 判定为 WorkBuddy fs shim 的沙箱环境问题，**非本轮引入** |
+
+#### 顺带根除的第三个缺陷
+
+`package.json` 的 `update:explore` 一度被写成 `node scripts/update-explore.mnode`（扩展名手误）。**它不会立刻报错** —— `npm run` 会因模块不存在而失败，但只有真正跑那条命令时才暴露；而实测若直接 `node scripts/update-explore.mjs` 则**完全绕过**了这条错误路径。教训：**入口收敛的产物必须从真实入口（`npm run`）验，不能只验被调用的那个文件**。已修为 `.mjs`，并以 `npm run update:explore` 实跑确认。
+
 ### 未闭合（登记，不阻断）
 
 1. `CONTEXT.md:91 / :105 / :124` 三处措辞（`mj-session-v1`、恒为两栏、第 9 个页签）仍与实现不符，Q14 冻结未解除。
-2. 15 条 11-08 作业无七段拆解，灯箱走空态。补齐需跑 `decompose:explore`，会抹掉 `config/explore-decomposed.yaml` 的未提交精修 → **`update:explore` / `decompose:explore` / `merge-fine-parts.mjs` 禁令继续生效**。
+2. ~~15 条 11-08 作业无七段拆解，灯箱走空态。补齐需跑 `decompose:explore`，会抹掉 `config/explore-decomposed.yaml` 的未提交精修 → **`update:explore` / `decompose:explore` / `merge-fine-parts.mjs` 禁令继续生效**。~~ **Round 11 已解除**：禁令理由经复算不成立（原子写 + 版本过滤 942/942 一条不丢），更新链收敛为唯一入口并自带备份/回滚。待补条数随采集推进到 **29 条**（971 - 942），仍需配好 LLM 代理（`.env`）才能补齐。
 3. `mid/` 640px 大图档未接入灯箱（Q9 挂账）。
 4. `dist/` 单独拷走会丢图：探索榜 3828 张 + 风格榜 1600 张都在项目根 `public/`（`.gitignore` 排除）。Q2 A 已接受，README 已写明。
 5. `webui/assets/styles-top/` 抽样图仍是 6 个旧码：public 默认模式下不影响；手动跑 sample 现在会被上述守门**中止且不留半成品**，不再静默产出 0/200。抽样图 basename 不匹配本身仍未修，恢复 sample 能力需重做抽样图（未排期）。
@@ -409,4 +491,4 @@
 
 ### 回退
 
-`package.json:10` 去掉 `--images=public`、`scripts/build-webui-data.mjs` 注释改回、`scripts/verify-webui.mjs` 的动态断言改回字面量，再跑 `npm run build:webui-data && npm run build`；本 ADR 章节与 README 修订一并回退。ADR-0017 是**未跟踪文件**，禁止用 `git checkout --` 回退。
+Round 11 的回退：`package.json` 的 `update:explore` 改回 `npm run collect:explore && npm run decompose:explore && npm run build:webui-data && npm run build`（或原三步版），删除 `scripts/update-explore.mjs`、`更新探索榜.bat` 恢复原三步展开。本 ADR 章节与 README 修订一并回退。ADR-0017 是**未跟踪文件**，禁止用 `git checkout --` 回退。
