@@ -11,7 +11,7 @@
     "legacy:dev": "vite",
     "legacy:build": "vue-tsc && vite build",
     "legacy:preview": "vite preview",
-    "test": "vitest run",
+    "test": "node scripts/test-guard.mjs",
     "test:watch": "vitest",
     "export:vocab": "node tools/export-vocab.ts",
     "build:styles": "node tools/build-styles.ts",
