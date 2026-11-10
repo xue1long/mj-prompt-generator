@@ -1,0 +1,20 @@
+{
+  "tool": "Lighthouse (snapshot 模式，Chrome 156.0.8078.80 headless)",
+  "runAt": "2026-11-08",
+  "note": "本地 file:// 原型。robots.txt / llms.txt 两项属公开网站部署产物，本地工具无公开地址，未添加。",
+  "results": [
+    { "screen": "index.html 工作台 · 艺术家页签", "theme": "dark", "viewport": "desktop", "accessibility": 100, "bestPractices": 100, "failed": ["robots-txt", "llms-txt"] },
+    { "screen": "index.html 工作台 · 探索榜页签", "theme": "dark", "viewport": "desktop", "accessibility": 100, "bestPractices": 100, "failed": ["robots-txt", "llms-txt"] },
+    { "screen": "index.html 工作台", "theme": "light", "viewport": "mobile", "accessibility": 100, "bestPractices": 100, "failed": ["robots-txt", "llms-txt"] },
+    { "screen": "gallery.html 画廊", "theme": "dark", "viewport": "desktop", "accessibility": 100, "bestPractices": 100, "failed": ["robots-txt", "llms-txt"] },
+    { "screen": "style-library.html 风格库", "theme": "dark", "viewport": "desktop", "accessibility": 100, "bestPractices": 100, "failed": ["robots-txt", "llms-txt"] }
+  ],
+  "fixedByAudit": [
+    { "issue": "aria-valid-attr-value", "where": "工作台分面按钮", "detail": "aria-controls 指向未渲染的 #facet-panel，改为仅在面板展开时输出该属性" },
+    { "issue": "color-contrast", "where": "选中页签上的计数", "detail": "琥珀底色上 muted 文本仅 3.79:1，选中态计数改用 --fg-2" },
+    { "issue": "label-content-name-mismatch", "where": "探索榜作业卡", "detail": "aria-label 未包含卡面可见文字，去掉 aria-label 让可见文字作无障碍名" },
+    { "issue": "label-content-name-mismatch", "where": "风格码卡", "detail": "同上，aria-label 改为 title 提示" },
+    { "issue": "devtools-form-field-id", "where": "24 个参数控件", "detail": "补齐 id 与 name 属性" },
+    { "issue": "meta-description", "where": "四屏", "detail": "补齐页面描述" }
+  ]
+}
