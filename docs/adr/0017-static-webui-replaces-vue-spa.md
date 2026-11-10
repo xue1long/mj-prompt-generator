@@ -2,6 +2,8 @@
 
 > **状态：替换已完成并验证（Round 1–4 全部裁决完毕）**。正式入口、`npm` 脚本、`dist/` 构建链、探索榜 942 条 / 官方风格榜 200 组全量数据均已接通。Round 4 用户按推荐裁定：`webui/assets/` 维持入库、不启用 `--images=public`、不动 `CONTEXT.md`、不动 CSS —— 均为「维持现状」，无新增代码改动。**唯一未闭合项**：`CONTEXT.md` 三处措辞修订（前置条件是用户先处理仓库里 34 项未提交改动）；窄屏遮挡与 4 张过期截图留待单独视觉轮次。本 ADR 不代批 `CONTEXT.md`。
 >
+> **编年提示（数据入库，2026-11-10）**：三份真实采集数据已入库 —— `config/explore.yaml` 942 → **971 条**（新增 11-08 / 11-10 两批，老作业零改动）、`config/explore-decomposed.yaml` **25 条从规则兜底升级为 LLM 精拆**（其余 917 条逐字节一致）、`config/styles-top.yaml` **200 码全量换新**（旧码是坏数据：采集器两个缺陷导致 —— headless Chrome 未设 UA 被 Cloudflare 挡 + 构建 YAML 未接收本次采集的码清单；两个缺陷已修，见 commit `f66a8d3`）。顺带关闭一条长期未确认项：**styles-top 200 码与 `styles.yaml` 4,638 码交集 0/200，不是子集**，两者是独立语料。
+>
 > **编年提示（Round 8，2026-11-10）**：上文 Q13 / Round 5 关于「不启用 public 引用、保持 942 条、禁跑 `build:webui-data`」的裁决已被用户新裁决推翻；文中 942 条、Round 4「不启用 `--images=public`」等均为历史记录。**现行口径以本 ADR 末尾「Round 8」为准**。`CONTEXT.md` 仍按 Q14 冻结，本 ADR 不代批。
 
 ## 背景
@@ -691,9 +693,9 @@ FNV 哈希，而实测有 **34 条提示词重复（涉及 74 条作业）** →
 1. `CONTEXT.md:91 / :105 / :124` 三处措辞（`mj-session-v1`、恒为两栏、第 9 个页签）仍与实现不符，Q14 冻结未解除。
 2. ~~15 条 11-08 作业无七段拆解，灯箱走空态。补齐需跑 `decompose:explore`，会抹掉 `config/explore-decomposed.yaml` 的未提交精修 → **`update:explore` / `decompose:explore` / `merge-fine-parts.mjs` 禁令继续生效**。~~ **Round 11 已解除**：禁令理由经复算不成立（原子写 + 版本过滤 942/942 一条不丢），更新链收敛为唯一入口并自带备份/回滚。待补条数随采集推进到 **29 条**（971 - 942），仍需配好 LLM 代理（`.env`）才能补齐。
 3. `mid/` 640px 大图档未接入灯箱（Q9 挂账）。
-4. `dist/` 单独拷走会丢图：探索榜 3828 张 + 风格榜 1600 张都在项目根 `public/`（`.gitignore` 排除）。Q2 A 已接受，README 已写明。
+4. `dist/` 单独拷走会丢图：探索榜 **3,884 张** + 风格榜 **1,600 张**都在项目根 `public/`（`.gitignore` 排除）。Q2 A 已接受，README 已写明。
 5. `webui/assets/styles-top/` 抽样图仍是 6 个旧码：public 默认模式下不影响；手动跑 sample 现在会被上述守门**中止且不留半成品**，不再静默产出 0/200。抽样图 basename 不匹配本身仍未修，恢复 sample 能力需重做抽样图（未排期）。
-6. 窄屏页签遮挡（Q15）、`docs/screenshots/` 4 张 Vue 时代过期截图、38 M/D + 27 ?? 未提交改动 —— 维持原状（唯一新增 `??` 是 `tools/audit-decomposition.mjs`；备份在 `node_modules/.cache/` 内，被忽略）。
+6. 窄屏页签遮挡（Q15）、`docs/screenshots/` 4 张 Vue 时代过期截图、剩余未提交改动 —— 维持原状。**2026-11-10 更新**：三份真实采集数据（`config/explore.yaml` 971 条 / `config/explore-decomposed.yaml` 942 条 / `config/styles-top.yaml` 200 码）已入库（commits `084ac2d` / `f66a8d3` / `065438b`），备份在 `node_modules/.cache/backup-20261110/`（sha256 校验一致）。`src/` 下 34 个 Vue 时代的改动、`config/decompose-parts/`、`tools/build-fine-queue.mjs` 等仍未提交 —— 属退役前端与第 13 步的范围。
 
 ### 回退
 
