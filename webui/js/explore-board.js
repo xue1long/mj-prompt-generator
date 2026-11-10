@@ -1,13 +1,18 @@
 /* ==========================================================================
-   探索榜面板（可复用组件）
-   现在挂在工作台的提示词库里，作为第 6 个页签「探索榜」（原项目 ADR-0013：
-   探索榜是提示词库的一个页签，不是独立页面；会话 Dock 常驻、只换右栏）。
-   组件对外只暴露 head / toolbar / body 三段，工作台与独立页各自拼装。
+   研究样本库面板（报告 4.2：原「探索榜」）
+   现在是**一级视图** —— 与「提示词库」并列而非从属。理由：词库是可拼装的片段
+   （假设集），社区作业是不可拼装的成品（证据集）；两者在同一个容器下并列，
+   页签标题同级会暗示它们同类（Q3 已裁定社区数据是证据集、词库是假设集）。
+
+   旧裁决：2026-11-07 用户要求「探索榜放入提示词库里面」（ADR-0013 修订）。
+   本轮按报告 4.2 推翻该落点 —— 见 docs/adr/0020-research-sample-library-is-top-level.md。
+
+   筛选统一走 webui/js/filter-engine.js（报告 3.4）：状态以 URL hash 为唯一来源。
    数据源：config/explore.yaml + config/explore-decomposed.yaml
    ========================================================================== */
 
 const EXPLORE_BOARD = (() => {
-  const ui = { q: '', batch: '', aspect: '', srefOnly: false, limit: 60 };
+  const ui = { q: '', batch: '', aspect: '', srefOnly: false, limit: 60, facetsOpen: false };
 
   /* ── 卡片操作区 ─────────────────────────────────────────────────────
      收藏键只由提示词正文的哈希决定：同一条提示词在任何筛选条件下状态一致。
@@ -48,7 +53,7 @@ const EXPLORE_BOARD = (() => {
     return EXPLORE_JOBS.find((j) => jobKeyOf(j).toLowerCase() === k) || null;
   }
 
-  /** 这条作业的深链：#explore?job=<key>。
+  /** 这条作业的深链：#samples?job=<key>（报告 4.2：一级视图 id 是 samples）。
       用相对 index.html，file:// 与 http:// 下都成立（深链是给人和笔记用的，
       粘到别的机器上也能开）。 */
   function jobDeepLink(job) {
@@ -56,7 +61,7 @@ const EXPLORE_BOARD = (() => {
     const base = location.pathname.endsWith('/')
       ? 'index.html'
       : location.pathname.split('/').pop() || 'index.html';
-    return `${base}#explore?job=${encodeURIComponent(key)}`;
+    return `${base}#samples?job=${encodeURIComponent(key)}`;
   }
 
   function favRead(prompt) {
@@ -134,16 +139,31 @@ const EXPLORE_BOARD = (() => {
       </div>`;
   }
 
+  /* ── 筛选（报告 3.4：统一走 filter-engine.js）─────────────────────
+     引擎的白名单由 workbench.js 的 EXPLORE_FILTER_SOURCE 声明；
+     这里只提供「怎么取值」，匹配与计数都由引擎做 —— 不再各写各的。 */
+  function filterState() {
+    return {
+      q: ui.q || '',
+      dims: {
+        batch: ui.batch || '',
+        aspect: ui.aspect || '',
+        sref: !!ui.srefOnly,
+      },
+    };
+  }
+
   function matches() {
-    const q = ui.q.trim().toLowerCase();
-    return EXPLORE_JOBS.filter(j => {
-      if (ui.batch && j.batch !== ui.batch) return false;
-      if (ui.aspect && j.aspect !== ui.aspect) return false;
-      if (ui.srefOnly && !j.sref) return false;
-      if (q && !j.title.toLowerCase().includes(q) && !String(j.author).toLowerCase().includes(q)
-        && !j.prompt.toLowerCase().includes(q)) return false;
-      return true;
-    });
+    const src = typeof EXPLORE_FILTER_SOURCE !== 'undefined' ? EXPLORE_FILTER_SOURCE : null;
+    if (!src) return EXPLORE_JOBS.slice();
+    return FILTER_ENGINE.filter(src, EXPLORE_JOBS, filterState());
+  }
+
+  /** 某个维度的分面计数（批次 / 比例）。 */
+  function facetCount(dimKey, value) {
+    const src = typeof EXPLORE_FILTER_SOURCE !== 'undefined' ? EXPLORE_FILTER_SOURCE : null;
+    if (!src) return 0;
+    return FILTER_ENGINE.counts(src, EXPLORE_JOBS, filterState(), dimKey).get(value) || 0;
   }
 
   const totalJobs = () => EXPLORE_BATCHES.reduce((s, b) => s + b.jobs, 0);
@@ -180,8 +200,8 @@ const EXPLORE_BOARD = (() => {
   function headHtml() {
     return `
       <div class="library-head" data-od-id="explore-head">
-        <h1>探索榜</h1>
-        <p class="lead">社区已做好的成品：一条原始提示词配四格成图。点开看它是怎么搭的——七段结构、命中构图法、参数尾与合规体检。</p>
+        <h1>研究样本库</h1>
+        <p class="lead">社区已做好的成品：一条原始提示词配四格成图。这是**证据集**——用来检验你的假设，不是用来拼装的片段。点开看它是怎么搭的：七段结构、命中构图法、参数尾与合规体检。</p>
         <div class="head-meta">${chipsHtml()}</div>
       </div>`;
   }
@@ -196,11 +216,11 @@ const EXPLORE_BOARD = (() => {
         </div>
         <select class="select" id="ex-batch" aria-label="按批次筛选" style="width:auto">
           <option value="">全部批次</option>
-          ${availableBatches().map(b => `<option value="${esc(b.key)}"${ui.batch === b.key ? ' selected' : ''}>${esc(b.name)} · ${b.sample}</option>`).join('')}
+          ${availableBatches().map(b => `<option value="${esc(b.key)}"${ui.batch === b.key ? ' selected' : ''}>${esc(b.name)} · ${facetCount('batch', b.key)}</option>`).join('')}
         </select>
         <select class="select" id="ex-aspect" aria-label="按宽高比筛选" style="width:auto">
           <option value="">全部比例</option>
-          ${availableAspects().map(a => `<option value="${esc(a.key)}"${ui.aspect === a.key ? ' selected' : ''}>${esc(a.name)} · ${a.sample}</option>`).join('')}
+          ${availableAspects().map(a => `<option value="${esc(a.key)}"${ui.aspect === a.key ? ' selected' : ''}>${esc(a.name)} · ${facetCount('aspect', a.key)}</option>`).join('')}
         </select>
         ${srefCount()
           ? `<button class="toggle${ui.srefOnly ? ' on' : ''}" type="button" id="ex-sref" aria-pressed="${ui.srefOnly}">只看有 sref <span class="n">${srefCount()}</span></button>`
@@ -279,10 +299,16 @@ const EXPLORE_BOARD = (() => {
 
   /** 把 toolbar + grid 换到 host 里并接线 */
   function wire(host) {
+    // 筛选变化 → 回写 URL（报告 3.4 / ADR-0010：hash 是筛选状态的唯一来源）
+    const pushUrl = () => {
+      if (typeof writeFilterToUrl === 'function') writeFilterToUrl();
+    };
+
     const search = host.querySelector('#ex-search');
     if (search) search.addEventListener('input', () => {
       ui.q = search.value;
       ui.limit = 60;
+      pushUrl();
       refresh(host);
     });
 
@@ -290,6 +316,7 @@ const EXPLORE_BOARD = (() => {
     if (batch) batch.addEventListener('change', () => {
       ui.batch = batch.value;
       ui.limit = 60;
+      pushUrl();
       refresh(host);
     });
 
@@ -297,12 +324,14 @@ const EXPLORE_BOARD = (() => {
     if (aspect) aspect.addEventListener('change', () => {
       ui.aspect = aspect.value;
       ui.limit = 60;
+      pushUrl();
       refresh(host);
     });
 
     const sref = host.querySelector('#ex-sref');
     if (sref) sref.addEventListener('click', () => {
       ui.srefOnly = !ui.srefOnly;
+      pushUrl();
       refresh(host);
     });
 
@@ -554,9 +583,9 @@ const EXPLORE_BOARD = (() => {
     return params.get('job');
   }
 
-  /** 把 job 参数写进 URL（保持页签是 explore）。不写 query 的其余部分。 */
+  /** 把 job 参数写进 URL（保持一级视图是 samples）。不写 query 的其余部分。 */
   function writeJobToHash(key) {
-    const base = `#explore${key ? `?job=${encodeURIComponent(key)}` : ''}`;
+    const base = `#samples${key ? `?job=${encodeURIComponent(key)}` : ''}`;
     if (location.hash !== base) {
       // 用 replaceState 而不是改 location.hash：改 hash 会触发 hashchange → 重渲染 →
       // 灯箱被重建关闭。replaceState 只改地址栏，不触发重渲染。

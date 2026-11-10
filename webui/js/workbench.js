@@ -1,7 +1,13 @@
 /* ==========================================================================
-   工作台：左会话 Dock + 右提示词库
-   库内五个分区：四个摄影词库分类 + 艺术家/摄影师。
+   工作台：左会话 Dock + 右主区
+   主区按**一级视图**切换（报告 4.2）：
+     · 提示词库    —— 五个分区：四个摄影词库分类 + 艺术家/摄影师（假设集）
+     · 研究样本库  —— 社区作业（证据集），原「探索榜」
+     · 研究笔记    —— 观察记录与结论（报告 2.3）
    艺术家为全量词库（4,322 条）；预览图按需取，没有图的落回排版版位。
+
+   筛选统一走 webui/js/filter-engine.js（报告 3.4）：一个引擎 + 一套 URL 契约。
+   筛选状态以 URL hash 为唯一来源（ADR-0010），刷新 / 后退 / 分享都能复现。
    ========================================================================== */
 
 const ARTIST_TOTAL = ARTISTS.length;
@@ -11,18 +17,30 @@ const ARTISTS_SORTED = [...ARTISTS].sort((a, b) => (a.preview ? 0 : 1) - (b.prev
 const VOCAB_TOTAL = VOCAB_CATEGORIES.reduce(
   (s, c) => s + c.groups.reduce((t, g) => t + g.items.length, 0), 0);
 
-const TABS = [
+/* ── 一级视图（报告 4.2）──────────────────────────────────────────────
+   「提示词库」与「研究样本库」是**异质的证据集 vs 假设集**，不该同层并列在
+   一个容器下（页签标题同级会暗示它们同类）。研究样本库因此升为一级视图。
+
+   旧裁决：2026-11-07 用户要求「探索榜放入提示词库里面」（ADR-0013 修订），
+   当时的落点是「提示词库的第 9 个页签」。本轮按报告 4.2 推翻该落点 ——
+   见 docs/adr/0020-research-sample-library-is-top-level.md。 */
+const VIEWS = [
+  { id: 'library', label: '提示词库', hint: '可拼装的片段 —— 你的假设集' },
+  { id: 'samples', label: '研究样本库', hint: '社区已做好的成品 —— 证据集' },
+  { id: 'research', label: '研究笔记', hint: '观察记录与结论' },
+];
+
+/* 提示词库视图下的二级页签：四个摄影词库分类 + 艺术家 */
+const LIBRARY_TABS = [
   ...VOCAB_CATEGORIES.map(c => ({ id: c.id, label: c.name, kind: 'vocab' })),
   { id: 'artists', label: '艺术家 / 摄影师', kind: 'artists' },
-  // 探索榜是提示词库的一个页签，不是独立页面（沿用原项目 ADR-0013）
-  { id: 'explore', label: '探索榜', kind: 'explore' },
-  // 研究笔记（报告 2.3）：观察记录与结论 —— 研究闭环的「记录」一段。
-  // 计数是异步的（数据在本机 IndexedDB），空时显示 0。
-  { id: 'research', label: '研究笔记', kind: 'research' },
 ];
 const EXPLORE_TOTAL = EXPLORE_BATCHES.reduce((s, b) => s + b.jobs, 0);
 
 const ui = {
+  /** 当前一级视图（报告 4.2）：library / samples / research */
+  view: 'library',
+  /** 提示词库视图下的二级页签 */
   tab: 'artists',
   q: '',
   tested: false,
@@ -31,8 +49,12 @@ const ui = {
   artistCat: 'all',
   facetsOpen: false,
   limit: 48,
-  /** URL 里带来的作业引用键（#explore?job=<key>）；渲染后用它直达灯箱（报告 2.1） */
+  /** URL 里带来的作业引用键（#samples?job=<key>）；渲染后用它直达灯箱（报告 2.1） */
   hashJob: null,
+  /** 上一次渲染的筛选签名：变了才重绘（避免 URL 回写引起的空转） */
+  lastFilterSig: '',
+  /** 上一次提示过的「不支持参数」签名 —— 保证只提示一次 */
+  lastIgnoredSig: '',
 };
 
 /* ── 筛选 ───────────────────────────────────────────────────────────── */
@@ -57,23 +79,190 @@ const colourCount = (slug) => ARTISTS.reduce((n, a) => n + (a.colours.includes(s
 const catName = (id) => ARTIST_CATEGORIES.find(c => c.id === id)?.name || id;
 const tabCount = (t) => {
   if (t.kind === 'artists') return ARTIST_TOTAL;
-  if (t.kind === 'explore') return EXPLORE_TOTAL;
-  if (t.kind === 'research') {
-    // 研究笔记的计数来自本机 IndexedDB（异步加载）；未加载时先显示 0
-    return typeof RESEARCH_VIEW !== 'undefined' ? (RESEARCH_VIEW.ui.notes.length + RESEARCH_VIEW.ui.conclusions.length) : 0;
-  }
   return VOCAB_CATEGORIES.find(c => c.id === t.id).groups.reduce((s, g) => s + g.items.length, 0);
 };
 
-/* 深链：#artists / #shutter-speed 直接落到某个分区；无 hash 时默认落在艺术家（与原产品一致）
-   带参数：#explore?job=<key> —— 页签 id 与 query 参数分开解析（报告 2.1）。
-   此前只把整个 hash 当页签 id 匹配，'explore?job=xxx' 匹配不上任何页签会被丢弃。 */
+/* 一级视图的计数 */
+const viewCount = (v) => {
+  if (v.id === 'samples') return EXPLORE_TOTAL;
+  if (v.id === 'research') {
+    // 研究笔记的计数来自本机 IndexedDB（异步加载）；未加载时先显示 0
+    return typeof RESEARCH_VIEW !== 'undefined' ? (RESEARCH_VIEW.ui.notes.length + RESEARCH_VIEW.ui.conclusions.length) : 0;
+  }
+  return VOCAB_TOTAL + ARTIST_TOTAL;
+};
+
+/* 深链（报告 2.1 / 3.4）：
+   形态  #<一级视图>            —— 直接落到某个视图
+         #<一级视图>?<参数>     —— 带筛选参数（ADR-0010：hash 是筛选的唯一来源）
+         #samples?job=<key>    —— 直达某条研究样本的灯箱
+
+   页签 id 与 query 参数分开解析。此前只把整个 hash 当页签 id 匹配，
+   'explore?job=xxx' 匹配不上任何页签会被整段丢弃。
+
+   旧的 #explore 仍可用 —— 重定向到新的 #samples（一级视图）。
+   筛选参数按数据源的白名单解析，不认识的参数丢弃并提示一次。 */
 function readHash() {
   const raw = location.hash.replace(/^#\/?/, '').trim();
   const q = raw.indexOf('?');
   const id = (q === -1 ? raw : raw.slice(0, q)).trim();
-  ui.tab = (id && TABS.some(t => t.id === id)) ? id : 'artists';
-  ui.hashJob = q === -1 ? null : new URLSearchParams(raw.slice(q + 1)).get('job');
+  const query = q === -1 ? '' : raw.slice(q + 1);
+
+  // 一级视图：优先匹配 VIEWS；'explore' 是旧的探索榜 id，重定向到 'samples'
+  let view = VIEWS.find(v => v.id === id);
+  if (!view && id === 'explore') view = VIEWS.find(v => v.id === 'samples');
+  ui.view = view ? view.id : 'library';
+
+  // 二级页签：仅提示词库视图有
+  if (ui.view === 'library') {
+    const legacyExplore = id === 'explore';
+    const wanted = legacyExplore ? 'artists' : id;
+    ui.tab = (wanted && LIBRARY_TABS.some(t => t.id === wanted)) ? wanted : 'artists';
+  }
+
+  // query 参数
+  const params = new URLSearchParams(query);
+  ui.hashJob = params.get('job');
+  ui.rawQuery = query;
+  // 筛选状态由各数据源自己解析（引擎按白名单吃参数）
+  const ignored = applyFilterFromQuery(query);
+
+  // 不认识的参数：丢弃并**提示一次**（ADR-0010）。
+  // 不静默忽略 —— 本地单人工具，静默失败比报错更贵。
+  // 同时把 URL 修正成只含支持的参数（job 深链参数要保留）。
+  if (ignored && ignored.length) {
+    const known = new Set([...(filterSourceOf(ui.view) || { dims: [] }).dims.map(d => d.key)]);
+    known.add('job');
+    const kept = [];
+    for (const [k, v] of params.entries()) {
+      if (known.has(k)) kept.push([k, v]);
+    }
+    const qs = new URLSearchParams(kept).toString();
+    const fixed = `#${ui.view}${qs ? `?${qs}` : ''}`;
+    if (location.hash !== fixed) {
+      try { history.replaceState(null, '', fixed); } catch { /* 忽略 */ }
+    }
+    // 提示**一次**：同一组不支持的参数不重复刷屏。
+    // 闸门按「参数名集合」判定 —— 用户改了筛选后 URL 里不再有这些参数，
+    // 再次带着同样的坏参数进来才算另一次。
+    const sig = ignored.slice().sort().join(',');
+    if (sig !== ui.lastIgnoredSig) {
+      ui.lastIgnoredSig = sig;
+      toast(`已忽略不支持的筛选参数：${ignored.join('、')}`, 'close');
+    }
+  }
+}
+
+/* ── 筛选源声明（报告 3.4）──────────────────────────────────────────
+   每个数据源声明自己有哪些筛选维度，引擎据此决定「哪些参数允许出现在 URL 里」。
+   维度类型：q 自由文本 / enum 单选 / bool 开关 / multi 多选（组内任一）。 */
+
+/* 提示词库侧：艺术家分面词 + 主色 + 只看实测 + 搜索 */
+const LIBRARY_FILTER_SOURCE = FILTER_ENGINE.source('library', [
+  { key: 'q', type: 'q', matchOf: (a, text) => {
+    if (a.name.toLowerCase().includes(text)) return true;
+    return String(a.en || '').toLowerCase().includes(text);
+  } },
+  { key: 'tested', type: 'bool', activeOf: (a) => !!a.tested },
+  { key: 'terms', type: 'multi', valuesOf: (a) => a.terms || [] },
+  { key: 'colours', type: 'multi', valuesOf: (a) => a.colours || [] },
+]);
+
+/* 研究样本库侧：批次 + 比例 + 只看有 sref + 搜索（报告 2.2 的 sref 码筛选留待第 8 步） */
+const EXPLORE_FILTER_SOURCE = FILTER_ENGINE.source('samples', [
+  { key: 'q', type: 'q', matchOf: (j, text) => {
+    if (String(j.title || '').toLowerCase().includes(text)) return true;
+    if (String(j.author || '').toLowerCase().includes(text)) return true;
+    return String(j.prompt || '').toLowerCase().includes(text);
+  } },
+  { key: 'batch', type: 'enum', valueOf: (j) => j.batch },
+  { key: 'aspect', type: 'enum', valueOf: (j) => j.aspect },
+  { key: 'sref', type: 'bool', activeOf: (j) => !!j.sref },
+]);
+
+/* 把 URL 里的筛选参数灌进当前视图的筛选状态 */
+function applyFilterFromQuery(query) {
+  const src = filterSourceOf(ui.view);
+  if (!src) {
+    ui.ignoredParams = [];
+    return ui.ignoredParams;
+  }
+  // 用 parseQuery 而不是 parseHash —— 页签已经被 readHash 拆过了，不重复拆
+  const parsed = FILTER_ENGINE.parseQuery(src, query);
+  const st = parsed.state;
+  ui.q = st.q || '';
+  ui.tested = !!(st.dims && st.dims.tested);
+  ui.terms = new Set(st.dims && st.dims.terms ? st.dims.terms : []);
+  ui.colours = new Set(st.dims && st.dims.colours ? st.dims.colours : []);
+  // 探索榜侧：批次 / 比例 / 只看有 sref
+  if (st.dims && st.dims.batch !== undefined) EXPLORE_BOARD.state.batch = st.dims.batch || '';
+  if (st.dims && st.dims.aspect !== undefined) EXPLORE_BOARD.state.aspect = st.dims.aspect || '';
+  if (st.dims && st.dims.sref !== undefined) EXPLORE_BOARD.state.srefOnly = !!st.dims.sref;
+  if (ui.view === 'samples') EXPLORE_BOARD.state.q = ui.q;
+  ui.ignoredParams = parsed.ignored || [];
+  return ui.ignoredParams;
+}
+
+/* 当前视图的筛选源（引擎的白名单） */
+function filterSourceOf(view) {
+  if (view === 'samples') return EXPLORE_FILTER_SOURCE;
+  if (view === 'library') return LIBRARY_FILTER_SOURCE;
+  return null;
+}
+
+/* ── URL 回写（ADR-0010：hash 是筛选状态的唯一来源）──────────────────
+   筛选一变就把状态写回地址栏。用 history.replaceState 而不是改
+   location.hash —— 改 hash 会触发 hashchange → 重渲染 → 输入焦点丢失、
+   灯箱被重建关闭。replaceState 只改地址栏，不触发重渲染。
+
+   保留 job 参数（深链）：正在看某条样本时改筛选不该把深链抹掉。 */
+function writeFilterToUrl() {
+  const src = filterSourceOf(ui.view);
+  if (!src) return;
+  const st = currentFilterState();
+  let hash = FILTER_ENGINE.buildHash(src, ui.view, st);
+  // 研究样本库侧额外保留 job 深链参数
+  const job = (location.hash.match(/[?&]job=([^&]*)/) || [])[1];
+  if (job) {
+    const sep = hash.includes('?') ? '&' : '?';
+    hash = `${hash}${sep}job=${job}`;
+  }
+  if (location.hash !== hash) {
+    try {
+      history.replaceState(null, '', hash);
+    } catch {
+      location.hash = hash;
+    }
+  }
+}
+
+/* 当前视图的筛选状态（统一成引擎的状态形状） */
+function currentFilterState() {
+  if (ui.view === 'samples') {
+    const s = EXPLORE_BOARD.state;
+    return {
+      q: s.q || '',
+      dims: {
+        batch: s.batch || '',
+        aspect: s.aspect || '',
+        sref: !!s.srefOnly,
+      },
+    };
+  }
+  return {
+    q: ui.q || '',
+    dims: {
+      tested: !!ui.tested,
+      terms: [...ui.terms],
+      colours: [...ui.colours],
+    },
+  };
+}
+
+/* 筛选状态变化后：回写 URL + 重绘（筛选一变 URL 一定变） */
+function applyFilterChange() {
+  writeFilterToUrl();
+  render();
 }
 
 /* ── 片段 ───────────────────────────────────────────────────────────── */
@@ -90,14 +279,33 @@ function headHtml() {
     </div>`;
 }
 
+/* 二级页签：只属于「提示词库」视图。其它两个一级视图没有二级页签，
+   所以这里在它们下面渲染时会返回空串（不占位、不留白边）。 */
 function catnavHtml() {
+  if (ui.view !== 'library') return '';
   return `
     <div class="catnav" role="tablist" aria-label="提示词库分区" data-od-id="library-tabs">
-      ${TABS.map(t => `
+      ${LIBRARY_TABS.map(t => `
         <button class="catnav-btn" role="tab" type="button" id="tab-${esc(t.id)}" data-tab="${esc(t.id)}"
           aria-controls="library-panel" aria-selected="${ui.tab === t.id}"
           tabindex="${ui.tab === t.id ? '0' : '-1'}">
           ${esc(t.label)}<span class="n">${tabCount(t)}</span>
+        </button>`).join('')}
+    </div>`;
+}
+
+/* 一级视图切换条（报告 4.2）：证据集与假设集不同层，不能同级并列在一个容器里。 */
+function viewnavHtml() {
+  return `
+    <div class="catnav" role="tablist" aria-label="一级视图" data-od-id="view-tabs"
+      style="border-bottom:2px solid var(--border-2);padding-bottom:0">
+      ${VIEWS.map(v => `
+        <button class="catnav-btn" role="tab" type="button" id="view-${esc(v.id)}" data-view="${esc(v.id)}"
+          aria-controls="library-panel" aria-selected="${ui.view === v.id}"
+          title="${esc(v.hint || '')}"
+          tabindex="${ui.view === v.id ? '0' : '-1'}"
+          style="${ui.view === v.id ? 'font-size:14px;font-weight:600;padding-block:8px' : 'padding-block:8px'}">
+          ${esc(v.label)}<span class="n">${viewCount(v).toLocaleString('zh-CN')}</span>
         </button>`).join('')}
     </div>`;
 }
@@ -334,20 +542,22 @@ function openArtistSheet(id) {
 function render() {
   const page = document.getElementById('page');
   if (!page) return;
-  const isExplore = ui.tab === 'explore';
-  const isResearch = ui.tab === 'research';
+  const isSamples = ui.view === 'samples';
+  const isResearch = ui.view === 'research';
   page.innerHTML = `
-    ${isExplore ? EXPLORE_BOARD.headHtml() : isResearch ? RESEARCH_VIEW.headHtml() : headHtml()}
+    ${isSamples ? EXPLORE_BOARD.headHtml() : isResearch ? RESEARCH_VIEW.headHtml() : headHtml()}
+    ${viewnavHtml()}
     ${catnavHtml()}
-    ${isExplore ? EXPLORE_BOARD.toolbarHtml() : isResearch ? RESEARCH_VIEW.toolbarHtml() : toolbarHtml()}
-    <div class="library-body" id="library-panel" role="tabpanel" aria-labelledby="tab-${esc(ui.tab)}" tabindex="0">
-      ${isExplore ? EXPLORE_BOARD.bodyHtml() : isResearch ? RESEARCH_VIEW.bodyHtml() : bodyHtml()}
+    ${isSamples ? EXPLORE_BOARD.toolbarHtml() : isResearch ? RESEARCH_VIEW.toolbarHtml() : toolbarHtml()}
+    <div class="library-body" id="library-panel" role="tabpanel"
+      aria-labelledby="${isSamples ? 'view-samples' : isResearch ? 'view-research' : `tab-${esc(ui.tab)}`}" tabindex="0">
+      ${isSamples ? EXPLORE_BOARD.bodyHtml() : isResearch ? RESEARCH_VIEW.bodyHtml() : bodyHtml()}
     </div>`;
   wire();
-  if (isExplore) {
+  if (isSamples) {
     EXPLORE_BOARD.wire(page);
     markImageStates(page);
-    // 深链直达：#explore?job=<key> → 打开那条作业的灯箱（报告 2.1）
+    // 深链直达：#samples?job=<key> → 打开那条作业的灯箱（报告 2.1）
     // 只在确实有 key 时触发；openJobByKey 内部用 replaceState 回写地址栏，
     // 不会触发 hashchange → 不会重渲染 → 不递归。
     if (ui.hashJob) {
@@ -359,7 +569,7 @@ function render() {
     // 研究笔记的数据在本机 IndexedDB，是异步的 —— 先渲染骨架，再拉数据后重绘。
     RESEARCH_VIEW.wire(page);
     RESEARCH_VIEW.load().then(() => {
-      if (ui.tab !== 'research') return;
+      if (ui.view !== 'research') return;
       render();
     });
   } else {
@@ -371,9 +581,10 @@ function render() {
 function updateCount() {
   const el = document.getElementById('result-count');
   if (!el) return;
+  if (ui.view !== 'library') return;
   if (ui.tab === 'artists') {
     el.textContent = `${filteredArtists().length.toLocaleString('zh-CN')} 条匹配`;
-  } else if (ui.tab !== 'explore' && ui.tab !== 'research') {
+  } else {
     const cat = VOCAB_CATEGORIES.find(c => c.id === ui.tab);
     const total = cat ? cat.groups.reduce((s, g) => s + g.items.length, 0) : 0;
     el.textContent = ui.q ? `${total} 条中匹配` : `${total} 条`;
@@ -423,6 +634,35 @@ function hidePop() {
 function wire() {
   const page = document.getElementById('page');
 
+  // 一级视图切换（报告 4.2）
+  page.querySelectorAll('[data-view]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const next = btn.dataset.view;
+      if (next === ui.view) return;
+      ui.view = next;
+      ui.q = '';
+      ui.limit = 48;
+      if (next !== 'library') { ui.terms = new Set(); ui.colours = new Set(); }
+      location.hash = `#${next}`;
+      render();
+    });
+    btn.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'Home' && e.key !== 'End') return;
+      e.preventDefault();
+      const i = VIEWS.findIndex(v => v.id === btn.dataset.view);
+      let n = i;
+      if (e.key === 'ArrowRight') n = (i + 1) % VIEWS.length;
+      else if (e.key === 'ArrowLeft') n = (i - 1 + VIEWS.length) % VIEWS.length;
+      else if (e.key === 'Home') n = 0;
+      else n = VIEWS.length - 1;
+      ui.view = VIEWS[n].id;
+      location.hash = `#${ui.view}`;
+      render();
+      const el = document.getElementById(`view-${VIEWS[n].id}`);
+      if (el) el.focus();
+    });
+  });
+
   page.querySelectorAll('[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => {
       ui.tab = btn.dataset.tab;
@@ -435,16 +675,16 @@ function wire() {
     btn.addEventListener('keydown', (e) => {
       if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'Home' && e.key !== 'End') return;
       e.preventDefault();
-      const i = TABS.findIndex(t => t.id === btn.dataset.tab);
+      const i = LIBRARY_TABS.findIndex(t => t.id === btn.dataset.tab);
       let next = i;
-      if (e.key === 'ArrowRight') next = (i + 1) % TABS.length;
-      else if (e.key === 'ArrowLeft') next = (i - 1 + TABS.length) % TABS.length;
+      if (e.key === 'ArrowRight') next = (i + 1) % LIBRARY_TABS.length;
+      else if (e.key === 'ArrowLeft') next = (i - 1 + LIBRARY_TABS.length) % LIBRARY_TABS.length;
       else if (e.key === 'Home') next = 0;
-      else next = TABS.length - 1;
-      ui.tab = TABS[next].id;
+      else next = LIBRARY_TABS.length - 1;
+      ui.tab = LIBRARY_TABS[next].id;
       location.hash = `#${ui.tab}`;
       render();
-      const el = document.getElementById(`tab-${TABS[next].id}`);
+      const el = document.getElementById(`tab-${LIBRARY_TABS[next].id}`);
       if (el) el.focus();
     });
   });
@@ -454,6 +694,7 @@ function wire() {
     search.addEventListener('input', () => {
       ui.q = search.value;
       ui.limit = 48;
+      writeFilterToUrl();
       const body = document.getElementById('library-panel');
       if (!body) return;
       body.innerHTML = bodyHtml();
@@ -466,7 +707,7 @@ function wire() {
   page.querySelectorAll('[data-toggle]').forEach(btn => {
     btn.addEventListener('click', () => {
       const kind = btn.dataset.toggle;
-      if (kind === 'tested') ui.tested = !ui.tested;
+      if (kind === 'tested') { ui.tested = !ui.tested; writeFilterToUrl(); }
       else ui.facetsOpen = !ui.facetsOpen;
       render();
     });
@@ -508,6 +749,7 @@ function wireBody() {
     el.addEventListener('click', () => {
       const s = el.dataset.term;
       if (ui.terms.has(s)) ui.terms.delete(s); else ui.terms.add(s);
+      writeFilterToUrl();
       render();
     });
   });
@@ -515,6 +757,7 @@ function wireBody() {
     el.addEventListener('click', () => {
       const s = el.dataset.colour;
       if (ui.colours.has(s)) ui.colours.delete(s); else ui.colours.add(s);
+      writeFilterToUrl();
       render();
     });
   });
@@ -535,9 +778,9 @@ window.addEventListener('hashchange', () => { readHash(); render(); });
 // 研究数据变化（灯箱里写了观察 / 研究视图里改了记录）→ 页签计数与列表同步刷新。
 // 只在研究页签或探索榜页签时重绘，避免在别的页签上做无谓的整页渲染。
 document.addEventListener('researchchange', () => {
-  if (ui.tab === 'research') render();
+  if (ui.view === 'research') render();
   else {
-    const el = document.querySelector('#tab-research .n');
+    const el = document.querySelector('#view-research .n');
     if (el && typeof RESEARCH_VIEW !== 'undefined') {
       el.textContent = String(RESEARCH_VIEW.ui.notes.length + RESEARCH_VIEW.ui.conclusions.length);
     }

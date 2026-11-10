@@ -1,23 +1,64 @@
 /* ==========================================================================
    画廊：把带预览图的词条集中陈列，可直接取用
+   筛选统一走 webui/js/filter-engine.js（报告 3.4）：状态以 URL hash 为唯一来源。
    ========================================================================== */
 
 const galleryUi = { q: '', cat: 'all', limit: 24 };
 
-function galleryEntries() {
-  const q = galleryUi.q.trim().toLowerCase();
+/* ── 筛选源（报告 3.4）────────────────────────────────────────────────
+   画廊侧：分类（单选）+ 词条搜索。 */
+const GALLERY_FILTER_SOURCE = FILTER_ENGINE.source('gallery', [
+  { key: 'q', type: 'q', matchOf: (it, text) => {
+    if (String(it.zh || '').toLowerCase().includes(text)) return true;
+    return String(it.en || '').toLowerCase().includes(text);
+  } },
+  { key: 'cat', type: 'enum', valueOf: (it) => it.catId || '' },
+]);
+
+/* 词库是三层结构（分类 → 分组 → 词条），引擎要的是扁平列表。
+   先展平一次并缓存 —— 展平结果不随筛选变化，筛选交给引擎。 */
+let galleryFlatCache = null;
+function galleryFlat() {
+  if (galleryFlatCache) return galleryFlatCache;
   const out = [];
   for (const cat of VOCAB_CATEGORIES) {
-    if (galleryUi.cat !== 'all' && cat.id !== galleryUi.cat) continue;
     for (const g of cat.groups) {
       for (const it of g.items) {
         if (!it.preview) continue;
-        if (q && !it.zh.toLowerCase().includes(q) && !it.en.toLowerCase().includes(q)) continue;
-        out.push({ ...it, cat, group: g.name, position: cat.position });
+        out.push({ ...it, cat, catId: cat.id, group: g.name, position: cat.position });
       }
     }
   }
+  galleryFlatCache = out;
   return out;
+}
+
+function galleryFilterState() {
+  return {
+    q: galleryUi.q || '',
+    dims: { cat: galleryUi.cat === 'all' ? '' : (galleryUi.cat || '') },
+  };
+}
+
+function galleryEntries() {
+  return FILTER_ENGINE.filter(GALLERY_FILTER_SOURCE, galleryFlat(), galleryFilterState());
+}
+
+/* 筛选状态 → URL（ADR-0010） */
+function writeGalleryFilterToUrl() {
+  const hash = FILTER_ENGINE.buildHash(GALLERY_FILTER_SOURCE, 'gallery', galleryFilterState());
+  if (location.hash !== hash) {
+    try { history.replaceState(null, '', hash); } catch { location.hash = hash; }
+  }
+}
+
+/* URL → 筛选状态 */
+function readGalleryFilterFromUrl() {
+  const parsed = FILTER_ENGINE.parseHash(GALLERY_FILTER_SOURCE, location.hash);
+  const st = parsed.state;
+  galleryUi.q = st.q || '';
+  galleryUi.cat = (st.dims && st.dims.cat) || 'all';
+  return parsed.ignored || [];
 }
 
 function galleryHeadHtml() {
@@ -114,6 +155,7 @@ function wireGallery() {
     search.addEventListener('input', () => {
       galleryUi.q = search.value;
       galleryUi.limit = 24;
+      writeGalleryFilterToUrl();
       const body = page.querySelector('#library-panel');
       if (!body) return;
       body.innerHTML = galleryBodyHtml();
@@ -127,6 +169,7 @@ function wireGallery() {
     btn.addEventListener('click', () => {
       galleryUi.cat = btn.dataset.galCat;
       galleryUi.limit = 24;
+      writeGalleryFilterToUrl();
       renderGallery();
     });
   });
@@ -170,5 +213,10 @@ function wireGalleryBody() {
   });
 }
 
+readGalleryFilterFromUrl();
 boot('gallery.html');
 renderGallery();
+window.addEventListener('hashchange', () => {
+  readGalleryFilterFromUrl();
+  renderGallery();
+});

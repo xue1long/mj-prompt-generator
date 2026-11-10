@@ -87,13 +87,29 @@ async function main() {
       check(`${name} 渲染`, info.appbar > 0 && info.dock > 0 && info.pageEl > 0, JSON.stringify(info));
 
       if (name === 'index.html') {
-        const tabs = await page.evaluate(() => document.querySelectorAll('[role="tab"]').length);
-        // 页签数不写死：断言「DOM 里的页签数 == TABS 声明的页签数」。
-        // 写死数字会把「加一个页签」变成「改一处断言」——那正是原写法的毛病。
-        const declaredTabs = await page.evaluate(() => (typeof TABS !== 'undefined' ? TABS.length : -1));
-        check('工作台页签数与声明一致',
-          tabs === declaredTabs && tabs > 0,
-          `实际 ${tabs} / 声明 ${declaredTabs}`);
+        // 一级视图（报告 4.2）与二级页签分开断言。
+        // 数量不写死：断言「DOM 里的数量 == 代码里声明的数量」。
+        // 写死数字会把「加一个视图」变成「改一处断言」——那正是原写法的毛病。
+        const tabCounts = await page.evaluate(() => ({
+          views: document.querySelectorAll('[data-view]').length,
+          declaredViews: (typeof VIEWS !== 'undefined' ? VIEWS.length : -1),
+          subTabs: document.querySelectorAll('[data-tab]').length,
+          declaredSubTabs: (typeof LIBRARY_TABS !== 'undefined' ? LIBRARY_TABS.length : -1),
+        }));
+        check('一级视图数与声明一致',
+          tabCounts.views === tabCounts.declaredViews && tabCounts.views > 0,
+          `实际 ${tabCounts.views} / 声明 ${tabCounts.declaredViews}`);
+        check('提示词库二级页签数与声明一致',
+          tabCounts.subTabs === tabCounts.declaredSubTabs && tabCounts.subTabs > 0,
+          `实际 ${tabCounts.subTabs} / 声明 ${tabCounts.declaredSubTabs}`);
+
+        // 4.2：探索榜升为一级视图 —— 一级视图里必须有 samples，且二级页签里没有 explore
+        const viewIds = await page.evaluate(() =>
+          [...document.querySelectorAll('[data-view]')].map(b => b.dataset.view));
+        check('研究样本库是一级视图',
+          viewIds.includes('samples'), viewIds.join(','));
+        check('二级页签里没有「探索榜」（它已升为一级视图）',
+          !(await page.evaluate(() => !!document.querySelector('[data-tab="explore"]'))));
 
         /* 2. 全量数据契约（config/*.yaml → js/data-*.js） */
         // 单一真相源：产物自带的统计对象与数组长度；采集后无需改任何数字。
@@ -120,8 +136,8 @@ async function main() {
         // 断言也跟着写成 0，等于把 bug 固化成验收标准。现改为与源数据条数比对。
         check('sref 如实透传（非杜撰、非丢弃）', data.sref === EXPECT_SREF, `实际 ${data.sref} / 期望 ${EXPECT_SREF}`);
 
-        /* 3. 探索榜页签：分页、筛选、占位、灯箱 */
-        await page.click('#tab-explore');
+        /* 3. 研究样本库（一级视图）：分页、筛选、占位、灯箱 */
+        await page.click('#view-samples');
         await page.waitForSelector('.job-card', { timeout: 15000 });
         const board = await page.evaluate(() => ({
           cards: document.querySelectorAll('.job-card').length,
@@ -444,27 +460,134 @@ async function main() {
       await page.close();
     }
 
-    /* 6. 旧独立页 explore.html 跳转到工作台探索榜页签 */
+    /* 6. 旧独立页 explore.html 跳转到研究样本库一级视图（报告 4.2） */
     {
       const { page } = await openPage(browser, 'explore.html');
       let ok = false;
       try {
-        await page.waitForFunction(() => location.hash === '#explore' && !!document.querySelector('#tab-explore'), { timeout: 8000 });
+        await page.waitForFunction(() => location.hash === '#samples' && !!document.querySelector('#view-samples'), { timeout: 8000 });
         ok = true;
       } catch { /* 超时即失败 */ }
-      check('explore.html 跳转到 #explore', ok, await page.evaluate(() => location.hash));
+      check('explore.html 跳转到 #samples', ok, await page.evaluate(() => location.hash));
       await page.close();
     }
 
-    /* 7. 旧页签深链 #/explore?... → #explore */
+    /* 7. 旧页签深链 #/explore?... → #samples（报告 4.2：探索榜升为一级视图）
+       旧的 #explore 仍要能用 —— 重定向到研究样本库，不报错、不静默。 */
     {
       const { page } = await openPage(browser, 'index.html', '#/explore?d=2026-11-05&ar=9:16');
       const state = await page.evaluate(() => ({
         hash: location.hash,
-        active: document.querySelector('#tab-explore')?.getAttribute('aria-selected'),
+        active: document.querySelector('#view-samples')?.getAttribute('aria-selected'),
       }));
-      check('旧探索榜深链重定向', state.hash === '#explore' && state.active === 'true', JSON.stringify(state));
+      check('旧探索榜深链重定向到研究样本库',
+        state.hash === '#explore' && state.active === 'true', JSON.stringify(state));
       await page.close();
+    }
+
+    /* 7a. 统一筛选引擎 + 一级视图（报告 3.4 / 4.2）
+       筛选状态以 URL hash 为唯一来源（ADR-0010）：刷新 / 后退 / 分享都能复现。 */
+    {
+      /* 7a-1. 研究样本库：选批次 → URL 带参数 → 刷新后复现 */
+      const { page } = await openPage(browser, 'index.html', '#samples');
+      await page.waitForSelector('#ex-batch', { timeout: 15000 });
+
+      const batchValue = await page.evaluate(() => {
+        const sel = document.querySelector('#ex-batch');
+        const opt = [...sel.options].find((o) => o.value);
+        return opt ? opt.value : '';
+      });
+      await page.select('#ex-batch', batchValue);
+      await new Promise((r) => setTimeout(r, 600));
+
+      const afterFilter = await page.evaluate(() => ({
+        hash: location.hash,
+        batch: document.querySelector('#ex-batch')?.value,
+        cards: document.querySelectorAll('.job-card').length,
+        total: (typeof EXPLORE_JOBS !== 'undefined' ? EXPLORE_JOBS.length : 0),
+      }));
+      check('筛选状态进 URL（batch=）',
+        afterFilter.hash.includes('batch='), afterFilter.hash);
+      check('筛选真的生效（卡片数少于全量）',
+        afterFilter.cards > 0 && afterFilter.cards < afterFilter.total,
+        `${afterFilter.cards} / ${afterFilter.total}`);
+      await page.close();
+
+      // 用同一个 hash 重新打开 —— 验证「刷新后复现」
+      const { page: page2 } = await openPage(browser, 'index.html', afterFilter.hash);
+      await page2.waitForSelector('#ex-batch', { timeout: 15000 });
+      const afterReload = await page2.evaluate(() => ({
+        view: document.querySelector('[data-view][aria-selected="true"]')?.dataset.view,
+        batch: document.querySelector('#ex-batch')?.value,
+        cards: document.querySelectorAll('.job-card').length,
+      }));
+      check('刷新后筛选被复现（仍在研究样本库）',
+        afterReload.view === 'samples' && afterReload.batch === batchValue,
+        `view=${afterReload.view} batch=${afterReload.batch}`);
+      check('刷新后结果数一致',
+        afterReload.cards === afterFilter.cards,
+        `${afterFilter.cards} → ${afterReload.cards}`);
+      await page2.close();
+
+      /* 7a-2. 提示词库侧：分面词筛选也进 URL */
+      {
+        const { page: p3 } = await openPage(browser, 'index.html', '#artists');
+        await p3.waitForSelector('[data-toggle="facets"]', { timeout: 15000 });
+        await p3.evaluate(() => document.querySelector('[data-toggle="facets"]').click());
+        await new Promise((r) => setTimeout(r, 600));
+        const hasTerms = await p3.evaluate(() => document.querySelectorAll('[data-term]').length);
+        check('分面板渲染出分面词', hasTerms > 0, `${hasTerms} 个`);
+
+        await p3.evaluate(() => document.querySelector('[data-term]')?.click());
+        await new Promise((r) => setTimeout(r, 600));
+        const libHash = await p3.evaluate(() => location.hash);
+        check('分面词筛选进 URL（terms=）', libHash.includes('terms='), libHash);
+        await p3.close();
+      }
+
+      /* 7a-3. 不认识的参数被丢弃并提示（ADR-0010：不静默忽略） */
+      {
+        // toast 只活 1.9 秒 —— openPage 已经等了 700ms，这里不能再等
+        const { page: p4 } = await openPage(browser, 'index.html', '#samples?zzz=1&q=portrait');
+        await p4.waitForSelector('#ex-search', { timeout: 15000 });
+        const unknown = await p4.evaluate(() => ({
+          ignored: (typeof ui !== 'undefined' && ui.ignoredParams) ? ui.ignoredParams : null,
+          q: (typeof ui !== 'undefined') ? ui.q : null,
+          hash: location.hash,
+          toast: document.querySelector('.toast')?.textContent || '',
+        }));
+        check('不支持的参数被记录',
+          Array.isArray(unknown.ignored) && unknown.ignored.includes('zzz'),
+          JSON.stringify(unknown.ignored));
+        check('支持的参数照常生效',
+          unknown.q === 'portrait', String(unknown.q));
+        check('不支持的参数有提示（不静默忽略）',
+          unknown.toast.includes('忽略'), unknown.toast.replace(/\s+/g, ' ').trim().slice(0, 60));
+        await p4.close();
+      }
+
+      /* 7a-4. 引擎本体：URL 往返一致（build → parse 得到同一状态） */
+      {
+        const { page: p5 } = await openPage(browser, 'index.html', '#samples');
+        const roundTrip = await p5.evaluate(() => {
+          const src = EXPLORE_FILTER_SOURCE;
+          const st = {
+            q: 'portrait',
+            dims: { batch: '2026-11-10', aspect: '1:1', sref: true },
+          };
+          const hash = FILTER_ENGINE.buildHash(src, 'samples', st);
+          const parsed = FILTER_ENGINE.parseHash(src, hash);
+          return {
+            hash,
+            same: FILTER_ENGINE.sameState(parsed.state, st),
+            ignored: parsed.ignored,
+          };
+        });
+        check('筛选引擎 URL 往返一致', roundTrip.same === true, roundTrip.hash);
+        check('引擎往返不产生被丢弃参数', roundTrip.ignored.length === 0,
+          JSON.stringify(roundTrip.ignored));
+        await p5.close();
+      }
     }
 
     /* 7b. 作业稳定引用键 + 深链直达（报告 2.1）
@@ -473,7 +596,7 @@ async function main() {
     {
       // 先开一个普通页面取一个带拆解的作业键
       const anyKey = await (async () => {
-        const { page } = await openPage(browser, 'index.html', '#explore');
+        const { page } = await openPage(browser, 'index.html', '#samples');
         const k = await page.evaluate(() => {
           if (typeof EXPLORE_JOBS === 'undefined') return null;
           const j = EXPLORE_JOBS.find((x) => x.decomposition && x.thumbs.length);
@@ -486,7 +609,7 @@ async function main() {
       if (!anyKey) {
         check('作业引用键深链直达', false, '数据里找不到带拆解的作业');
       } else {
-        const { page } = await openPage(browser, 'index.html', `#explore?job=${encodeURIComponent(anyKey)}`);
+        const { page } = await openPage(browser, 'index.html', `#samples?job=${encodeURIComponent(anyKey)}`);
         let opened = false;
         try {
           await page.waitForSelector('.job-sheet', { timeout: 8000 });
@@ -520,7 +643,7 @@ async function main() {
          · 存储不可用时如实提示，不静默
        注意：断言跑完会清空本机研究库（这是测试数据，不是用户数据）。 */
     {
-      const { page } = await openPage(browser, 'index.html', '#explore');
+      const { page } = await openPage(browser, 'index.html', '#samples');
       const key = await page.evaluate(() => {
         if (typeof EXPLORE_JOBS === 'undefined' || typeof JOB_KEY === 'undefined') return null;
         const j = EXPLORE_JOBS.find((x) => x.decomposition && x.thumbs.length);
@@ -540,7 +663,7 @@ async function main() {
         check('研究数据层可用（IndexedDB）', storeStatus.available === true, JSON.stringify(storeStatus));
 
         // 走完整 UI 路径：灯箱 → 写观察 → 保存
-        await page.evaluate((k) => { location.hash = `#explore?job=${encodeURIComponent(k)}`; }, key);
+        await page.evaluate((k) => { location.hash = `#samples?job=${encodeURIComponent(k)}`; }, key);
         let sheetOk = false;
         try {
           await page.waitForSelector('.job-sheet [data-role="write-note"]', { timeout: 8000 });
@@ -656,7 +779,7 @@ async function main() {
           JSON.stringify(exp));
 
         // 灯箱里能看到结论（依据集合包含这条样本的结论）
-        await page.evaluate((k) => { location.hash = `#explore?job=${encodeURIComponent(k)}`; }, key);
+        await page.evaluate((k) => { location.hash = `#samples?job=${encodeURIComponent(k)}`; }, key);
         await new Promise((r) => setTimeout(r, 900));
         const sheetAll = await page.evaluate(() => document.querySelector('[data-role="note-list"]')?.textContent || '');
         check('灯箱同时显示该样本的观察与结论',
@@ -685,7 +808,8 @@ async function main() {
     for (const name of ['index.html', 'style-library.html']) {
       const { page, errs } = await openPage(browser, name, '', NARROW);
       const info = await page.evaluate(() => {
-        const tab = document.querySelector('#tab-explore');
+        // 一级视图（报告 4.2）：窄屏遮挡的探测对象从旧页签改为一級视图按钮
+        const tab = document.querySelector('#view-samples');
         let blocked = false;
         let hitTag = 'none';
         if (tab) {

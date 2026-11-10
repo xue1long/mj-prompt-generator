@@ -1,5 +1,7 @@
 # 探索榜是独立页面，数据由本项目自己每日重采
 
+> **状态：页面形态已被修订两次**。① 2026-11-07：下文「顶层独立页」的决定作废，探索榜改为提示词库的第 9 个页签；② 2026-11-10：**「第 9 个页签」这一落点再次作废** —— 探索榜升为与提示词库并列的一级视图「研究样本库」（`docs/adr/0020`）。**数据、采集、授权、筛选与交互部分自始至终仍然有效**。两次修订全文见文末。
+
 隔壁仓 `ai-video-imge-prompts` 镜像了 Midjourney 官网 Explore 榜（1016 条社区作业、4064 张成图）。现在要把这份内容搬进本项目的提示词库，**单独一个页面**。
 
 ## 决定
@@ -32,3 +34,44 @@
 - **采集失败即中止**，保留上一份快照与旧图：宁可给旧数据，也不让页面开天窗。
 - **导入的数据与自采的数据同源同构**：都来自上游 Explore 榜，字段含义一致，页面上看不出哪条是哪天导入的——这是有意的：用户看的是内容，不是数据来源的批次。
 - 隔壁仓的 `sites/midjourney-explore/NOTICE.md` 仍写着"禁止再分发"，那是隔壁仓自己的文件，不在本项目范围内，但已过时。
+
+## 修订 2026-11-07：改为提示词库第 9 个页签
+
+**起因**：用户要求「探索榜 放入到 提示词库 里面」。此前两版实现都读偏了——先做成探索榜底部浮条，再做成「探索榜占左栏、会话 Dock 内嵌右栏」，用户以「探索榜为什么移动到了左栏，没有放到提示词库里面」否决。经逐项确认，确切落点是**做成提示词库第 9 个页签**，且**会话 Dock 始终左栏常驻**。
+
+**新布局**（`src/App.vue`）：
+
+| 项 | 修订后 |
+|---|---|
+| 布局 | 恒定两栏：左栏 `SessionDock`（单实例）、中间 `ColumnSplitter`、右栏 `PromptPanel`。不再按页面分支渲染 |
+| 探索榜 | `PromptPanel.vue` 的 `<n-tab-pane name="explore">`，排在 5 个一级分类 + 风格参考码 + 官方风格榜 + 画廊之后，即第 9 个页签 |
+| 顶层页面 | 取消。`pageStore.current` 退化为导航高亮 / 页签组状态（`workbench` = 词库页签组，`explore` = 探索榜页签），不再决定布局 |
+| 顶部导航 | 删除全宽 `AppHeader`；「工作台 / 探索榜」页签切换下沉到左栏 `SessionDock` 顶部的 `DockToolbar`（语义为切页签，GitHub 入口按裁决一并删除）；`goWorkbench()` 显式 `filterStore.setActiveTab('artists')`，避免不可筛 tab 清空 hash 后切不回词库 |
+| 会话 Dock | `App.vue` 顶层挂一次，始终在 `.main-column`；不再有 `dock-embed` 变体 |
+
+**失效的否决理由**：原决定以「右栏只有半屏宽，四格成图与提示词原文挤不下」否决做成页签。修订后页签容器仍是右栏半屏，但探索榜网格改为自适应宽度（`ExplorePage.vue` 去掉 `height:100%` 与自带 `overflow-y`，滚动交给 `.n-tabs-pane-wrapper`）；更重要的是用户明确要求统一工作区——把「看成品」与「组装」分成两页的收益低于让会话状态与词库同屏的收益。这条取舍由用户裁决，不是技术推导。
+
+**保持不变**：
+
+- 数据来路、按作业 id 合并、14 天窗口、每日自采、`npm run update:explore`、构建期内联、授权分写 NOTICE——全部不变。
+- 筛选契约不变：`#/explore?d/ar/sref/q` 仍由 `src/utils/exploreHash.ts` 与 `exploreStore` 独占解析（ADR-0010 仍成立）。**把探索榜并进词库时最容易踩的坑**：`PromptPanel.syncFromHash()` 必须先判断 `isExploreHash()`，不能把 `#/explore?...` 交给 `filterStore.applyFromHash()`，否则会被当成不认识的 tab 清空 `d/ar/sref/q`。
+- 交互不变：作业不是提示词条目，只填「主体与环境」与 `--sref`，不进「已选提示词」。
+
+**改动文件**：`src/App.vue`、`src/components/PromptBuilder/PromptPanel.vue`、`src/components/Explore/ExplorePage.vue`（删「← 返回工作台」与 `usePageStore`）、`src/stores/pageStore.ts`、`src/stores/filterStore.ts`（默认 `activeTab` 从已删除的 `subject-environment` 改为 `artists`）、`src/stores/exploreStore.ts` 与 `src/utils/exploreHash.ts`（注释）、`scripts/verify-app.mjs`（回归判据）。
+
+**回归判据**（`npm run verify` 的 dev-server / file-protocol 两个 target）：`.explore-page` 必须位于 `.content-column .prompt-panel-card .tabs-container` 内；激活 tab 文本含「探索榜」且下标为 8 / 共 9 个；`.main-column .session-dock` 恒在且全页只有 1 个实例；顶部导航切页签后 hash 与激活 tab 同步、Dock 不重挂。
+
+**关联**：会话 Dock 挂载点的修订见 ADR-0016 修订段；术语表 `CONTEXT.md` 的「会话」与「探索榜」章节已同步。
+## 修订 2026-11-10：研究样本库升为一级视图（部分推翻 2026-11-07 的落点）
+
+**被推翻的**：2026-11-07 修订里「探索榜 = 提示词库的第 9 个页签」这一**落点**。
+
+**仍然有效的**：本 ADR 的**数据线全部不变** —— 一次性导入 + 每日自采、按作业 id 合并、14 天窗口、`npm run update:explore`、构建期内联、授权分写 NOTICE、筛选契约的语义（「作业不是提示词条目，只填主体与环境与 `--sref`」）、以及那条被记录下来的坑（`PromptPanel.syncFromHash()` 必须先判 `isExploreHash()`）。
+
+**为什么推翻**：2026-11-07 那次修订是**布局取舍**（让会话状态与词库同屏），当时的落点是「页签」。但第 1 轮 grilling 的 Q3 裁决给出了**语义判据**：社区数据是**证据集**，词库是**假设集**，二者不该同层。页签标题「探索榜」与相邻的「快门速度」「艺术家 / 摄影师」同层，**暗示它们是同类** —— 这正是术语模型要防的事。
+
+**新的落点**：**研究样本库**（`samples`）是**与提示词库并列的一级视图**，提示词库下的二级页签只剩 4 个词库分类 + 艺术家。详见 `docs/adr/0020-research-sample-library-is-top-level.md`；实施编年见 ADR-0017 Round 14。
+
+**兼容性**：旧深链 `#explore`（含 `?job=<引用键>`）**自动重定向**到 `#samples`，且带 job 参数时仍能直达灯箱 —— 第 5 步发出去的深链继续有效。
+
+**注意**：本 ADR 的修订段落描述的是 **Vue 版前端（`src/`）** 的布局，该实现将在第 11 步删除。静态 WebUI 的对应实现在 ADR-0017 Round 14。

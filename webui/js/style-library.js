@@ -1,17 +1,59 @@
 /* ==========================================================================
    风格库：风格参考码（--sref）+ 官方风格榜（styles_top）
    参考码为全量词库（4,638 条）；参考图按需取，取不到就落回排版版位。
+
+   筛选统一走 webui/js/filter-engine.js（报告 3.4）：状态以 URL hash 为唯一来源
+   （ADR-0010），刷新 / 后退 / 分享都能复现。
    ========================================================================== */
 
 const CODE_TOTAL = STYLE_CODES.length;
 const CODE_ILLUSTRATED = STYLE_CODES.filter(c => c.preview).length;
-const styleUi = { tab: 'codes', q: '', limit: 48 };
+const styleUi = { tab: 'codes', q: '', limit: 48, kind: '' };
+
+/* ── 筛选源（报告 3.4）────────────────────────────────────────────────
+   风格库侧：风格码搜索 + 题材筛选（官方榜）+ 只看已实测。 */
+const STYLE_FILTER_SOURCE = FILTER_ENGINE.source('style-library', [
+  { key: 'q', type: 'q', matchOf: (c, text) => {
+    if (String(c.name || '').toLowerCase().includes(text)) return true;
+    return String(c.code || '').includes(text);
+  } },
+  { key: 'tested', type: 'bool', activeOf: (c) => !!c.tested },
+  { key: 'kind', type: 'enum', valueOf: (c) => c.kind || '' },
+]);
+
+function styleFilterState() {
+  return {
+    q: styleUi.q || '',
+    dims: {
+      tested: !!styleUi.tested,
+      kind: styleUi.kind || '',
+    },
+  };
+}
 
 function styleCodes() {
-  const q = styleUi.q.trim().toLowerCase();
-  const hits = STYLE_CODES.filter(c => !q || c.name.toLowerCase().includes(q) || String(c.code).includes(q));
+  const src = STYLE_FILTER_SOURCE;
+  const hits = FILTER_ENGINE.filter(src, STYLE_CODES, styleFilterState());
   // 浏览顺序：先给有参考图的
   return hits.sort((a, b) => (a.preview ? 0 : 1) - (b.preview ? 0 : 1));
+}
+
+/* 筛选状态 → URL（ADR-0010：hash 是筛选的唯一来源） */
+function writeStyleFilterToUrl() {
+  const hash = FILTER_ENGINE.buildHash(STYLE_FILTER_SOURCE, 'style-library', styleFilterState());
+  if (location.hash !== hash) {
+    try { history.replaceState(null, '', hash); } catch { location.hash = hash; }
+  }
+}
+
+/* URL → 筛选状态 */
+function readStyleFilterFromUrl() {
+  const parsed = FILTER_ENGINE.parseHash(STYLE_FILTER_SOURCE, location.hash);
+  const st = parsed.state;
+  styleUi.q = st.q || '';
+  styleUi.tested = !!(st.dims && st.dims.tested);
+  styleUi.kind = (st.dims && st.dims.kind) || '';
+  return parsed.ignored || [];
 }
 
 function styleHeadHtml() {
@@ -216,6 +258,7 @@ function wireStyle() {
     search.addEventListener('input', () => {
       styleUi.q = search.value;
       styleUi.limit = 48;
+      writeStyleFilterToUrl();
       const body = page.querySelector('#library-panel');
       if (!body) return;
       body.innerHTML = styleBodyHtml();
@@ -249,5 +292,10 @@ function wireStyleBody() {
   });
 }
 
+readStyleFilterFromUrl();
 boot('style-library.html');
 renderStyle();
+window.addEventListener('hashchange', () => {
+  readStyleFilterFromUrl();
+  renderStyle();
+});

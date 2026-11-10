@@ -600,7 +600,7 @@ FNV 哈希，而实测有 **34 条提示词重复（涉及 74 条作业）** →
 | `webui/js/workbench.js` | 第 7 个页签「研究笔记」+ 计数同步 |
 | `webui/index.html` | 脚本加载顺序 |
 | `scripts/verify-webui.mjs` | 新增 **13 条断言**（48 → 61） |
-| 	ests/researchStore.test.ts`（新增） | **18 个单元测试**（159 → 177） |
+| `tests/researchStore.test.ts`（新增） | **18 个单元测试**（159 → 177） |
 
 #### 三个实现细节值得记
 
@@ -621,7 +621,7 @@ FNV 哈希，而实测有 **34 条提示词重复（涉及 74 条作业）** →
 | `npm run build` | 723 文件 / 19.31 MB / 14 个 JS / 4 个 HTML |
 | `npm run verify` / `--dist` | **61/61** / **61/61** |
 | 
-px vitest run` | **12 文件 / 177 用例**（新增 18） |
+| `npx vitest run` | **12 文件 / 177 用例**（新增 18） |
 | 数据层浏览器探针 | **18/18** |
 | 端到端浏览器探针 | **24/24** |
 
@@ -630,6 +630,61 @@ px vitest run` | **12 文件 / 177 用例**（新增 18） |
 - **对照视图（2.2）** —— 并排比较、sref 码筛选，属第 8 步。
 - **作业 / 拆解的查询下沉、增量、导出（4.1 完整版）** —— 第 10 步在同一个库 `mj-research` 上扩展。
 - **跨作业对比分析** —— 结论可建、可挂作业、可看，但横向统计属第 8 步。
+
+### Round 14：统一筛选引擎 + 研究样本库升为一级视图（2026-11-10）
+
+#### 问题
+
+两件事叠在一起：
+
+1. **筛选有 4 套各写各的实现** —— `workbench.js`（分面词 + 主色 + 只看实测 + 搜索，带分面计数）、`explore-board.js`（批次 + 比例 + 只看有 sref + 搜索，**无计数、无分面、无分组语义**）、`style-library.js`（搜索）、`gallery.js`（分类 + 搜索）。每加一个数据源就多一套。
+2. **筛选状态根本没进 URL** —— 静态 WebUI 三个页面的 `q` / `terms` / `colours` 全在内存里，**刷新即丢**。ADR-0010 只在 Vue 版落地（`src/utils/exploreHash.ts` + `facetFilter.ts`），静态版没有对应的独立解析器。
+
+外加一个结构问题：探索榜是「词库的一个页签」（ADR-0013，2026-11-07 按用户要求修订），但 Q3 已裁定**社区数据是证据集、词库是假设集**，二者不该同层。
+
+#### 决定
+
+1. **抽出 `webui/js/filter-engine.js`：一个引擎 + 一套 URL 契约**，四个数据源共用。引擎是**纯函数、无依赖**（不碰 DOM、不碰 `window`），可被 `vm` 加载做单元测试。
+2. **URL 沿用 ADR-0010 形态**：`#<页签>?<参数>`，与既有的 `#explore?job=<引用键>` 同一形态，不引入第二套写法。回写用 `history.replaceState`（改 hash 会触发重渲染 → 焦点丢失、灯箱被关）。
+3. **探索榜升为一级视图「研究样本库」**（`VIEWS`），与「提示词库」「研究笔记」并列；二级页签（`LIBRARY_TABS`：4 个词库分类 + 艺术家）**只属于提示词库**。
+
+详见 `docs/adr/0020-research-sample-library-is-top-level.md`（4.2 的独立裁决）。
+
+#### 改动
+
+| 位置 | 改动 |
+| --- | --- |
+| `webui/js/filter-engine.js`（新增） | 统一筛选引擎：`source` / `emptyState` / `cloneState` / `sameState` / `matches` / `filter` / `counts` / `parseHash` / `parseQuery` / `buildHash` / `isEmpty` |
+| `webui/js/workbench.js` | 两级视图结构（`VIEWS` / `LIBRARY_TABS`）；提示词库筛选源接引擎；URL 回写；不认识参数丢弃 + 提示一次 |
+| `webui/js/explore-board.js` | 研究样本库筛选源接引擎；批次 / 比例下拉显示**分面计数**；深链 `#explore?job=` → `#samples?job=` |
+| `webui/js/style-library.js` | 风格库筛选源接引擎 + URL 读写 |
+| `webui/js/gallery.js` | 画廊筛选源接引擎 + URL 读写；新增 `galleryFlat()` **展平缓存**（词库是三层结构） |
+| `webui/index.html` / `style-library.html` / `gallery.html` | 加载 `js/filter-engine.js` |
+| `webui/explore.html` | 空壳页 → 重定向页（`index.html#samples`） |
+| `scripts/verify-webui.mjs` | 新增 **14 条断言**（61 → 75）；旧「页签数」断言拆成 4 条动态断言 |
+| `tests/filterEngine.test.ts`（新增） | **53 个单元测试**（177 → 230） |
+
+#### 三个实现细节值得记
+
+1. **`parseQuery` 与 `parseHash` 必须分开** —— `parseHash` 自己拆页签与 query；调用方若已拆过页签还用 `parseHash`，会把 `x?batch` 当成参数名整段丢掉。本步初版用 `parseHash(src, '?x' + query)` 的 hack 实测**丢参数**，故引擎新增 `parseQuery(src, query)` 只解析 query 串。
+2. **`q` 维度的权威位置是 `state.q`（顶层），不在 `dims` 里** —— 否则 `state.q` 与 `state.dims.q` 是**两处真相源**，改一处漏一处。
+3. **回写 URL 必须用 `replaceState`** —— 改 `location.hash` 会触发 `hashchange` → 重渲染 → 搜索框输入焦点丢失、灯箱被重建关闭。
+
+#### 验证
+
+| 项 | 结果 |
+| --- | --- |
+| `npm run build:webui-data` | 通过（sref 源数据 82 条透传） |
+| `npm run build` | 724 文件 / 19.34 MB / **15 个 JS** / 4 个 HTML |
+| `npm run verify` | **75/75**（61 → 75） |
+| `npx vitest run` | **13 文件 / 230 用例**（177 → 230，新增 53） |
+| 端到端浏览器探针 | **27/27** |
+
+#### 未做
+
+- **sref 码筛选（2.2）** —— 是**按码值筛选**（不是布尔开关），属第 8 步，已在 `EXPLORE_FILTER_SOURCE` 注释里登记。
+- **对照视图（2.2）** —— 并排比较，属第 8 步。
+- **一级视图只覆盖左右方向键导航** —— 更完整的键盘导航属第 10 步的交互统一。
 
 ### 未闭合（登记，不阻断）
 
@@ -649,3 +704,5 @@ Round 13 的回退：删除 `webui/js/research-store.js` 与 `webui/js/research-
 渲染分支，从 `webui/js/explore-board.js` 去掉灯箱里的研究记录区块，并回退
 `scripts/verify-webui.mjs` 的 13 条新断言。**`mj-research` 库里的用户数据不会被删除** ——
 删掉前端代码不等于删掉浏览器里的库；需要清库用「研究笔记」页签里的清空动作。
+
+Round 14 的回退：删除 `webui/js/filter-engine.js`，把 `webui/index.html`、`webui/style-library.html`、`webui/gallery.html` 里的 `js/filter-engine.js` 脚本标签去掉，把四个数据源里接引擎的 `filter` / `matches` / `counts` 调用改回各自的本地实现，`webui/js/workbench.js` 的 `VIEWS` / `LIBRARY_TABS` 改回单层 `TABS`，`webui/explore.html` 改回空壳页，并回退 `scripts/verify-webui.mjs` 的 14 条新断言。**旧深链兼容不需回退** —— `#explore` → `#samples` 的重定向是纯加法，去掉它只会让第 5 步发出去的深链失效，不会破坏新链。
