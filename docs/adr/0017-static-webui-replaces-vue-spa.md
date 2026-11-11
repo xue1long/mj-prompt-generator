@@ -952,3 +952,73 @@ Round 16 的回退：把 `webui/js/core.js` 的 `vocabPreviewPath()` / `midlibra
 
 - `docs/screenshots/` 4 张 Vue 时代截图的重拍 —— 属独立视觉轮次；
 - `CONTEXT.md` 里 `src/` 相关措辞的正式修订 —— Q14 冻结项仍待用户批准，本轮未触碰。
+
+---
+
+## Round 19（2026-11-11）：候选词条视图 —— 假设集与证据集的对照界面
+
+### 做了什么
+
+报告 2.6 说「词库与社区数据零通路」。本轮把这条路接上，但接的方式与报告字面不同 —— 实测发现真正的状态不是「零」而是「**语义层错位**」，所以产物不是「把社区词并入词库」，而是一张**对照表**。
+
+| 文件 | 变更 |
+|---|---|
+| `webui/js/candidate-vocab.js`（新增，约 360 行） | 候选词条引擎：词库索引 / 三态判定 / 清单构建 / 反向验证 |
+| `webui/js/candidate-view.js`（新增） | 一级视图：`headHtml` / `toolbarHtml` / `bodyHtml` / `wire` / 出处弹层 |
+| `webui/js/candidate-export.js`（新增） | 导出 JSON + Markdown（走既有下载通道） |
+| `webui/js/workbench.js` | `VIEWS` 加 `candidates` 条目；`viewCount` / `readHash` 白名单 / `render()` 分支 / `filterSourceOf` / `currentFilterState` / `applyFilterFromQuery` 全部接通 |
+| `webui/index.html` | 加载顺序插入 3 个 script（`candidate-vocab` → `candidate-export` → `candidate-view`，都在 `workbench.js` 之前） |
+| `webui/css/app.css` | 追加 `.cand-table` / `.cand-badge` / `.cand-phrase-btn` / `.cand-src-btn` 等；三态沿用既有 token（`--ok` / `--accent-cool` / `--warn`），不新开颜色家族 |
+| `tests/candidateVocab.test.ts`（新增，29 用例） | 词库索引 / 三态判定 / 清单构建 / 反向验证 / 真实语料实测 |
+| `scripts/verify-webui.mjs` | 插入 7a-3b 候选视图断言块（12 条）+ 视图 id 列表断言 1 条；`openPage` 加 toast 观察器 |
+| `docs/adr/0024-…`（新增） | 裁决、实测依据、考虑过的选项、后果、三个坑 |
+| `docs/第一性原理校验报告.md` | 2.6 节原地加「实测复核」块（原文保留）；执行序第 12 步状态更新；文首进度块更新 |
+
+### 为什么产物是「对照表」而不是「并入词库」
+
+实测（133 条词库 × 571 条收录短语）：
+
+| 口径 | 结果 |
+|---|---|
+| 精确字符串交集 | 9 条（5.8%） |
+| 词元级重合 | 146 / 571（25.6%） |
+| 词库条目零出现 | 71 / 156（45.5%） |
+| `shutter-speed` / `depth-aperture` / `artists` 分类 | **全部零出现**（0/11、0/5、0/23） |
+
+社区 Top 15 高频短语里，`background`(281) / `black`(205) / `dark`(183) / `style`(172) / `hair`(159) 全是**内容词**，词库是**摄影技术词**。社区 prompt 说的是「拍什么」，词库说的是「怎么拍」。
+
+把通路接上不会让 `background` 变成一条可用的摄影参数 —— 硬并入只会污染假设集。所以产出是让**错位本身可见**：12 条确认、136 条措辞偏差、423 条结构空洞，三个数字都能导出成文件带走。
+
+### 关键设计决定
+
+- **三态而非二值** —— `exact` / `near` / `missing`。二值会骗人：只看精确命中会误以为词库没用（5.8%）；只看零命中会漏掉「词库已有但社区不常用」的反向信号。
+- **`exact` 用词元集合签名判定** —— `light blue` 与词库条目 `blue light` 词序不同但词元集合相同，判为命中。在此之前 `build()` 说它是 exact、`validateVocab()` 说词库条目未被使用，两把尺子打架；统一到签名口径后 12 条候选 ↔ 11 条词库条目（`close-up` / `close up` 共用一条），零冲突。
+- **全量列出，不默认只显示缺口** —— 默认只显示 missing 会让「词库覆盖了什么」不可见，而那是判断词库价值的另一半证据。
+- **运行时现算** —— 复用 `PHRASE_INDEX.build()` 的抽取算法与阈值（`MULTI_MIN_DF=8` / `WORD_MIN_DF=20`），不复刻。改阈值不用重跑采集。
+- **`viewCount` 不得触发构建** —— 它在每次 render 的 `viewnavHtml()` 里同步调用，触发构建会让首页多付 690 ms。改为 `count()` 只在已构建时给数，构建延到候选视图首次渲染（实测：首页 `count: 0`，候选视图 `count: 571`）。
+- **`minDf` 不进引擎匹配** —— 它是阈值，引擎的 `enum` 维度语义是精确相等。只在 URL 契约层参与，匹配时由视图前置过滤。哨兵用 `''` 不用 `'0'`（`'0'` 是真值字符串，会被当成「df 精确等于 0」的激活筛选，把候选全滤光）。
+
+### 实施中踩到的坑
+
+| 坑 | 症状 | 根因 |
+|---|---|---|
+| 跨 vm realm 的 `instanceof Map` | `sourceCount` 全 0，出处全丢，3 个测试失败 | `Map` 在 vm realm 里创建，跨 realm `instanceof` 恒为 false ⇒ `byJobMap` 被换成空 Map |
+| `minDf = '0'` | `.cand-table` 等不到 | 见上「关键设计决定」最后一条 |
+| 断言赌 toast 还在 | 「不支持的参数有提示」从偶发失败变稳定失败 | 新增 3 个 script 让 load 更晚，toast 只活 1.9 s ⇒ 修断言侧：`evaluateOnNewDocument` 挂 `MutationObserver` 记录所有出现过的 toast（观察目标必须是 `document`，document-start 时 `documentElement` 还是 null） |
+
+### 验证记录
+
+| 项 | 结果 |
+|---|---|
+| `npm run verify`（源码） | **113/113**（新增 13 条断言；连跑 4 轮全绿） |
+| `node scripts/verify-webui.mjs --dist` | 113/113 |
+| `npm test` | **17 文件 / 324 用例全部通过**（基线 16/295 + 新增 29，零损失） |
+| `npx tsc --noEmit` | 6 个错误（与 Round 18 基线一致，零新增） |
+| `npm run build` | 29 文件 / 7.06 MB / 21 个 JS / 4 个 HTML |
+| 引擎实测 | 571 = 12 exact + 136 near + 423 missing；`df === sourceCount` 零不一致 |
+
+### 未做
+
+- **不自动入库、不改词库** —— 用户拍板。词库是假设集，并入等于让证据自己变成假设。
+- **`config/prompts.yaml` 与 `data-vocab.js` 的一致性** —— 前者 156 条、后者 133 条（`artists` 23 条并入 `data-artists.js`）。这个「少 23 条」的现状本轮未动，属独立轮次。
+- **`validateVocab` 未进界面** —— 引擎有反向验证能力（「词库哪些条目社区没用过」），但用户选的是「只做候选清单 + 导出」，反向结果暂只在测试里断言。

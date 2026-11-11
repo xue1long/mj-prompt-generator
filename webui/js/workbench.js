@@ -23,10 +23,15 @@ const VOCAB_TOTAL = VOCAB_CATEGORIES.reduce(
 
    旧裁决：2026-11-07 用户要求「探索榜放入提示词库里面」（ADR-0013 修订），
    当时的落点是「提示词库的第 9 个页签」。本轮按报告 4.2 推翻该落点 ——
-   见 docs/adr/0020-research-sample-library-is-top-level.md。 */
+   见 docs/adr/0020-research-sample-library-is-top-level.md。
+
+   「候选词条」（报告 2.6 / 第 12 步）同样是一级视图：它是假设集与证据集的
+   **对质界面**，与两者都不同层（不是可拼装的片段，也不是社区成品）——
+   见 docs/adr/0024-candidate-vocab-as-top-level-view.md。 */
 const VIEWS = [
   { id: 'library', label: '提示词库', hint: '可拼装的片段 —— 你的假设集' },
   { id: 'samples', label: '研究样本库', hint: '社区已做好的成品 —— 证据集' },
+  { id: 'candidates', label: '候选词条', hint: '社区高频措辞 × 词库覆盖 —— 对质界面' },
   { id: 'compare', label: '对照', hint: '并排看两条 —— 固定变量再下结论' },
   { id: 'research', label: '研究笔记', hint: '观察记录与结论' },
 ];
@@ -86,6 +91,14 @@ const tabCount = (t) => {
 /* 一级视图的计数 */
 const viewCount = (v) => {
   if (v.id === 'samples') return EXPLORE_TOTAL;
+  if (v.id === 'candidates') {
+    // 候选词条数：**不触发构建** —— viewCount 在每次 render 的 viewnav 里同步调用，
+    // 若在这里跑一遍 phrase-index(300ms)+candidate-vocab(391ms)，
+    // 打开首页（library 视图）也要付这 690 ms，与当前视图无关。
+    // 未构建时给 0；候选视图渲染完由 CANDIDATE_VIEW.warm() 把数字补上。
+    if (typeof CANDIDATE_VIEW === 'undefined') return 0;
+    return CANDIDATE_VIEW.count();
+  }
   if (v.id === 'compare') {
     // 对照视图固定两条 —— 计数就是 2（有对象时）；没对象时 0
     if (typeof COMPARE_VIEW === 'undefined') return 0;
@@ -212,6 +225,11 @@ const EXPLORE_FILTER_SOURCE = FILTER_ENGINE.source('samples', [
   { key: 'phrase', type: 'multi', valuesOf: (j) => (typeof PHRASE_INDEX !== 'undefined' ? phraseIndexOf(j) : []) },
 ]);
 
+/* 候选词条侧（报告 2.6 / 第 12 步）：搜索 + 三态筛选 + 最小频次。
+   维度声明在 webui/js/candidate-view.js 里（视图自带自己的源，
+   工作台只做 URL 契约的搬运）。 */
+const CANDIDATE_FILTER_SOURCE = (typeof CANDIDATE_VIEW !== 'undefined') ? CANDIDATE_VIEW.source() : null;
+
 /* 把 URL 里的筛选参数灌进当前视图的筛选状态 */
 function applyFilterFromQuery(query) {
   const src = filterSourceOf(ui.view);
@@ -233,6 +251,10 @@ function applyFilterFromQuery(query) {
   if (st.dims && st.dims.srefCode !== undefined) EXPLORE_BOARD.state.srefCodes = new Set(st.dims.srefCode || []);
   if (st.dims && st.dims.phrase !== undefined) EXPLORE_BOARD.state.phrases = new Set(st.dims.phrase || []);
   if (ui.view === 'samples') EXPLORE_BOARD.state.q = ui.q;
+  // 候选词条侧：状态在自己的视图里（报告 2.6）
+  if (ui.view === 'candidates' && typeof CANDIDATE_VIEW !== 'undefined') {
+    CANDIDATE_VIEW.stateFromDims({ q: ui.q, status: st.dims.status || [], minDf: st.dims.minDf || '' });
+  }
   ui.ignoredParams = parsed.ignored || [];
   return ui.ignoredParams;
 }
@@ -241,6 +263,7 @@ function applyFilterFromQuery(query) {
 function filterSourceOf(view) {
   if (view === 'samples') return EXPLORE_FILTER_SOURCE;
   if (view === 'library') return LIBRARY_FILTER_SOURCE;
+  if (view === 'candidates') return CANDIDATE_FILTER_SOURCE;
   return null;
 }
 
@@ -282,6 +305,17 @@ function currentFilterState() {
         sref: !!s.srefOnly,
         srefCode: [...(s.srefCodes || [])],
         phrase: [...(s.phrases || [])],
+      },
+    };
+  }
+  if (ui.view === 'candidates' && typeof CANDIDATE_VIEW !== 'undefined') {
+    // 候选视图的状态住在视图自己那里（报告 2.6）—— 不在这里复制一份
+    const d = CANDIDATE_VIEW.dims();
+    return {
+      q: d.q || '',
+      dims: {
+        status: [...(d.status || [])],
+        minDf: d.minDf || '',
       },
     };
   }
@@ -581,17 +615,18 @@ function render() {
   const isSamples = ui.view === 'samples';
   const isResearch = ui.view === 'research';
   const isCompare = ui.view === 'compare';
+  const isCandidates = ui.view === 'candidates';
   // 对照视图的对象从 URL 读（a / b 两个引用键）
   const cmpPair = isCompare && typeof COMPARE_VIEW !== 'undefined' ? COMPARE_VIEW.readFromHash() : null;
   const cmpHasBoth = !!(cmpPair && cmpPair.a && cmpPair.b);
   page.innerHTML = `
-    ${isSamples ? EXPLORE_BOARD.headHtml() : isResearch ? RESEARCH_VIEW.headHtml() : isCompare ? COMPARE_VIEW.headHtml() : headHtml()}
+    ${isSamples ? EXPLORE_BOARD.headHtml() : isResearch ? RESEARCH_VIEW.headHtml() : isCompare ? COMPARE_VIEW.headHtml() : isCandidates ? CANDIDATE_VIEW.headHtml() : headHtml()}
     ${viewnavHtml()}
     ${catnavHtml()}
-    ${isSamples ? EXPLORE_BOARD.toolbarHtml() : isResearch ? RESEARCH_VIEW.toolbarHtml() : isCompare ? COMPARE_VIEW.toolbarHtml(cmpHasBoth) : toolbarHtml()}
+    ${isSamples ? EXPLORE_BOARD.toolbarHtml() : isResearch ? RESEARCH_VIEW.toolbarHtml() : isCompare ? COMPARE_VIEW.toolbarHtml(cmpHasBoth) : isCandidates ? CANDIDATE_VIEW.toolbarHtml() : toolbarHtml()}
     <div class="library-body" id="library-panel" role="tabpanel"
-      aria-labelledby="${isSamples ? 'view-samples' : isResearch ? 'view-research' : isCompare ? 'view-compare' : `tab-${esc(ui.tab)}`}" tabindex="0">
-      ${isSamples ? EXPLORE_BOARD.bodyHtml() : isResearch ? RESEARCH_VIEW.bodyHtml() : isCompare ? COMPARE_VIEW.bodyHtml(cmpPair) : bodyHtml()}
+      aria-labelledby="${isSamples ? 'view-samples' : isResearch ? 'view-research' : isCompare ? 'view-compare' : isCandidates ? 'view-candidates' : `tab-${esc(ui.tab)}`}" tabindex="0">
+      ${isSamples ? EXPLORE_BOARD.bodyHtml() : isResearch ? RESEARCH_VIEW.bodyHtml() : isCompare ? COMPARE_VIEW.bodyHtml(cmpPair) : isCandidates ? CANDIDATE_VIEW.bodyHtml() : bodyHtml()}
     </div>`;
   wire();
   if (isSamples) {
@@ -608,6 +643,10 @@ function render() {
   } else if (isCompare) {
     COMPARE_VIEW.wire(page);
     markImageStates(page);
+  } else if (isCandidates) {
+    CANDIDATE_VIEW.wire(page);
+    // 把 viewnav 上的候选计数补上（viewCount 不触发构建，见候选视图 count() 的注释）
+    CANDIDATE_VIEW.warm(page);
   } else if (isResearch) {
     // 研究笔记的数据在本机 IndexedDB，是异步的 —— 先渲染骨架，再拉数据后重绘。
     RESEARCH_VIEW.wire(page);

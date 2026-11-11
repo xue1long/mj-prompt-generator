@@ -57,6 +57,28 @@ async function openPage(browser, name, hash = '', viewport = DESKTOP) {
   page.on('pageerror', (e) => errs.push('pageerror: ' + e.message.slice(0, 160)));
   page.on('console', (m) => { if (m.type() === 'error') errs.push('console: ' + m.text().slice(0, 160)); });
   page.on('requestfailed', (r) => errs.push('reqfail: ' + r.url().slice(-100)));
+
+  /* toast 观察器（先于页面脚本执行就挂上）。
+     toast 只活 1.9 s，而 goto 等的是 load 事件 —— 页面脚本越多 load 越晚，
+     「load 之后固定等 700 ms 再查 toast」就会在 toast 已过期后才查，
+     断言变成赌运气（实测：加 3 个 script 标签后从偶发失败变成稳定失败）。
+     改成**记录出现过的所有 toast**，断言就不依赖它现在还在不在 DOM 里。 */
+  await page.evaluateOnNewDocument(() => {
+    window.__toasts = [];
+    const push = (txt) => { try { window.__toasts.push(String(txt || '')); } catch { /* 忽略 */ } };
+    new MutationObserver((muts) => {
+      for (const m of muts) {
+        for (const n of m.addedNodes) {
+          if (n.nodeType !== 1) continue;
+          if (n.classList && n.classList.contains('toast')) push(n.textContent);
+        }
+      }
+    /* 观察目标必须是 document 而不是 document.documentElement ——
+       evaluateOnNewDocument 在「文档已建、元素树还没长出来」时执行，
+       此刻 documentElement 仍是 null，observe(null) 会抛 TypeError。 */
+    }).observe(document, { childList: true, subtree: true });
+  });
+
   await page.goto(fileUrl(name) + hash, { waitUntil: 'load', timeout: 30000 });
   await new Promise((r) => setTimeout(r, 700));
   return { page, errs };
@@ -111,6 +133,9 @@ async function main() {
           viewIds.includes('samples'), viewIds.join(','));
         check('对照是一级视图',
           viewIds.includes('compare'), viewIds.join(','));
+        // 2.6：候选词条是「假设集 × 证据集」的对质界面，也是一级视图（ADR-0024）
+        check('候选词条是一级视图',
+          viewIds.includes('candidates'), viewIds.join(','));
         check('二级页签里没有「探索榜」（它已升为一级视图）',
           !(await page.evaluate(() => !!document.querySelector('[data-tab="explore"]'))));
 
@@ -846,6 +871,8 @@ async function main() {
           q: (typeof ui !== 'undefined') ? ui.q : null,
           hash: location.hash,
           toast: document.querySelector('.toast')?.textContent || '',
+          // 观察器记录的全部 toast（含已过期的）—— 断言不依赖它现在还在 DOM 里
+          toasts: Array.isArray(window.__toasts) ? window.__toasts : [],
         }));
         check('不支持的参数被记录',
           Array.isArray(unknown.ignored) && unknown.ignored.includes('zzz'),
@@ -853,8 +880,135 @@ async function main() {
         check('支持的参数照常生效',
           unknown.q === 'portrait', String(unknown.q));
         check('不支持的参数有提示（不静默忽略）',
-          unknown.toast.includes('忽略'), unknown.toast.replace(/\s+/g, ' ').trim().slice(0, 60));
+          [unknown.toast, ...unknown.toasts].some((t) => t.includes('忽略')),
+          (unknown.toast || unknown.toasts.join(' | ')).replace(/\s+/g, ' ').trim().slice(0, 60));
         await p4.close();
+      }
+
+      /* ── 7a-3b. 候选词条视图（报告 2.6 / 第 12 步）────────────────────
+         候选词条是「社区高频措辞 × 词库覆盖」的对照界面（ADR-0024）。
+         断言要点：一级视图身份 / 三态标记真实 / 筛选进 URL / 刷新复现 /
+         出处可回指 / 导出两种格式都出内容。 */
+      {
+        const { page: pc } = await openPage(browser, 'index.html', '#candidates');
+        await pc.waitForSelector('.cand-table', { timeout: 20000 });
+
+        const candBasic = await pc.evaluate(() => {
+          const built = typeof CANDIDATE_VIEW !== 'undefined' ? CANDIDATE_VIEW.built() : null;
+          return {
+            isView: !!document.querySelector('[data-od-id="candidate-head"]'),
+            rows: document.querySelectorAll('.cand-row').length,
+            badges: document.querySelectorAll('.cand-badge').length,
+            exact: document.querySelectorAll('.cand-badge.is-exact').length,
+            near: document.querySelectorAll('.cand-badge.is-near').length,
+            missing: document.querySelectorAll('.cand-badge.is-missing').length,
+            total: built ? built.candidates.length : -1,
+            dfOk: built ? built.candidates.every((c) => c.df === c.sourceCount) : false,
+            srcOk: built ? built.candidates.some((c) => c.sourceCount > 0) : false,
+            exportMenu: !!document.querySelector('[data-od-id="candidate-export-menu"]'),
+          };
+        });
+        check('候选词条是一级视图',
+          candBasic.isView, `视图头 ${candBasic.isView ? '有' : '无'}`);
+        check('候选词条清单有行且总数与引擎一致',
+          candBasic.rows > 0 && candBasic.rows === Math.min(candBasic.total, 120),
+          `渲染 ${candBasic.rows} 行 / 引擎 ${candBasic.total} 条`);
+        check('三态标记都出现在界面上',
+          candBasic.exact > 0 && candBasic.near > 0 && candBasic.missing > 0,
+          `exact ${candBasic.exact} / near ${candBasic.near} / missing ${candBasic.missing}`);
+        check('候选的频次与出处条数口径一致',
+          candBasic.dfOk && candBasic.srcOk,
+          `df==sourceCount ${candBasic.dfOk} / 有出处 ${candBasic.srcOk}`);
+        check('候选词条有导出菜单',
+          candBasic.exportMenu, '');
+
+        // 三态筛选 → 进 URL → 刷新复现
+        await pc.evaluate(() => document.querySelector('[data-cand-status="missing"]')?.click());
+        await new Promise((r) => setTimeout(r, 600));
+        const candHash = await pc.evaluate(() => location.hash);
+        check('候选词条筛选进 URL（status=）',
+          candHash.includes('status=missing'), candHash);
+        const candFiltered = await pc.evaluate(() => ({
+          rows: document.querySelectorAll('.cand-row').length,
+          badges: [...document.querySelectorAll('.cand-badge')].map((b) => b.className),
+        }));
+        check('筛选后只剩「词库未覆盖」',
+          candFiltered.rows > 0 && candFiltered.badges.every((c) => c.includes('is-missing')),
+          `${candFiltered.rows} 行`);
+        await pc.close();
+
+        const { page: pc2 } = await openPage(browser, 'index.html', candHash);
+        await pc2.waitForSelector('.cand-table', { timeout: 20000 });
+        const candReload = await pc2.evaluate(() => ({
+          view: document.querySelector('[data-view][aria-selected="true"]')?.dataset.view,
+          rows: document.querySelectorAll('.cand-row').length,
+          allMissing: [...document.querySelectorAll('.cand-badge')].every((b) => b.className.includes('is-missing')),
+        }));
+        check('刷新后候选词条筛选被复现',
+          candReload.view === 'candidates' && candReload.rows === candFiltered.rows && candReload.allMissing,
+          `view=${candReload.view} / ${candReload.rows} 行`);
+        await pc2.close();
+
+        // 出处可回指：点「N 条出处」→ 弹层列出样本 → 点引用键跳到样本库
+        const { page: pc3 } = await openPage(browser, 'index.html', '#candidates');
+        await pc3.waitForSelector('.cand-table', { timeout: 20000 });
+        const srcSheet = await pc3.evaluate(async () => {
+          const btn = document.querySelector('[data-cand-sources]');
+          if (!btn) return { ok: false, reason: '没有出处按钮' };
+          btn.click();
+          await new Promise((r) => setTimeout(r, 500));
+          const sheet = document.querySelector('[data-od-id="cand-sources"]');
+          const keys = [...document.querySelectorAll('[data-cand-goto]')].map((b) => b.dataset.candGoto);
+          return {
+            ok: true,
+            sheet: !!sheet,
+            cards: keys.length,
+            keyShape: keys.every((k) => /^[0-9a-f]{8}-[0-9a-z]{4}$/.test(k)),
+          };
+        });
+        check('点出处能打开出处弹层并列出样本',
+          srcSheet.ok && srcSheet.sheet && srcSheet.cards > 0 && srcSheet.keyShape,
+          srcSheet.reason || `${srcSheet.cards} 条出处`);
+        const candGoto = await pc3.evaluate(async () => {
+          const btn = document.querySelector('[data-cand-goto]');
+          if (!btn) return { ok: false, reason: '没有可点的出处' };
+          btn.click();
+          await new Promise((r) => setTimeout(r, 700));
+          return { ok: true, hash: location.hash, isSamples: !!document.querySelector('[data-od-id="explore-head"]') };
+        });
+        check('点引用键能跳到研究样本库并直达该样本',
+          candGoto.ok && candGoto.hash.includes('#samples?job=') && candGoto.isSamples,
+          candGoto.hash);
+        await pc3.close();
+
+        // 导出两种格式都出内容（内容在页面里算，不落盘）
+        const { page: pc4 } = await openPage(browser, 'index.html', '#candidates');
+        await pc4.waitForSelector('.cand-table', { timeout: 20000 });
+        const candExport = await pc4.evaluate(() => {
+          if (typeof CANDIDATE_EXPORT === 'undefined') return { ok: false, reason: '导出模块未加载' };
+          const list = CANDIDATE_EXPORT.currentCandidates();
+          const json = CANDIDATE_EXPORT.toJson(list);
+          const md = CANDIDATE_EXPORT.toMarkdown(list);
+          let parsed = null;
+          try { parsed = JSON.parse(json); } catch { /* 解析失败 */ }
+          return {
+            ok: true,
+            n: list.length,
+            jsonLen: json.length,
+            mdLen: md.length,
+            jsonRows: parsed ? (parsed['候选词条'] || []).length : -1,
+            jsonCount: parsed ? parsed['命中条数'] : -1,
+            mdHasTable: md.includes('| 措辞 | 频次 |'),
+            mdHasKeys: md.includes('#samples?job='),
+          };
+        });
+        check('候选词条 JSON 导出可解析且条数一致',
+          candExport.ok && candExport.jsonRows === candExport.n && candExport.jsonCount === candExport.n,
+          candExport.reason || `${candExport.jsonRows} 行 / ${candExport.jsonLen} 字节`);
+        check('候选词条 Markdown 导出有概览表与深链说明',
+          candExport.mdHasTable && candExport.mdHasKeys && candExport.mdLen > 0,
+          `${candExport.mdLen} 字节`);
+        await pc4.close();
       }
 
       /* 7a-4. 引擎本体：URL 往返一致（build → parse 得到同一状态） */

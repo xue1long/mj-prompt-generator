@@ -1144,3 +1144,50 @@ details[open] > summary::after { transform: rotate(-135deg) translate(-1px, -1px
 .cmp-meta td:first-child, .cmp-decomp td:first-child { white-space: nowrap; color: var(--muted); }
 .cmp-text { font-size: 12.5px; color: var(--fg); line-height: 1.55; }
 .cmp-text--empty { color: var(--muted); font-style: italic; }
+
+/* ── 候选词条视图（报告 2.6 / 第 12 步）───────────────────────────────
+   一张对照表：社区措辞 × 频次 × 词库覆盖状态 × 词库对应 × 出处。
+
+   三态配色沿用既有 token，不新开颜色家族：
+     exact   （已在词库）  → --ok       绿：词库覆盖到了，是确认
+     near    （词库有近义）→ --accent-cool 冷蓝：方向对，措辞没对上
+     missing （词库未覆盖）→ --warn     琥珀：真缺口，最值得注意 */
+.cand-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cand-table th {
+  text-align: left; font-weight: 600; font-size: 11px; color: var(--muted);
+  padding: 8px 10px; border-bottom: 1px solid var(--border-2);
+  text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
+}
+.cand-table td {
+  padding: 9px 10px; border-bottom: 1px solid var(--border);
+  color: var(--fg-2); vertical-align: middle;
+}
+.cand-table tbody tr:hover td { background: var(--surface-2); }
+.cand-phrase-btn {
+  border: 0; background: transparent; padding: 0; cursor: pointer;
+  font-family: var(--font-mono); font-size: 12.5px; color: var(--fg);
+  text-align: left; border-bottom: 1px dashed var(--border-2);
+}
+.cand-phrase-btn:hover { color: var(--accent); border-bottom-color: var(--accent-line); }
+.cand-df {
+  font-family: var(--font-mono); font-size: 12px; color: var(--muted);
+  text-align: right; font-variant-numeric: tabular-nums;
+}
+.cand-badge {
+  display: inline-block; font-size: 11px; padding: 2px 8px;
+  border-radius: 999px; border: 1px solid var(--border-2);
+  color: var(--muted); white-space: nowrap;
+}
+.cand-badge.is-exact   { color: var(--ok);          border-color: color-mix(in oklch, var(--ok) 42%, transparent); }
+.cand-badge.is-near    { color: var(--accent-cool); border-color: color-mix(in oklch, var(--accent-cool) 42%, transparent); }
+.cand-badge.is-missing { color: var(--warn);        border-color: color-mix(in oklch, var(--warn) 42%, transparent); }
+.cand-match { display: flex; flex-wrap: wrap; gap: 4px; }
+.cand-match .term { color: var(--fg-2); }
+.cand-match .term .en { margin-left: 5px; color: var(--muted); }
+.cand-src-btn {
+  border: 1px solid var(--border-2); background: var(--surface);
+  border-radius: var(--r-sm); padding: 3px 9px; cursor: pointer;
+  font-family: var(--font-mono); font-size: 11px; color: var(--muted);
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.cand-src-btn:hover { color: var(--accent); border-color: var(--accent-line); }
