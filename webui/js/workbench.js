@@ -223,6 +223,15 @@ const EXPLORE_FILTER_SOURCE = FILTER_ENGINE.source('samples', [
   { key: 'srefCode', type: 'multi', valuesOf: (j) => String(j.sref || '').split(/\s+/).filter(Boolean) },
   // 提示词短语（报告 2.2）：从 prompt 现算的短语索引，不是烘焙字段
   { key: 'phrase', type: 'multi', valuesOf: (j) => (typeof PHRASE_INDEX !== 'undefined' ? phraseIndexOf(j) : []) },
+  // 拆解来源（报告 2.5）：三层可信度 + 无拆解。值域与 explore-board.js 的 DECOMP_SOURCES 一致
+  { key: 'decomp', type: 'multi', valuesOf: (j) => [(j.decomposition && j.decomposition.source) || '无拆解'] },
+  /* 生成日期（报告 2.7）：由 time 换算的**真实生成日**，与上面的 batch 是两个口径。
+     实测 968/971 条两者不同（批次 2026-11-05 下真实生成日横跨 28 天），
+     拿批次当时间维度做研究会全错。换算走 GEN_DATE（与样本导出同一份实现）。 */
+  { key: 'genDate', type: 'multi', valuesOf: (j) => {
+    const d = typeof GEN_DATE !== 'undefined' ? GEN_DATE.ofJob(j) : '';
+    return d ? [d] : [];
+  } },
 ]);
 
 /* 候选词条侧（报告 2.6 / 第 12 步）：搜索 + 三态筛选 + 最小频次。
@@ -250,6 +259,9 @@ function applyFilterFromQuery(query) {
   if (st.dims && st.dims.sref !== undefined) EXPLORE_BOARD.state.srefOnly = !!st.dims.sref;
   if (st.dims && st.dims.srefCode !== undefined) EXPLORE_BOARD.state.srefCodes = new Set(st.dims.srefCode || []);
   if (st.dims && st.dims.phrase !== undefined) EXPLORE_BOARD.state.phrases = new Set(st.dims.phrase || []);
+  // 报告 2.5 / 2.7 的两个新维度
+  if (st.dims && st.dims.decomp !== undefined) EXPLORE_BOARD.state.decomp = new Set(st.dims.decomp || []);
+  if (st.dims && st.dims.genDate !== undefined) EXPLORE_BOARD.state.genDates = new Set(st.dims.genDate || []);
   if (ui.view === 'samples') EXPLORE_BOARD.state.q = ui.q;
   // 候选词条侧：状态在自己的视图里（报告 2.6）
   if (ui.view === 'candidates' && typeof CANDIDATE_VIEW !== 'undefined') {
@@ -305,6 +317,8 @@ function currentFilterState() {
         sref: !!s.srefOnly,
         srefCode: [...(s.srefCodes || [])],
         phrase: [...(s.phrases || [])],
+        decomp: [...(s.decomp || [])],
+        genDate: [...(s.genDates || [])],
       },
     };
   }

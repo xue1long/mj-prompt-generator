@@ -22,6 +22,7 @@ const ROOT = path.resolve(__dirname, '..');
 const EXPORT_FILE = path.join(ROOT, 'webui', 'js', 'sample-export.js');
 const DATA_FILE = path.join(ROOT, 'webui', 'js', 'data-explore.js');
 const JOBKEY_FILE = path.join(ROOT, 'webui', 'js', 'job-key.js');
+const GENDATE_FILE = path.join(ROOT, 'webui', 'js', 'gen-date.js');
 
 interface Seg {
   段位: string;
@@ -50,6 +51,8 @@ function loadExport(jobs?: unknown[]) {
   vm.createContext(ctx);
   // 键算法：与 sample-export.js 用的是同一个 JOB_KEY
   vm.runInContext(fs.readFileSync(JOBKEY_FILE, 'utf8'), ctx, { timeout: 5000 });
+  // 生成日期换算（第 13 步起 sample-export.js 委托给它，不再自带一份实现）
+  vm.runInContext(fs.readFileSync(GENDATE_FILE, 'utf8'), ctx, { timeout: 5000 });
   // 导出模块本体
   vm.runInContext(fs.readFileSync(EXPORT_FILE, 'utf8'), ctx, { timeout: 5000 });
   // 真实数据。
@@ -189,10 +192,11 @@ describe('研究样本导出', () => {
 
     it('没有拆解的作业留空，不编造', () => {
       const { SE } = loadExport();
-      const jobs = SE.currentJobs();
-      const noDecomp = jobs.find((j: any) => !j.decomposition);
-      expect(noDecomp).toBeTruthy();
-      const row = SE.rowOf(noDecomp) as Row;
+      /* 第 13 步用规则解析补齐了全部缺口（942 → 971），真实数据里已经没有
+         「无拆解」的作业了 —— 所以这里**构造**一个，而不是在数据里碰运气。
+         这条守的是降级行为本身：缺拆解时导出必须留空列，不能编一段出来。 */
+      const bare = { id: 'no-decomp-job', title: 't', prompt: 'p', author: 'a', aspect: '1:1', version: '8.2', batch: '2026-11-10', sref: '', time: 1791958105932, thumbs: [] };
+      const row = SE.rowOf(bare) as Row;
       expect(row['七段拆解']).toEqual([]);
       expect(row['拆解摘要']).toBe('');
       expect(row['拆解来源']).toBe('');

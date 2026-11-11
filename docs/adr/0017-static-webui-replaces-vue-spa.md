@@ -1022,3 +1022,61 @@ Round 16 的回退：把 `webui/js/core.js` 的 `vocabPreviewPath()` / `midlibra
 - **不自动入库、不改词库** —— 用户拍板。词库是假设集，并入等于让证据自己变成假设。
 - **`config/prompts.yaml` 与 `data-vocab.js` 的一致性** —— 前者 156 条、后者 133 条（`artists` 23 条并入 `data-artists.js`）。这个「少 23 条」的现状本轮未动，属独立轮次。
 - **`validateVocab` 未进界面** —— 引擎有反向验证能力（「词库哪些条目社区没用过」），但用户选的是「只做候选清单 + 导出」，反向结果暂只在测试里断言。
+
+---
+
+## Round 20（2026-11-11）：拆解分层、时间两个口径、参数维度不可研究
+
+### 做了什么
+
+报告 2.5 / 2.7 / 2.8 三条一起做 —— 它们指向同一件事：**字段的可信度与口径没在界面上分清**。
+
+| 文件 | 变更 |
+|---|---|
+| `tools/rule-decompose.mjs` | 保留判据 `/手工/` → `/手工\|精拆/`（**否则全量跑会把 50 条 LLM 精拆静默降级成规则解析**）；统计字段 `keptHandmade` → `keptTrusted` |
+| `config/explore-decomposed.yaml` | 942 → **971** 条：规则解析 889 → 918，手工 3 / 逐条精拆 50 不变，**可信层 53 条内容逐字未变** |
+| `webui/js/gen-date.js`（新增） | 生成日期换算的**唯一实现**（本地时间口径），供界面筛选与样本导出共用 |
+| `webui/js/sample-export.js` | `genDate()` 改为委托 `GEN_DATE.ofJob`；`filterSummary()` 补两个新维度的描述 |
+| `webui/js/explore-board.js` | 新增 `DECOMP_SOURCES` / `TRUSTED_DECOMP` / `decompSourceOf` / `setOfMsel` / `availableGenDates` / `availableDecompSources`；工具栏加 2 个多选 + 1 个开关；灯箱加 `param-absent` / `param-caveat` 两条注记 |
+| `webui/js/workbench.js` | `EXPLORE_FILTER_SOURCE` 加 `decomp` / `genDate` 两维；`applyFilterFromQuery` / `currentFilterState` 同步 |
+| `webui/index.html` | 加载 `gen-date.js` |
+| `webui/css/app.css` | `.param-absent` / `.param-caveat` 注记样式（虚线边框 = 注记，不是数据） |
+| `tests/genDate.test.ts`（新增，9 用例） | 非法输入不产出 `NaN` 日期、本地时间口径、真实数据 34 天口径、**界面与导出对同一条作业给出同一日期** |
+| `tests/sampleExport.test.ts` | 「无拆解留空」改为**构造**数据 —— 真实缺口已归零，测试前提消失 |
+| `scripts/verify-webui.mjs` | 新增 7 条断言（含「拆解缺口归零」这条不变量） |
+| `docs/adr/0025-…`（新增） | 三条裁决与实测依据 |
+| `docs/第一性原理校验报告.md` | 2.5 / 2.7 / 2.8 各加「实测复核」块（原文保留）；执行序第 13 步；文首进度块 |
+
+### 关键设计决定
+
+- **「只看可信拆解」不是独立状态位** —— 它是 `decomp` 多选的一种写法（= 勾手工 + 逐条）。独立状态位必然与多选双写，会出现「开关开着、多选里还有规则解析」的矛盾状态。做成快捷写法后只有一处真相，URL 里就是 `decomp=手工精拆&decomp=逐条精拆`。
+- **规则解析器不得覆盖比它更可信的层** —— 这是数据治理问题，不是脚本书写问题。修法是把保留判据从「含手工」扩到「含精拆」。
+- **补齐缺口用规则解析、并如实落在最低层** —— 目的是让「971/971 都有拆解」成为可断言的不变量，不是让数据看起来完整。用 LLM 补会更好，但环境里没有 `MJ_DECOMPOSE_API_KEY`。
+- **日期口径选本地时间** —— UTC 与本地在实测数据上差 287 条。选本地的理由：使用者看的是自己日历上的哪天，且第 10 步的导出已经这么做了。
+- **两个时间维度都留着** —— 采集批次不是错数据，是另一种口径（判断新鲜度、追踪滚动窗口）；只是下拉标签改成「采集批次」并加 `title`。
+
+### 实施中踩到的坑
+
+| 坑 | 症状 | 根因 |
+|---|---|---|
+| `rule-decompose.mjs` 只保护手工精拆 | dry-run 显示 `generated: 968` / `keptHandmade: 3` | 判据 `includes('手工')` 不匹配「逐条精拆」的 model 串 ⇒ 50 条 LLM 精拆会被覆盖 |
+| `refresh()` 里的三元同步 | 新下拉的勾选态会被按 `phrases` 判断 | `id === 'ex-srefcode' ? ui.srefCodes : ui.phrases` —— 加第三个下拉就错。改 `setOfMsel(id)` 单一映射 |
+| 测试的 mismatch 判据 | `mismatch` 只算出 369 条（应为 968） | 写成 `startsWith(batch.slice(0,8))`，只比到月份。改为全等比较 |
+| 模板里写了 markdown 星号 | `**不可研究**` 会原样显示 | JS 模板字符串里没有 markdown 渲染。改 `<b>`，并在 verify 里加「渲染层不得漏出 `**`」 |
+
+### 验证记录
+
+| 项 | 结果 |
+|---|---|
+| `npm run verify`（源码 / `--dist`） | **120/120**（新增 7 条断言） |
+| `npm test` | **18 文件 / 333 用例全部通过**（基线 17/324 + 新增 9，收集守卫确认完整） |
+| `npx tsc --noEmit` | 6 个错误（与 Round 19 基线一致，零新增） |
+| `npm run build` | 30 文件 / 7.13 MB / 22 个 JS / 4 个 HTML |
+| 数据 | 942 → 971；可信层 53 条内容变化 **0 条** |
+| 分面计数 | 拆解 3 + 50 + 918 = 971；生成日期 34 天合计 971；组合 手工 + 规则 = 921 |
+
+### 未做
+
+- **29 条用 LLM 精拆升级** —— 无 API key。等能跑 LLM 时整批做更好。
+- **采集侧补参数**（报告 2.8 的另一个选项）—— 需要改采集链 + 重新采集，且上游是否真有结构化参数未验证。
+- **窄屏下 7 个筛选控件的排布** —— 窄屏页签遮挡是既有缺陷，本步未碰。

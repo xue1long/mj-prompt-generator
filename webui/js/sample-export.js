@@ -58,14 +58,14 @@ const SAMPLE_EXPORT = (() => {
 
   /** 生成时间（Unix 毫秒）→ 本地日期字符串。
       批次键是「首次采集日」，与生成时间不是一回事（报告 2.7），
-      导出时两个都给，读者才不会混。 */
+      导出时两个都给，读者才不会混。
+
+      换算逻辑在 `webui/js/gen-date.js`（第 13 步抽出）—— 研究样本库的
+      「生成日期」筛选维度用的是同一份实现。两处各写一份就会漂移：
+      导出的日期与界面筛出的日期可能对不上，而同一条作业只该有一个生成日。
+      GEN_DATE 缺席时返回空串（导出文件的该列留空比给错日期安全）。 */
   function genDate(job) {
-    const t = Number(job?.time);
-    if (!Number.isFinite(t) || t <= 0) return '';
-    const d = new Date(t);
-    if (Number.isNaN(d.getTime())) return '';
-    const p = (n) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    return typeof GEN_DATE !== 'undefined' ? GEN_DATE.ofJob(job) : '';
   }
 
   /**
@@ -156,6 +156,10 @@ const SAMPLE_EXPORT = (() => {
     if (ui.srefOnly) parts.push('只看有 sref');
     if (ui.srefCodes && ui.srefCodes.size) parts.push(`sref 码 ${[...ui.srefCodes].join('/')}`);
     if (ui.phrases && ui.phrases.size) parts.push(`短语 ${[...ui.phrases].join('/')}`);
+    // 报告 2.5 / 2.7：新维度的筛选条件也必须写进文件头 —— 导出的数据
+    // 离开界面后，读者只能靠这行字知道它被什么条件筛过。
+    if (ui.decomp && ui.decomp.size) parts.push(`拆解来源 ${[...ui.decomp].join('/')}`);
+    if (ui.genDates && ui.genDates.size) parts.push(`生成日期 ${[...ui.genDates].sort().join('/')}`);
     return parts.length ? parts.join(' · ') : '全部';
   }
 

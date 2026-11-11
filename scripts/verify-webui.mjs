@@ -158,6 +158,11 @@ async function main() {
           `作业 ${data.jobs} / 统计 ${data.total} / 批次合计 ${data.totalJobs}`);
         check('七段拆解与待精拆数自洽', data.decomp > 0 && data.decomp + data.noDecomp === data.jobs,
           `有拆解 ${data.decomp} / 待精拆 ${data.noDecomp} / 共 ${data.jobs}`);
+        /* 第 13 步：缺口必须归零。规则解析已补齐全部缺失项，
+           所以「待精拆」从 29 变成 0 —— 这里钉住它，避免以后采集到新作业后
+           悄悄退回去（界面不会报错，只是灯箱空着，没人发现）。 */
+        check('拆解缺口归零（第 13 步）', data.noDecomp === 0,
+          `仍有 ${data.noDecomp} 条无拆解`);
         check('探索榜配图为 public 全量', data.imageMode === 'public' && data.withImages === data.total,
           `${data.imageMode} / ${data.withImages} / ${data.total}`);
         // sref 如实透传：源快照有值就有值，无值就是 null。历史事故——构建期硬编码 null，
@@ -406,7 +411,9 @@ async function main() {
         await page.evaluate(() => { location.hash = '#samples'; });
         await new Promise((r) => setTimeout(r, 300));
 
-        /* 灯箱：选首屏里有七段拆解的作业（11-08 新增 15 条尚无拆解，另测空态分支） */
+        /* 灯箱：选首屏里有七段拆解的作业。
+           第 13 步已用规则解析补齐全部缺口（942 → 971），因此下面的「空态分支」
+           断言会退化为验证有拆解作业的灯箱 —— 那段逻辑本来就是自洽的。 */
         const decomJob = await page.evaluate(() => {
           for (const c of document.querySelectorAll('.job-card[data-job]')) {
             const j = typeof EXPLORE_JOBS !== 'undefined'
@@ -540,6 +547,126 @@ async function main() {
               + ` / 新增错误 ${errs.length - errsBeforeSheet}`);
           await page.click('.job-sheet [data-role="close"]');
           await page.select('#ex-batch', '');
+        }
+
+        /* ── 7a-2b. 拆解分层与生成日期（报告 2.5 / 2.7 / 第 13 步）──────────
+           三件事各守一条：
+             1. 拆解来源下拉的三项计数之和 == 全部作业数（缺口归零，且分层不重不漏）
+             2. 「只看可信拆解」= 手工 + 逐条，点一下 URL 里就是这两项，刷新能复现
+             3. 生成日期的下拉计数 == 真的点下去筛出的条数（批次与生成日是两个口径，
+                口径错的症状正是「显示的数和筛出的数对不上」）
+           参数维度（2.8）另守一条：灯箱必须把「不可研究」说清楚。 */
+        {
+          await page.evaluate(() => { location.hash = '#samples'; });
+          await new Promise((r) => setTimeout(r, 400));
+
+          const decompUi = await page.evaluate(() => {
+            const jobs = typeof EXPLORE_JOBS !== 'undefined' ? EXPLORE_JOBS : [];
+            const counts = [...document.querySelectorAll('#ex-decomp .msel-n')].map((e) => parseInt(e.textContent, 10) || 0);
+            const values = [...document.querySelectorAll('#ex-decomp input')].map((e) => e.value);
+            const trustedCount = jobs.filter((j) => {
+              const s = j.decomposition && j.decomposition.source;
+              return s === '手工精拆' || s === '逐条精拆';
+            }).length;
+            return {
+              hasSel: !!document.querySelector('#ex-decomp'),
+              hasTrustedBtn: !!document.querySelector('#ex-decomp-trusted'),
+              values,
+              counts,
+              sum: counts.reduce((a, b) => a + b, 0),
+              total: jobs.length,
+              trustedCount,
+              // 「无拆解」不该出现在选项里 —— 缺口已归零（971/971 都有拆解）
+              hasNoDecomp: values.includes('无拆解'),
+            };
+          });
+          check('拆解来源下拉存在且分层不重不漏',
+            decompUi.hasSel && decompUi.sum === decompUi.total && !decompUi.hasNoDecomp,
+            `选项 ${decompUi.values.join('/')} = ${decompUi.counts.join('+')} = ${decompUi.sum} / 作业 ${decompUi.total}`);
+
+          // 点「只看可信拆解」
+          await page.evaluate(() => document.querySelector('#ex-decomp-trusted').click());
+          await new Promise((r) => setTimeout(r, 450));
+          const trusted = await page.evaluate(() => ({
+            hash: location.hash,
+            on: document.querySelector('#ex-decomp-trusted').classList.contains('on'),
+            checked: [...document.querySelectorAll('#ex-decomp input:checked')].map((e) => e.value),
+            count: parseInt(document.querySelector('.toolbar .dock-count').textContent, 10),
+            rows: document.querySelectorAll('[data-job]').length,
+          }));
+          check('「只看可信拆解」= 手工 + 逐条，且 URL 里就是这两项',
+            trusted.on && trusted.checked.length === 2
+              && trusted.checked.includes('手工精拆') && trusted.checked.includes('逐条精拆')
+              && trusted.hash.includes('decomp=') && trusted.count === decompUi.trustedCount,
+            `${trusted.count} 条（期望 ${decompUi.trustedCount}）/ ${trusted.hash.slice(0, 80)}`);
+          check('只看可信拆解后列表同步收窄',
+            trusted.rows > 0 && trusted.rows === Math.min(trusted.count, 60),
+            `${trusted.rows} 行`);
+
+          // 刷新复现（URL 是多选本身，不是独立开关位）
+          const trustedHash = trusted.hash;
+          await page.goto(fileUrl('index.html') + trustedHash, { waitUntil: 'load', timeout: 30000 });
+          await new Promise((r) => setTimeout(r, 800));
+          const trustedReload = await page.evaluate(() => ({
+            on: document.querySelector('#ex-decomp-trusted').classList.contains('on'),
+            checked: [...document.querySelectorAll('#ex-decomp input:checked')].map((e) => e.value).length,
+            count: parseInt(document.querySelector('.toolbar .dock-count').textContent, 10),
+            view: document.querySelector('[data-view][aria-selected="true"]')?.dataset.view,
+          }));
+          check('刷新后拆解来源筛选被复现',
+            trustedReload.on && trustedReload.checked === 2 && trustedReload.count === trusted.count
+              && trustedReload.view === 'samples',
+            `view=${trustedReload.view} / ${trustedReload.count} 条 / 开关 ${trustedReload.on}`);
+
+          // 生成日期：下拉计数必须等于真的筛出来的条数
+          await page.evaluate(() => { location.hash = '#samples'; });
+          await new Promise((r) => setTimeout(r, 500));
+          const dateProbe = await page.evaluate(async () => {
+            const row = document.querySelector('#ex-gendate .msel-row');
+            if (!row) return { ok: false };
+            const box = row.querySelector('input');
+            const expect = parseInt(row.querySelector('.msel-n').textContent, 10) || 0;
+            box.checked = true;
+            box.dispatchEvent(new Event('change', { bubbles: true }));
+            await new Promise((r) => setTimeout(r, 450));
+            const got = parseInt(document.querySelector('.toolbar .dock-count').textContent, 10) || 0;
+            const rows = document.querySelectorAll('[data-job]').length;
+            const hash = location.hash;
+            // 全选清掉，别污染后面的断言
+            const clear = document.querySelector('#ex-gendate [data-msel-clear]');
+            if (clear) clear.click();
+            await new Promise((r) => setTimeout(r, 350));
+            return { ok: true, date: box.value, expect, got, rows, hash };
+          });
+          check('生成日期筛选：下拉计数与真实命中一致',
+            dateProbe.ok && dateProbe.expect === dateProbe.got && dateProbe.rows === Math.min(dateProbe.got, 60)
+              && dateProbe.hash.includes('genDate=') && /^\d{4}-\d{2}-\d{2}$/.test(dateProbe.date),
+            `${dateProbe.date} 期望 ${dateProbe.expect} 实得 ${dateProbe.got} / ${dateProbe.rows} 行`);
+
+          // 参数维度如实说明（2.8）
+          const paramNote = await page.evaluate(async () => {
+            const card = document.querySelector('.job-card[data-job]');
+            if (!card) return { ok: false, reason: '没有卡片' };
+            card.click();
+            await new Promise((r) => setTimeout(r, 700));
+            const caveat = document.querySelector('[data-od-id="param-caveat"]');
+            const text = caveat ? caveat.textContent.replace(/\s+/g, ' ').trim() : '';
+            const sheetHtml = document.querySelector('.job-sheet')?.innerHTML || '';
+            const out = {
+              ok: true,
+              hasCaveat: !!caveat,
+              mentionsUnresearchable: text.includes('不可研究'),
+              mentionsVersionFlat: text.includes('8.2'),
+              // 渲染层不能漏出 markdown 星号（模板里手滑写 **x** 就会原样显示）
+              starLeak: (sheetHtml.match(/\*\*/g) || []).length,
+            };
+            document.querySelector('.job-sheet [data-role="close"]')?.click();
+            return out;
+          });
+          check('灯箱把「参数维度不可研究」说清楚',
+            paramNote.ok && paramNote.hasCaveat && paramNote.mentionsUnresearchable
+              && paramNote.mentionsVersionFlat && paramNote.starLeak === 0,
+            paramNote.reason || `说明 ${paramNote.hasCaveat} / 星号泄漏 ${paramNote.starLeak}`);
         }
 
         /* 所有下拉选项均有结果（不出现假空态） */

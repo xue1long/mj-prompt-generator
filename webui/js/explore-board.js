@@ -18,11 +18,43 @@ const EXPLORE_BOARD = (() => {
     srefCodes: new Set(),
     /** 已选的 prompt 短语（多选，报告 2.2） */
     phrases: new Set(),
+    /** 已选的拆解来源（多选，报告 2.5）—— 值的域在 DECOMP_SOURCES */
+    decomp: new Set(),
+    /** 已选的生成日期（多选，报告 2.7）—— `YYYY-MM-DD`，由 time 换算 */
+    genDates: new Set(),
     limit: 60,
     facetsOpen: false,
     /** 勾选待对照的作业 id（最多 2 条，报告 2.2） */
     compareSel: [],
   };
+
+  /* 拆解来源的取值域（报告 2.5）—— 与 build-webui-data.mjs 的 modelSource() 同域。
+     第四项「无拆解」是为将来采集到的新作业留的位置：当前 971/971 都有拆解，
+     但滚动窗口每天进新作业，缺拆解是常态而非异常。 */
+  const DECOMP_SOURCES = [
+    { value: '手工精拆', label: '手工精拆 · 已验收基准' },
+    { value: '逐条精拆', label: '逐条精拆 · LLM 语义判断' },
+    { value: '规则解析', label: '规则解析 · 未精拆' },
+    { value: '无拆解', label: '无拆解' },
+  ];
+  /** 「可信拆解」= 手工 + 逐条。报告 2.5：研究结论默认只采信这一层。 */
+  const TRUSTED_DECOMP = ['手工精拆', '逐条精拆'];
+  /** 一条作业的拆解来源。缺拆解归到「无拆解」，不归到最低可信的规则解析 ——
+      「没有结论」和「有结论但不可信」是两件事。 */
+  const decompSourceOf = (j) => (j && j.decomposition && j.decomposition.source) || '无拆解';
+
+  /** 多选下拉的 id → 它对应的状态集合。
+      单一映射，别在各处写 `id === 'x' ? A : B` 的三元 —— 每加一个下拉就要改好几处，
+      漏一处就会让新下拉的勾选态被当成另一个下拉的状态（错得很难看出来）。 */
+  function setOfMsel(id) {
+    switch (id) {
+      case 'ex-srefcode': return ui.srefCodes;
+      case 'ex-phrase': return ui.phrases;
+      case 'ex-decomp': return ui.decomp;
+      case 'ex-gendate': return ui.genDates;
+      default: return null;
+    }
+  }
 
   /* ── 卡片操作区 ─────────────────────────────────────────────────────
      收藏键只由提示词正文的哈希决定：同一条提示词在任何筛选条件下状态一致。
@@ -184,6 +216,9 @@ const EXPLORE_BOARD = (() => {
         sref: !!ui.srefOnly,
         srefCode: [...ui.srefCodes],
         phrase: [...ui.phrases],
+        // 报告 2.5 / 2.7 新增的两个维度
+        decomp: [...ui.decomp],
+        genDate: [...ui.genDates],
       },
     };
   }
@@ -242,6 +277,30 @@ const EXPLORE_BOARD = (() => {
     return [...counts.entries()]
       .map(([code, n]) => ({ code, n }))
       .sort((a, b) => b.n - a.n || a.code.localeCompare(b.code));
+  }
+
+  /* 生成日期的选项（报告 2.7）：真实生成日，**新 → 旧**排列。
+     为什么不复用 availableBatches：批次是「首次采集日」，实测 968/971 条
+     与真实生成日不同，两者是不同的口径，选项也不能共用。
+     日期换算走 GEN_DATE（与样本导出的那一列同一份实现）。 */
+  function availableGenDates() {
+    const counts = new Map();
+    if (typeof GEN_DATE === 'undefined') return [];
+    for (const j of EXPLORE_JOBS) {
+      const d = GEN_DATE.ofJob(j);
+      if (!d) continue;
+      counts.set(d, (counts.get(d) || 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([date, n]) => ({ date, n }))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }
+
+  /* 拆解来源的选项（报告 2.5）：只列数据里真的出现的来源，顺序按可信度。 */
+  function availableDecompSources() {
+    const seen = new Set();
+    for (const j of EXPLORE_JOBS) seen.add(decompSourceOf(j));
+    return DECOMP_SOURCES.filter((s) => seen.has(s.value));
   }
 
   /* 短语下拉的选项（报告 2.2）：全局短语表，按 df 降序。
@@ -323,6 +382,15 @@ const EXPLORE_BOARD = (() => {
   function toolbarHtml() {
     const srefCodes = availableSrefCodes();
     const phrases = availablePhrases();
+    const decompSources = availableDecompSources();
+    const genDates = availableGenDates();
+    /* 「只看可信拆解」开关的 on 状态 = 当前恰好只勾了手工 + 逐条。
+       为什么不做成独立状态位：那会让「开关开着、多选里又勾了规则解析」
+       这种自相矛盾的状态可能发生。开关只是多选的**快捷写法**，
+       URL 里体现的就是 decomp 多选本身，刷新与分享都自然复现。 */
+    const trustedOn = ui.decomp.size === TRUSTED_DECOMP.length
+      && TRUSTED_DECOMP.every((v) => ui.decomp.has(v));
+    const trustedCount = EXPLORE_JOBS.filter((j) => TRUSTED_DECOMP.includes(decompSourceOf(j))).length;
     return `
       <div class="toolbar" data-od-id="explore-toolbar">
         <div class="search">
@@ -330,8 +398,8 @@ const EXPLORE_BOARD = (() => {
           <input id="ex-search" type="search" aria-label="搜索提示词或作者"
             placeholder="搜索提示词或作者" value="${esc(ui.q)}" autocomplete="off">
         </div>
-        <select class="select" id="ex-batch" aria-label="按批次筛选" style="width:auto">
-          <option value="">全部批次</option>
+        <select class="select" id="ex-batch" aria-label="按采集批次筛选" title="采集批次 = 这条作业第一次被采到的那天，不是它被生成的那天" style="width:auto">
+          <option value="">全部采集批次</option>
           ${availableBatches().map(b => `<option value="${esc(b.key)}"${ui.batch === b.key ? ' selected' : ''}>${esc(b.name)} · ${facetCount('batch', b.key)}</option>`).join('')}
         </select>
         <select class="select" id="ex-aspect" aria-label="按宽高比筛选" style="width:auto">
@@ -355,6 +423,24 @@ const EXPLORE_BOARD = (() => {
           selected: [...ui.phrases],
           dimKey: 'phrase',
           lazy: true,
+        }) : ''}
+        ${decompSources.length ? multiSelectHtml({
+          id: 'ex-decomp',
+          label: '拆解来源',
+          options: decompSources.map(s => ({ value: s.value, label: s.label })),
+          selected: [...ui.decomp],
+          dimKey: 'decomp',
+        }) : ''}
+        ${decompSources.length
+          ? `<button class="toggle${trustedOn ? ' on' : ''}" type="button" id="ex-decomp-trusted"
+               aria-pressed="${trustedOn}" title="只保留手工精拆与逐条精拆 —— 研究结论默认只采信这一层">只看可信拆解 <span class="n">${trustedCount}</span></button>`
+          : ''}
+        ${genDates.length ? multiSelectHtml({
+          id: 'ex-gendate',
+          label: '生成日期',
+          options: genDates.map(g => ({ value: g.date, label: GEN_DATE.shortLabel(g.date) })),
+          selected: [...ui.genDates],
+          dimKey: 'genDate',
         }) : ''}
         <span class="spacer"></span>
         <span class="dock-count" role="status" aria-live="polite">${matches().length} 条作业（显示 ${Math.min(ui.limit, matches().length)}）</span>
@@ -529,13 +615,12 @@ const EXPLORE_BOARD = (() => {
     }
     // 多选下拉的勾选态与计数：toolbar 不随 body 重建，这里显式同步。
     scope.querySelectorAll('[data-msel-item]').forEach(el => {
-      const id = el.dataset.mselItem;
-      const set = id === 'ex-srefcode' ? ui.srefCodes : ui.phrases;
-      el.checked = set.has(el.value);
+      const set = setOfMsel(el.dataset.mselItem);
+      if (set) el.checked = set.has(el.value);
     });
     scope.querySelectorAll('[data-msel]').forEach(det => {
-      const id = det.dataset.msel;
-      const set = id === 'ex-srefcode' ? ui.srefCodes : ui.phrases;
+      const set = setOfMsel(det.dataset.msel);
+      if (!set) return;
       const badge = det.querySelector('.msel-badge');
       if (set.size) {
         if (badge) badge.textContent = String(set.size);
@@ -550,6 +635,14 @@ const EXPLORE_BOARD = (() => {
         badge.remove();
       }
     });
+    // 「只看可信拆解」开关：on 态由多选推导，不是独立状态位（见 toolbarHtml 注释）
+    const trustedBtn = scope.querySelector('#ex-decomp-trusted');
+    if (trustedBtn) {
+      const on = ui.decomp.size === TRUSTED_DECOMP.length
+        && TRUSTED_DECOMP.every((v) => ui.decomp.has(v));
+      trustedBtn.classList.toggle('on', on);
+      trustedBtn.setAttribute('aria-pressed', String(on));
+    }
   }
 
   /** 把 toolbar + grid 换到 host 里并接线 */
@@ -628,7 +721,8 @@ const EXPLORE_BOARD = (() => {
         if (!el || !toolbar0.contains(el)) return;
         const id = el.dataset.mselItem;
         const v = el.value;
-        const set = id === 'ex-srefcode' ? ui.srefCodes : ui.phrases;
+        const set = setOfMsel(id);
+        if (!set) return;
         if (el.checked) set.add(v); else set.delete(v);
         ui.limit = 60;
         pushUrl();
@@ -639,7 +733,21 @@ const EXPLORE_BOARD = (() => {
         const btn = ev.target.closest ? ev.target.closest('[data-msel-clear]') : null;
         if (btn && toolbar0.contains(btn)) {
           const id = btn.dataset.mselClear;
-          if (id === 'ex-srefcode') ui.srefCodes.clear(); else ui.phrases.clear();
+          const set = setOfMsel(id);
+          if (set) set.clear();
+          ui.limit = 60;
+          pushUrl();
+          refresh(host);
+          return;
+        }
+        // 「只看可信拆解」快捷开关（报告 2.5）：它只是 decomp 多选的一种写法 ——
+        // 打开 = 只勾手工 + 逐条；再点一次 = 清空。单一状态源，URL 里就是 decomp。
+        const trustedBtn = ev.target.closest ? ev.target.closest('#ex-decomp-trusted') : null;
+        if (trustedBtn && toolbar0.contains(trustedBtn)) {
+          ev.preventDefault();
+          const on = ui.decomp.size === TRUSTED_DECOMP.length
+            && TRUSTED_DECOMP.every((v) => ui.decomp.has(v));
+          ui.decomp = on ? new Set() : new Set(TRUSTED_DECOMP);
           ui.limit = 60;
           pushUrl();
           refresh(host);
@@ -809,7 +917,10 @@ const EXPLORE_BOARD = (() => {
                   </div>`;
                 }).join('')}
               </div>
-              ${d.paramTail?.text ? `<div class="param-tail-box">${esc(d.paramTail.text)}</div>` : ''}
+              ${d.paramTail?.text
+                ? `<div class="param-tail-box">${esc(d.paramTail.text)}</div>`
+                : `<p class="param-absent" data-od-id="param-absent">正文未写 MJ 参数。社区作者多数不写 <code>--ar</code> / <code>--v</code>，而参数尾是<b>按正文里的 <code>--</code> 实打实切出来的</b>，没有就显示没有 —— 不拿推断值冒充。</p>`}
+              <p class="param-caveat" data-od-id="param-caveat">参数维度在这批数据上<b>不可研究</b>：实测 971 条里 <code>version</code> 全是 <code>8.2</code>（零区分度），正文里出现 <code>--</code> 的 9 条全是 <code>--massive</code> / <code>--perfect</code> 这类正文破折号误命中。画幅与版本来自上游字段，<b>不是作者写进 prompt 的</b>，别当参数用法规避结论。</p>
               ${tags.length ? `
                 <div class="group-head" style="margin-top:20px"><h2>词库打标</h2></div>
                 <div class="term-row">

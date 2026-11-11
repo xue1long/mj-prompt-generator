@@ -10,7 +10,8 @@
  * 不在这里维护第二份词表。改方法论只改 SKILL.md。
  *
  * 边界：这是确定性关键词匹配，不是 LLM 判断。框架判定、构图法归属为启发式推断，
- * 中文速读为词表拼接。已有的手工精拆条目按 jobId 保留，不被覆盖。
+ * 中文速读为词表拼接。已有的**手工精拆与 LLM 逐条精拆**条目按 jobId 保留，
+ * 不被覆盖（只覆盖规则解析层与缺失项）—— 见报告 2.5 的三层可信度。
  *
  * 输出格式：JSON。派生文件 config/explore-decomposed.yaml 由全部写者统一写 JSON
  * （另两个写者是 tools/decompose-explore.ts 与 tools/merge-fine-parts.mjs）。
@@ -434,9 +435,16 @@ function main() {
     ? (yaml.load(fs.readFileSync(OUTPUT, 'utf8')) || { jobs: [] })
     : { jobs: [] }
 
-  const handmade = new Map(
+  /* 保留**所有可信层**的已有条目，不只是手工精拆。
+     报告 2.5：拆解按来源分三层 —— 手工精拆 / 逐条精拆（LLM）/ 规则解析。
+     手写这本工具时只保护了「手工」，于是 50 条 LLM 逐条精拆会被规则解析
+     静默覆盖成最低可信层（实测会退 50 条质量）。判据因此扩到「含精拆」：
+     规则解析的 model 是「规则解析 v1（确定性关键词匹配，非 LLM）」，
+     不含「手工」也不含「精拆」，不会被自己保护。 */
+  const KEEP_RE = /手工|精拆/
+  const trusted = new Map(
     (existing.jobs || [])
-      .filter(x => String(x.model || '').includes('手工'))
+      .filter(x => KEEP_RE.test(String(x.model || '')))
       .map(x => [x.jobId, x])
   )
 
@@ -444,21 +452,21 @@ function main() {
   const generated = []
   let kept = 0
   for (const job of target) {
-    if (handmade.has(job.id)) { kept++; continue }
+    if (trusted.has(job.id)) { kept++; continue }
     generated.push(decomposeJob(job, methodology))
   }
 
   // 保留 LIMIT 之外、快照里仍存在的旧条目（避免 --limit 调试时误删数据）
   const targetIds = new Set(target.map(j => j.id))
   const untouched = (existing.jobs || []).filter(x => !targetIds.has(x.jobId) && jobs.some(j => j.id === x.jobId))
-  const merged = [...handmade.values(), ...untouched.filter(x => !handmade.has(x.jobId)), ...generated]
+  const merged = [...trusted.values(), ...untouched.filter(x => !trusted.has(x.jobId)), ...generated]
   const order = new Map(jobs.map((j, i) => [j.id, i]))
   merged.sort((a, b) => (order.get(a.jobId) ?? 1e9) - (order.get(b.jobId) ?? 1e9))
 
   const stats = {
     snapshotJobs: jobs.length,
     generated: generated.length,
-    keptHandmade: kept,
+    keptTrusted: kept,
     untouched: untouched.length,
     merged: merged.length,
     missingAfter: jobs.filter(j => !merged.some(x => x.jobId === j.id)).length,
