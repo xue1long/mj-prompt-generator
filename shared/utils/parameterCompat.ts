@@ -1,4 +1,4 @@
-import type { Parameter, ParameterValues, SelectOption } from '@/types'
+import type { Parameter, ParameterValues, SelectOption } from '../types'
 
 /**
  * 参数与模型版本的兼容关系。

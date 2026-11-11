@@ -74,4 +74,4 @@
 
 **兼容性**：旧深链 `#explore`（含 `?job=<引用键>`）**自动重定向**到 `#samples`，且带 job 参数时仍能直达灯箱 —— 第 5 步发出去的深链继续有效。
 
-**注意**：本 ADR 的修订段落描述的是 **Vue 版前端（`src/`）** 的布局，该实现将在第 11 步删除。静态 WebUI 的对应实现在 ADR-0017 Round 14。
+**注意**：本 ADR 的修订段落描述的是 **Vue 版前端（`src/`）** 的布局，该实现**已在第 11 步删除**（2026-11-11，见 `docs/adr/0023-vue-implementation-removed-shared-layer-preserved.md`）。静态 WebUI 的对应实现在 ADR-0017 Round 14。

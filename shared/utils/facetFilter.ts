@@ -1,4 +1,4 @@
-import type { PromptItem, PromptSubCategory } from '@/types'
+import type { PromptItem, PromptSubCategory } from '../types'
 
 /**
  * 筛选引擎（纯函数，无 Vue 依赖）。

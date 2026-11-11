@@ -1,9 +1,10 @@
 /**
- * 探索榜页面的 URL 契约。
+ * 探索榜页签的 URL 契约。
  *
  * 与词库页签的筛选契约（utils/filterHash.ts）是两套：
- * - 词库的页签是提示词库里的 tab，路径是 `#/artists`、`#/style-codes`；
- * - 探索榜是**顶层独立页面**，路径 `#/explore`，参数名也不与词库重名。
+ * - 词库页签路径 `#/artists`、`#/style-codes`，由 filterStore 解析；
+ * - 探索榜是提示词库里的第 9 个页签，路径 `#/explore`，参数名不与词库重名，
+ *   由 exploreStore 解析。两套不能互相代管，否则筛选参数会被当作非法参数清空。
  *
  * 形如 `#/explore?d=2026-11-06&ar=9:16&sref=1&q=cat`。
  * 与 ADR-0010 一致：hash 是筛选状态的唯一来源，不认识的参数直接丢弃。
@@ -41,7 +42,7 @@ export interface ParsedExploreHash {
   ignored: string[]
 }
 
-/** 这个 hash 是不是探索榜页面 */
+/** 这个 hash 是不是探索榜页签 */
 export function isExploreHash(hash: string): boolean {
   const path = (hash || '').replace(/^#/, '').split('?')[0].replace(/^\//, '')
   return path === EXPLORE_PATH

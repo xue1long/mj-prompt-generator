@@ -1,8 +1,8 @@
 /**
  * 构建静态 WebUI（ADR-0017）：把 webui/ 原样复制进 dist/。
  *
- * 与旧 Vue 构建的区别：
- *   - 不再跑 vue-tsc / vite，无编译期数据内联；数据由 build:webui-data 预先生成。
+ * 与旧 Vue 构建的区别（Vue 版已于第 11 步删除，见报告 3.5）：
+ *   - 不跑 vue-tsc / vite，无编译期数据内联；数据由 build:webui-data 预先生成。
  *   - dist/ 是纯静态目录，双击 dist/index.html 或任意静态服务器即可用。
  *   - public/ 下的图保持不动（不复制、不删除），它们是数据生产链的源。
  *
@@ -13,7 +13,6 @@
  *   20,087 张里 19,928 张是采集链生成物、本就不入库）。
  *
  * 运行：npm run build   （等价于 node scripts/build-webui.mjs）
- * 回退：npm run legacy:build 会重建旧 Vue 产物。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -55,7 +54,7 @@ if (!fs.existsSync(path.join(SRC, 'js', 'data-explore.js'))) fail('webui/js/ 数
 const srcStat = treeStat(SRC);
 if (fs.existsSync(DIST)) {
   const old = treeStat(DIST);
-  console.log(`[build-webui] 清空旧 dist/：${old.files} 文件 / ${(old.bytes / 1048576).toFixed(1)} MB（旧构建产物；旧 Vue 版本可用 legacy:build 重建）`);
+  console.log(`[build-webui] 清空旧 dist/：${old.files} 文件 / ${(old.bytes / 1048576).toFixed(1)} MB（旧构建产物）`);
   fs.rmSync(DIST, { recursive: true, force: true });
   if (fs.existsSync(DIST)) fail('dist/ 清空失败');
 }

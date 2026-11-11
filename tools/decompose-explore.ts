@@ -12,7 +12,7 @@ import type {
   PromptParam,
   PromptSegment,
   PromptTagGroup,
-} from '../src/types/explore'
+} from '../shared/types/explore'
 
 /**
  * 探索榜提示词结构分解 —— 构建期 LLM 预生成（见 ADR-0015）。

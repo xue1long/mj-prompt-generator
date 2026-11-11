@@ -5,7 +5,7 @@ import type {
   PromptsConfig,
   StyleArtist,
   StylesConfig,
-} from '@/types'
+} from '../types'
 
 /**
  * 把风格库并进词库。

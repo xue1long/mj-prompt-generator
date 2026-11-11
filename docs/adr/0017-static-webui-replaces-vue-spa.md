@@ -10,6 +10,8 @@
 >
 > **编年提示（Round 17，2026-11-11）**：报告 4.1 的「本地数据层」重构**范围经实测收敛** —— 原设想的「作业落 IndexedDB + 筛选下沉」被证伪（采集链是 14 天滚动窗口，条数封顶 971 条；且 `file://` 下 `fetch` / `XHR` / 动态 `import()` 全部被 CORS 拦截，落库只能变成「复制一份」）。只做真缺口：**按当前筛选导出研究样本集**（JSON / Markdown 双格式）。新增 `webui/js/sample-export.js`；verify 断言 **94 → 100**，测试 **278 → 295**（16 文件）。**裁决见 `docs/adr/0022-sample-export-and-data-layer-verdict.md`，实施编年以本 ADR 末尾「Round 17」为准**。
 >
+> **编年提示（Round 18，2026-11-11）**：Vue 版实现**已删除** —— `src/`（58 文件 / 11,198 行）、根 `index.html`、`scripts/verify-app.mjs`、5 条 `legacy:*`/`verify:legacy*` 脚本、5 个 Vue 依赖全部退役；`vite.config.ts` 改名 `vitest.config.ts`。**但删除范围经实测收窄**：`src/` 同时是共享逻辑层所在，其中 7 个纯逻辑模块（`facetFilter` / `filterHash` / `exploreHash` / `styleMerge` / `promptLabel` / `promptBuilder` / `parameterCompat`）被 `tests/` 8 个文件直接 import 并断言行为，按字面整体删除会连带删掉被测对象、让 `webui/` 侧的筛选引擎失去单元测试保护。故拆层：类型与纯逻辑层用 `git mv` 迁出到 `shared/`（保留历史），`@' alias 指向 `shared/` ⇒ **8 个测试文件零改动**。verify **100/100**（零回退），测试 **295 用例 / 16 文件**（零损失），tsc 错误 **7 → 6**。**裁决见 `docs/adr/0023-vue-implementation-removed-shared-layer-preserved.md`，实施编年以本 ADR 末尾「Round 18」为准**。
+>
 > **关于 `CONTEXT.md`**：Q14 冻结（措辞修订需用户先处理仓库未提交改动）**本轮未正式解除**。本轮为让新术语有定义处，在 `CONTEXT.md` 的「素材」节新增了「配图命名空间」「配图来源目录」两条**新增**术语（不改动既有措辞，不触碰冻结项）。**既有措辞的三处修订仍待用户批准**。Round 17 又在「研究」节新增「生成日期」「导出样本集」两条**新增**术语，同样不改动既有措辞。
 
 ## 背景
@@ -896,3 +898,57 @@ Round 16 的回退：把 `webui/js/core.js` 的 `vocabPreviewPath()` / `midlibra
 #### 回退
 
 删 `webui/js/sample-export.js` 与 `tests/sampleExport.test.ts`，从 `webui/index.html` 移除对应 `<script>`，从 `webui/js/explore-board.js` 移除 `exportMenuHtml()` / `doExport()` 与 `matches` 的对外暴露、从 `scripts/verify-webui.mjs` 移除 5b 段，并回退 README / CONTEXT.md / 报告的对应段落。**无数据迁移、无存储格式变更** —— 导出是只读操作，不写任何持久化数据。
+
+
+---
+
+## Round 18（2026-11-11）：Vue 实现删除，共享逻辑层迁出到 `shared/`
+
+### 做了什么
+
+| 位置 | 改动 |
+|---|---|
+| `src/`（58 文件 / 11,198 行） | **整体删除**（含 26 项未提交改动 —— 2026-11-07「探索榜放入提示词库」决策下的 Vue 版改造，该决策已于第 7 步被 ADR-0020 推翻，经用户拍板直接丢弃） |
+| 根 `index.html`、`scripts/verify-app.mjs` | 删除（Vue 入口与 Vue 版冒烟验证） |
+| `src/types/` → `shared/types/` | `git mv` 迁移（7 文件 / 611 行），历史保留 |
+| `src/utils/` 的 7 个被测模块 → `shared/utils/` | `git mv` 迁移（`facetFilter` / `filterHash` / `exploreHash` / `styleMerge` / `promptLabel` / `promptBuilder` / `parameterCompat`） |
+| `src/vite-env.d.ts` → `shared/env.d.ts` | 删 `*.vue` 声明，保留 `virtual:app-config` |
+| `shared/utils/index.ts`（新增） | 共享层的导出入口，注明与 `webui/js/` 的「源 / 镜像」关系 |
+| `vite.config.ts` → `vitest.config.ts` | 删 vue 插件 / dev server / build 段；保留 `yamlConfigPlugin()` 与 `cacheDir` |
+| `tsconfig.json` | `@/*` → `shared/*`；`include` 改为 `shared/**/*.ts` + `tools/**/*.ts` + `tests/**/*.ts` |
+| `tsconfig.node.json` | `include` 改 `vitest.config.ts` |
+| `tools/*.d.ts` → `tools/*.d.mts` | `.mjs` 模块的声明文件必须匹配扩展名才会被 TS 识别 |
+| `package.json` | 删 5 条 legacy 脚本 + 5 个 Vue 依赖（`vue` / `pinia` / `naive-ui` / `vue-tsc` / `@vitejs/plugin-vue`） |
+| `webui/js/core.js` | 2 处「镜像 `src/utils/…`」注释改为「镜像 `shared/utils/…`」 |
+| `scripts/build-webui.mjs` | 删 `legacy:build` 回退说明（该脚本已不存在） |
+| `docs/adr/0023-…`（新增） | 裁决与收窄依据 |
+| `docs/第一性原理校验报告.md` | 3.5 节原地加「实测复核」块（原文保留）；执行序第 11 步状态更新；文首进度块更新 |
+
+### 为什么范围被收窄
+
+报告 3.5 原文把 `src/` 整体当「退役的 Vue 实现」。实测发现它**同时是共享逻辑层的所在**：`src/types/` 被 `tools/` 3 个文件与 `tests/` 8 个文件依赖，`src/utils/` 里 7 个模块被 `tests/` 直接 import 并断言行为（实测 7/7 零 Vue / 零 DOM 依赖）。按字面整体删除会连带删掉被测对象，`webui/` 侧的筛选引擎将失去单元测试保护（`styleMerge` / `promptLabel` / `exploreHash` 在 webui 侧无对应实现）。
+
+用户 2026-11-11 拍板选**方案 A（拆层迁出）**，否决了「按字面整体删 + 删 8 个测试文件」与「先移植到 webui 再删」两个选项。
+
+### 关键设计决定
+
+- **alias 指向变了，测试代码没变** —— `@/` 从 `src/*` 改指 `shared/*`，`tests/` 的 8 个 `@/utils/*` import **一个字都不用改**。这是「拆层」相对「重写测试」的核心优势。
+- **迁移用 `git mv` 而非重建** —— 历史保留，`git log --follow shared/utils/facetFilter.ts` 可追到原 `src/utils/` 的提交。
+- **`tools/` 纳入 tsconfig include** —— 生产代码本来就不该游离在类型检查之外；顺带把 `tools/job-key.mjs` 的隐式 any 修掉（tsc 错误 7 → 6）。
+- **vitest 2.x 的 alias 必须写在 `test.alias`** —— 写在 `resolve.alias` 里只影响 vite 应用构建管线，vitest 读不到。已在 `vitest.config.ts` 文件头注明。
+- **历史 ADR 不改写** —— ADR-0001 / 0004 / 0008 / 0013 / 0015 / 0016 / 0018 里提到 `src/` 的段落保留原样（历史记录，非当前事实）。
+
+### 验证记录
+
+| 项 | 结果 |
+|---|---|
+| `npm run verify`（源码） | **100/100 通过**（与第 10 步基线一致，零回退） |
+| `npm test` | 16 文件 / **295 用例全部通过**（与基线完全一致，收集守卫确认完整） |
+| `npx tsc --noEmit` | **6 个错误**（迁移前 7 个，净减 1） |
+| `npm run build` | `dist/` **26 文件 / 7.00 MB / 18 个 JS / 4 个 HTML**；单一命名空间守门通过 |
+| 残留引用扫描 | 代码层 `src/` 引用清零 |
+
+### 未做
+
+- `docs/screenshots/` 4 张 Vue 时代截图的重拍 —— 属独立视觉轮次；
+- `CONTEXT.md` 里 `src/` 相关措辞的正式修订 —— Q14 冻结项仍待用户批准，本轮未触碰。

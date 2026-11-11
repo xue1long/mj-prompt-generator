@@ -5,7 +5,7 @@ import { spawn } from 'node:child_process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import yaml from 'js-yaml'
 import sharp from 'sharp'
-import type { ExploreAspect, ExploreBatch, ExploreConfig, ExploreJob } from '../src/types/explore'
+import type { ExploreAspect, ExploreBatch, ExploreConfig, ExploreJob } from '../shared/types/explore'
 
 /**
  * 采集 Midjourney 探索榜 —— 生成 config/explore.yaml 与 public/explore/thumbs/。

@@ -247,7 +247,7 @@ function saveSession() {
   } catch { /* 存储不可用时忽略 */ }
 }
 
-/* ── 参数与模型版本的兼容（镜像 src/utils/parameterCompat.ts） ─────── */
+/* ── 参数与模型版本的兼容（镜像 shared/utils/parameterCompat.ts） ─────── */
 const currentVersion = () => String(session.params.version || '8.2');
 
 function isSupportedByVersion(param, version) {
@@ -291,7 +291,7 @@ function sanitizeParams() {
   }
 }
 
-/* ── 最终提示词拼装（镜像 src/utils/promptBuilder.ts） ─────────────── */
+/* ── 最终提示词拼装（镜像 shared/utils/promptBuilder.ts） ─────────────── */
 function emitParameter(param) {
   const version = currentVersion();
   if (!isSupportedByVersion(param, version)) return null;

@@ -3,7 +3,7 @@
  *
  * 该模块是派生文件格式契约的单一来源，被 decompose-explore.ts（TS）、
  * rule-decompose.mjs、merge-fine-parts.mjs（均为 JS）共用。
- * tools/ 不在 tsconfig 的 include 范围内，但补上声明可避免 IDE / vue-tsc
+ * tools/ 不在 tsconfig 的 include 范围内，但补上声明可避免 IDE / tsc
  * 把 JS 模块隐式 any 化。
  */
 

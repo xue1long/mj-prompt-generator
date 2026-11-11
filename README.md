@@ -5,7 +5,7 @@
 
 纯前端应用，**不需要后端、不需要联网**，构建产物**在项目根内**双击即用。
 
-> **当前实现状态（2026-11-11）**：正式前端是 `webui/` 下的静态多页 WebUI（原 Vue SPA 仅以 `legacy:*` 保留）；探索榜 971 条 / 8 批次（每条带可引用的短键）、官方风格榜 200 组；`dist/` **26 文件 / 7.00 MB**（只放代码）。**全部配图统一走项目根 `public/`，`dist/` 必须在项目根内打开，单独拷走会丢图**（`public/` 里 20,087 张图是数据生产链的源，其中 19,928 张是采集链生成物、本就不入库）。研究样本库支持**按当前筛选导出样本集**（JSON / Markdown 双格式，导出的是筛选命中的全量，不只是分页后显示的部分）。下文部分章节仍描述 Vue 时代实现，已在相应处标注；权威决策见 [ADR-0017](docs/adr/0017-static-webui-replaces-vue-spa.md)。
+> **当前实现状态（2026-11-11）**：正式前端是 `webui/` 下的静态多页 WebUI（**唯一**前端实现；Vue 版已于第 11 步整体删除，`legacy:*` 脚本与 Vue 依赖一并退役）；探索榜 971 条 / 8 批次（每条带可引用的短键）、官方风格榜 200 组；`dist/` **26 文件 / 7.00 MB**（只放代码）。**全部配图统一走项目根 `public/`，`dist/` 必须在项目根内打开，单独拷走会丢图**（`public/` 里 20,087 张图是数据生产链的源，其中 19,928 张是采集链生成物、本就不入库）。研究样本库支持**按当前筛选导出样本集**（JSON / Markdown 双格式，导出的是筛选命中的全量，不只是分页后显示的部分）。下文部分章节仍描述 Vue 时代实现，已在相应处标注；权威决策见 [ADR-0017](docs/adr/0017-static-webui-replaces-vue-spa.md)。
 
 ---
 
@@ -70,7 +70,7 @@ npm run verify    # 冒烟验证：用本机 Chrome/Edge 真实渲染（需已 n
 
 > **`npm test` 带一道「收集守卫」**：某些环境下 vitest 写 SSR 缓存会被拒（`EPERM`），而它对单个文件的 transform 失败是**跳过该文件**而不是整体报错 —— 表现为「测试文件数忽多忽少、用例数随机少几十个」。守卫会核对**实际收集的文件数**与**磁盘上的文件数**，不等就自动重跑（最多 3 次），连续失败则**明确报错并以非零码退出**。**绝不静默少跑后还报成功。** 临时目录已改到项目内（`node_modules/.cache/tmp`），绕开系统 Temp 的占用竞争。
 
-单元测试覆盖六件关键事：
+单元测试覆盖七件关键事：
 
 - **提示词组装规则** —— 固定顺序（摄影前缀 → 机位 → 主体环境 → 光线 → 其他 → 参数）与参数输出规则
 - **版本兼容规则** —— 切换模型版本后，不支持的参数被清除、越界的滑块值被收敛
@@ -79,11 +79,12 @@ npm run verify    # 冒烟验证：用本机 Chrome/Edge 真实渲染（需已 n
 - **筛选** —— 筛选引擎的语义（组内任一、组间全部、主色并集、计数口径）与 URL 契约（白名单、非法参数丢弃、往返一致）
 - **短语索引与对照** —— 短语怎么切、什么算噪声、收录阈值（`tests/phraseIndex.test.ts`）；词级差异、元数据对照、七段拆解对照（`tests/compareView.test.ts`）
 - **样本导出** —— 导出的是筛选命中的**全量**而非分页后显示的部分；JSON 与 Markdown 同源；空结果、缺拆解、非法时间戳的降级（`tests/sampleExport.test.ts`）
+- **共享逻辑层的纯函数**（`shared/utils/`：分面筛选 / 筛选 hash / 探索榜 hash / 风格合并 / 标签回填 / 提示词拼装 / 参数兼容）—— 这些是 `webui/` 侧筛选与拼装算法的**可测试源**，7 个模块全部零 Vue、零 DOM 依赖
 
 冒烟验证（`npm run verify`）用本机 Chrome/Edge 以 `file://` 真实打开 `webui/` 下的四个页面，默认**不依赖 dev server**；加 `--dist`（`node scripts/verify-webui.mjs --dist`）才校验构建产物。当前共 **100 项断言**，覆盖渲染、全量数据契约（阈值取自产物统计对象，采集后无需改数字）、分页与空态降级、**sref 如实透传与「只看有 sref」端到端可用**、**风格参考码与提示词短语多选筛选（URL 往返）**、**对照视图（并排渲染 / 三块对照 / 链接可分享）**、**配图真实加载（判据 `complete && naturalWidth === 0`，能抓到路径写错）+ 配图路径全在 `../public/` 命名空间**、**样本导出（双格式 / 全量口径 / 随筛选联动 / 含引用键与真实生成日期）**、会话 / 主题 / 旧 hash 迁移、参数折叠态、窄屏基线。
 它需要本机装有 Chrome 或 Edge，并已安装 `puppeteer-core`（已在 devDependencies 中）。
 
-`docs/screenshots/` 下 4 张是 Vue 时代截图，已与现行静态 WebUI 不符，重拍留待单独视觉轮次。
+`docs/screenshots/` 下 4 张是 Vue 时代截图，已与现行静态 WebUI 不符，重拍留待单独视觉轮次。Vue 实现本身已于第 11 步整体删除（见 [ADR-0023](docs/adr/0023-vue-implementation-removed-shared-layer-preserved.md)）。
 
 ---
 
@@ -111,7 +112,10 @@ MJ Prompt Generator/
 │  ├─ preview-images/tracked/   ← 前端实际引用的 448 张（入库）
 │  └─ preview-images/thumbs/    ← 词库缩略图 133 张（入库）
 ├─ scripts/                ← 静态服务 / 构建 / 数据生成 / 冒烟校验（.mjs）
-├─ src/ + vite.config.ts   ← 退役的 Vue SPA 源码（回退点，legacy:* 可重建）
+├─ shared/                ← 共享逻辑层（纯 TS，零 Vue / 零 DOM，可单测）
+│  ├─ types/                 类型定义（探索榜 / 词库 / 参数 / 风格 / 配置）
+│  ├─ utils/                 筛选 / 拼装 / 合并 / 标签 / hash 契约（被 tests/ 直接覆盖）
+│  └─ env.d.ts               virtual:app-config 等虚拟模块的类型声明
 ├─ tools/                  ← 采集、导出、拆解等 TypeScript 工具
 ├─ skills/                 ← 配套 Agent 技能包
 ├─ evals/ / tests/ / docs/adr/
@@ -147,7 +151,7 @@ categories:
 - `preview` 相对于 `public/preview-images/`
 - `generationPrompt` 只用于展示，不参与组装
 
-静态 WebUI 不监听 YAML：改完 `config/*.yaml` 需依次跑 `npm run build:webui-data`（重建 `webui/js/data-*.js`）与 `npm run build`（同步 `dist/`）。Vue 时代的 Vite HMR 只在 `npm run legacy:dev` 下有效。
+静态 WebUI 不监听 YAML：改完 `config/*.yaml` 需依次跑 `npm run build:webui-data`（重建 `webui/js/data-*.js`）与 `npm run build`（同步 `dist/`）。**没有 HMR** —— Vue 时代的 Vite HMR 已随 Vue 实现一同退役。
 
 ---
 

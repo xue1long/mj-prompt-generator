@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import yaml from 'js-yaml'
 import { STYLES_TOP_KINDS, STYLES_TOP_PREVIEW_DIR } from './build-styles-top.ts'
-import type { StylesTopConfig } from '../src/types/styleTop'
+import type { StylesTopConfig } from '../shared/types/styleTop'
 
 /**
  * 采集 Midjourney 官方风格榜（styles_top）缩略图 —— 迁移自隔壁仓 tools/styles_top.py。

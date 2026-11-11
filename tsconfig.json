@@ -20,12 +20,15 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
-    /* Path alias */
+    /* Path alias
+       `@/*` 指向 shared/ —— 第 11 步（报告 3.5）把纯逻辑层从 src/ 迁到 shared/，
+       原 alias 指向 src/* 会让 tests/ 的 8 个 import 全部失效。
+       现在 @/types 与 @/utils/* 指向的仍是同一批文件，测试代码零改动。 */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["shared/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "tests/**/*.ts"],
+  "include": ["shared/**/*.ts", "tools/**/*.ts", "tests/**/*.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

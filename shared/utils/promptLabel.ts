@@ -1,4 +1,4 @@
-import type { PromptItem } from '@/types'
+import type { PromptItem } from '../types'
 
 /**
  * 条目的显示名。

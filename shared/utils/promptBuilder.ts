@@ -4,7 +4,7 @@ import type {
   ParametersConfig,
   SelectOption,
   SelectedPrompt,
-} from '@/types'
+} from '../types'
 import { isSupportedByVersion } from './parameterCompat'
 
 /**
