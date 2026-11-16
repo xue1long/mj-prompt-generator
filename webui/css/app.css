@@ -765,6 +765,10 @@ h3 { font-size: 16px; line-height: 1.3; }
   .library-head, .catnav, .toolbar, .library-body { padding-inline: var(--sp-4); }
 }
 @media (max-width: 980px) {
+  /* ADR-0034：顶栏增至 7 项，980px 以下就允许横向滚动，避免撑破文档
+     （实测 800×600 下 7 项静态排布会让文档横向溢出 49px）。 */
+  .mainnav { overflow-x: auto; }
+  .appbar { gap: var(--sp-3); }
   .workbench { grid-template-columns: minmax(0, 1fr); height: auto; overflow: visible; }
   /* DOM 顺序 = 视觉顺序：会话区在上、浏览区在下，不靠 order 倒置，
      会话明细在窄屏收进折叠块，避免把浏览区推得太远 */

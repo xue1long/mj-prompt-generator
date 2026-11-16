@@ -393,8 +393,8 @@ const CANDIDATE_VIEW = (() => {
       if (!btn || !backdrop.contains(btn)) return;
       ev.preventDefault();
       const key = btn.dataset.candGoto;
-      // 跳到研究样本库并直达那条作业（深链契约，报告 2.1）
-      location.hash = `#samples?job=${encodeURIComponent(key)}`;
+      // 跳到研究样本库独立页并直达那条作业（深链契约，报告 2.1 / ADR-0034）
+      location.assign(`samples.html#samples?job=${encodeURIComponent(key)}`);
     });
   }
 

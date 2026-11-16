@@ -459,7 +459,9 @@ const RESEARCH_VIEW = (() => {
     page.querySelectorAll('[data-rv-open-job]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const key = btn.dataset.rvOpenJob;
-        location.hash = `#explore?job=${encodeURIComponent(key)}`;
+        // ADR-0034：研究样本库已升为顶栏独立页，旧 #explore 由 core.js 转发，
+        // 这里直接落到新页，少一跳。
+        location.assign(`samples.html#samples?job=${encodeURIComponent(key)}`);
       });
     });
   }

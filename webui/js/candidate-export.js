@@ -129,7 +129,7 @@ const CANDIDATE_EXPORT = (() => {
     out.push(`- 筛选条件：${filterSummary()}`);
     out.push(`- 命中条数：${list.length}`);
     out.push('');
-    out.push('> 措辞的稳定标识是**出处引用键**。回到工作台时用 `#samples?job=<引用键>` 直达那条社区样本。');
+    out.push('> 措辞的稳定标识是**出处引用键**。在样本库用 `samples.html#samples?job=<引用键>` 直达那条社区样本。');
     out.push('');
 
     if (!list.length) {

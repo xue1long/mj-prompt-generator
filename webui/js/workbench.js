@@ -2,10 +2,9 @@
    工作台：左会话 Dock + 右主区
    主区按**一级视图**切换（报告 4.2）：
      · 提示词库    —— 四个摄影词库分类（假设集）
-     · 研究样本库  —— 社区作业（证据集），原「探索榜」
      · 研究笔记    —— 观察记录与结论（报告 2.3）
-     · 风格榜      —— 官方风格榜（styles_top）参照语料（ADR-0026）
-   艺术家 / 摄影师已按 ADR-0033 升为顶栏独立页「艺术家库」，本页只留跳转路标。
+   艺术家 / 摄影师已按 ADR-0033 升为顶栏独立页「艺术家库」；研究样本库 /
+   官方风格榜按 ADR-0034 升为顶栏独立页「样本库」/「风格榜」。本页只留跳转路标。
 
    筛选统一走 webui/js/filter-engine.js（报告 3.4）：一个引擎 + 一套 URL 契约。
    筛选状态以 URL hash 为唯一来源（ADR-0010），刷新 / 后退 / 分享都能复现。
@@ -28,11 +27,9 @@ const VOCAB_TOTAL = VOCAB_CATEGORIES.reduce(
    见 docs/adr/0024-candidate-vocab-as-top-level-view.md。 */
 const VIEWS = [
   { id: 'library', label: '提示词库', hint: '可拼装的片段 —— 你的假设集' },
-  { id: 'samples', label: '研究样本库', hint: '社区已做好的成品 —— 证据集' },
   { id: 'candidates', label: '候选词条', hint: '社区高频措辞 × 词库覆盖 —— 对质界面' },
   { id: 'compare', label: '对照', hint: '并排看两条 —— 固定变量再下结论' },
   { id: 'research', label: '研究笔记', hint: '观察记录与结论' },
-  { id: 'styles-top', label: '风格榜', hint: '官方热度榜的 200 个可直接引用的码' },
   { id: 'materials', label: '资料库', hint: '自己收集的提示词与图片 —— 未经研究的自采资料' },
 ];
 
@@ -40,7 +37,6 @@ const VIEWS = [
    艺术家 / 摄影师已按 ADR-0033 升为顶栏独立页「艺术家库」，
    原位置只留一个跳转路标（见 catnavHtml）。 */
 const LIBRARY_TABS = VOCAB_CATEGORIES.map(c => ({ id: c.id, label: c.name, kind: 'vocab' }));
-const EXPLORE_TOTAL = EXPLORE_BATCHES.reduce((s, b) => s + b.jobs, 0);
 
 const ui = {
   /** 当前一级视图（报告 4.2）：library / samples / research */
@@ -57,7 +53,8 @@ const ui = {
   artistCat: 'all',
   facetsOpen: false,
   limit: 48,
-  /** URL 里带来的作业引用键（#samples?job=<key>）；渲染后用它直达灯箱（报告 2.1） */
+  /** 旧深链带来的作业引用键。样本库已迁出（ADR-0034），本字段不再消费，
+      保留是为 URL 白名单兼容（known.add('job')），值恒为 null。 */
   hashJob: null,
   /** 上一次渲染的筛选签名：变了才重绘（避免 URL 回写引起的空转） */
   lastFilterSig: '',
@@ -70,7 +67,6 @@ const tabCount = (t) => VOCAB_CATEGORIES.find(c => c.id === t.id).groups.reduce(
 
 /* 一级视图的计数 */
 const viewCount = (v) => {
-  if (v.id === 'samples') return EXPLORE_TOTAL;
   if (v.id === 'candidates') {
     // 候选词条数：**不触发构建** —— viewCount 在每次 render 的 viewnav 里同步调用，
     // 若在这里跑一遍 phrase-index(300ms)+candidate-vocab(391ms)，
@@ -89,9 +85,6 @@ const viewCount = (v) => {
     // 研究笔记的计数来自本机 IndexedDB（异步加载）；未加载时先显示 0
     return typeof RESEARCH_VIEW !== 'undefined' ? (RESEARCH_VIEW.ui.notes.length + RESEARCH_VIEW.ui.conclusions.length) : 0;
   }
-  if (v.id === 'styles-top') {
-    return typeof STYLES_TOP_ENTRIES !== 'undefined' ? STYLES_TOP_ENTRIES.length : 0;
-  }
   if (v.id === 'materials') {
     // 资料条目存在本机 IndexedDB，异步装载；未装载时显示 0，装载后由 wire() 触发重绘补上。
     return typeof MATERIALS_VIEW !== 'undefined' ? MATERIALS_VIEW.count() : 0;
@@ -108,7 +101,8 @@ const viewCount = (v) => {
    页签 id 与 query 参数分开解析。此前只把整个 hash 当页签 id 匹配，
    'explore?job=xxx' 匹配不上任何页签会被整段丢弃。
 
-   旧的 #explore 仍可用 —— 重定向到新的 #samples（一级视图）。
+   旧的 #explore / #samples / #styles-top 已按 ADR-0034 升为顶栏独立页 ——
+   进入本页时原样带 query 转发出去，不再在工作台渲染这两个视图。
    筛选参数按数据源的白名单解析，不认识的参数丢弃并提示一次。 */
 function readHash() {
   const raw = location.hash.replace(/^#\/?/, '').trim();
@@ -116,23 +110,25 @@ function readHash() {
   const id = (q === -1 ? raw : raw.slice(0, q)).trim();
   const query = q === -1 ? '' : raw.slice(q + 1);
 
-  // 一级视图：优先匹配 VIEWS；'explore' 是旧的探索榜 id，重定向到 'samples'
-  let view = VIEWS.find(v => v.id === id);
-  if (!view && id === 'explore') view = VIEWS.find(v => v.id === 'samples');
-  ui.view = view ? view.id : 'library';
-
-  /* ADR-0033：旧深链 index.html#artists?... 原样带 query 跳到独立页。
-     必须只用「显式 id === 'artists'」判定 —— 无 hash 时 ui.tab 默认是第一个
-     词库分类，若按解析后的 tab 判定，工作台首屏会直接跳走。 */
-  if (id === 'artists') {
-    location.replace(`artists.html#artists${query ? `?${query}` : ''}`);
+  /* ADR-0033/0034：已迁出工作台的视图，旧深链原样带 query 跳到独立页。
+     必须只用「显式 id」判定 —— 无 hash 时 ui.tab 默认是第一个词库分类，
+     若按解析后的 tab 判定，工作台首屏会直接跳走。 */
+  const moved = {
+    artists: `artists.html#artists`,
+    samples: 'samples.html#samples',
+    explore: 'samples.html#samples', // 旧探索榜 id，保留兼容
+    'styles-top': 'styles-top.html#styles-top',
+  };
+  if (moved[id]) {
+    location.replace(`${moved[id]}${query ? `?${query}` : ''}`);
     return;
   }
 
+  ui.view = VIEWS.some(v => v.id === id) ? id : 'library';
+
   // 二级页签：仅提示词库视图有
   if (ui.view === 'library') {
-    const legacyExplore = id === 'explore';
-    const wanted = legacyExplore ? LIBRARY_TABS[0].id : id;
+    const wanted = id;
     ui.tab = (wanted && LIBRARY_TABS.some(t => t.id === wanted)) ? wanted : LIBRARY_TABS[0].id;
   }
 
@@ -146,12 +142,8 @@ function readHash() {
   // 不认识的参数：丢弃并**提示一次**（ADR-0010）。
   // 不静默忽略 —— 本地单人工具，静默失败比报错更贵。
   // 同时把 URL 修正成只含支持的参数（job 深链参数要保留）。
-  //
-  // 例外（ADR-0028）：已下线的那三个样本库参数**静默**丢弃，但仍要修正 URL ——
-  // 地址栏挂着已经失效的 aspect / sref，用户复制出去会以为筛选还在。
-  const hasLegacySampleParam = ui.view === 'samples'
-    && [...params.keys()].some((k) => LEGACY_SAMPLES_PARAMS.includes(k));
-  if ((ignored && ignored.length) || hasLegacySampleParam) {
+  // 样本库已按 ADR-0034 迁出，其下线参数（ADR-0028）由 samples.html 自行处理。
+  if (ignored && ignored.length) {
     const known = new Set([...(filterSourceOf(ui.view) || { dims: [] }).dims.map(d => d.key)]);
     known.add('job');
     // 对照视图的参数是 a / b（引用键），不是筛选维度 —— 要放进白名单，
@@ -183,23 +175,6 @@ function readHash() {
    每个数据源声明自己有哪些筛选维度，引擎据此决定「哪些参数允许出现在 URL 里」。
    维度类型：q 自由文本 / enum 单选 / bool 开关 / multi 多选（组内任一）。 */
 
-/* 提示词短语索引（报告 2.2）：全站共用一份，惰性构建。
-   索引由 prompt 现算（webui/js/phrase-index.js），不烘焙进数据产物 ——
-   理由同 job-key.js：改阈值不该让 6 MB 生成物跟着漂移。 */
-let PHRASE_IDX = null;
-function phraseIndex() {
-  if (PHRASE_IDX) return PHRASE_IDX;
-  if (typeof PHRASE_INDEX === 'undefined' || typeof EXPLORE_JOBS === 'undefined') return null;
-  PHRASE_IDX = PHRASE_INDEX.build(EXPLORE_JOBS);
-  return PHRASE_IDX;
-}
-/** 一条作业命中的收录短语（筛选维度的取值来源）。 */
-function phraseIndexOf(job) {
-  const idx = phraseIndex();
-  if (!idx) return [];
-  return idx.byJob.get(String(job?.id ?? '')) || [];
-}
-
 /* 提示词库侧：艺术家分面词 + 主色 + 只看实测 + 搜索 */
 const LIBRARY_FILTER_SOURCE = FILTER_ENGINE.source('library', [
   { key: 'q', type: 'q', matchOf: (a, text) => {
@@ -211,43 +186,9 @@ const LIBRARY_FILTER_SOURCE = FILTER_ENGINE.source('library', [
   { key: 'colours', type: 'multi', valuesOf: (a) => a.colours || [] },
 ]);
 
-/* ADR-0028 下线的三个样本库参数。改完后它们没有对应维度 ——
-   静默丢弃、不弹提示，并在修正 URL 时顺手抹掉。
-   「比例」与「sref 三件套」的筛选能力是被有意换掉的，不是坏了。 */
-const LEGACY_SAMPLES_PARAMS = ['aspect', 'sref', 'srefCode'];
-
-/* 研究样本库侧：批次 + 两轴分类 + 提示词短语 + 拆解来源 + 生成日期 + 搜索
-   （ADR-0028 收窄了范围：宽高比与 sref 三件套下线，换成可解释的两轴分类。
-     比例是唯一「确定」的结构化维度，换成的是「推算」的内容维度 —— 这是
-     有意取舍，理由与代价都记在 ADR 里。） */
-const EXPLORE_FILTER_SOURCE = FILTER_ENGINE.source('samples', [
-  { key: 'q', type: 'q', matchOf: (j, text) => {
-    if (String(j.title || '').toLowerCase().includes(text)) return true;
-    if (String(j.author || '').toLowerCase().includes(text)) return true;
-    return String(j.prompt || '').toLowerCase().includes(text);
-  } },
-  { key: 'batch', type: 'enum', valueOf: (j) => j.batch },
-  /* 两轴分类（ADR-0028）：运行时由 SAMPLE_TAXONOMY 现算，不烘焙进产物 ——
-     改一条正则不必重建 3 MB 生成物（与 job-key / phrase-index 同一取舍）。
-     每层单值互斥，故 valuesOf 只返回 0 或 1 个值，各档计数之和恒等于 971。 */
-  { key: 'medium', type: 'multi', valuesOf: (j) => (
-    typeof SAMPLE_TAXONOMY !== 'undefined' ? [SAMPLE_TAXONOMY.mediumOf(j)] : []
-  ) },
-  { key: 'subject', type: 'multi', valuesOf: (j) => (
-    typeof SAMPLE_TAXONOMY !== 'undefined' ? [SAMPLE_TAXONOMY.subjectOf(j)] : []
-  ) },
-  // 提示词短语（报告 2.2）：从 prompt 现算的短语索引，不是烘焙字段
-  { key: 'phrase', type: 'multi', valuesOf: (j) => (typeof PHRASE_INDEX !== 'undefined' ? phraseIndexOf(j) : []) },
-  // 拆解来源（报告 2.5）：三层可信度 + 无拆解。值域与 explore-board.js 的 DECOMP_SOURCES 一致
-  { key: 'decomp', type: 'multi', valuesOf: (j) => [(j.decomposition && j.decomposition.source) || '无拆解'] },
-  /* 生成日期（报告 2.7）：由 time 换算的**真实生成日**，与上面的 batch 是两个口径。
-     实测 968/971 条两者不同（批次 2026-11-05 下真实生成日横跨 28 天），
-     拿批次当时间维度做研究会全错。换算走 GEN_DATE（与样本导出同一份实现）。 */
-  { key: 'genDate', type: 'multi', valuesOf: (j) => {
-    const d = typeof GEN_DATE !== 'undefined' ? GEN_DATE.ofJob(j) : '';
-    return d ? [d] : [];
-  } },
-]);
+/* 研究样本库筛选源已按 ADR-0034 抽到 explore-filter.js，与独立页 samples.html
+   共用一份。工作台虽不再渲染该视图，仍加载该模块以支撑旧链转发期的白名单
+   （applyFilterFromQuery / filterSourceOf 的 typeof 守卫）。 */
 
 /* 候选词条侧（报告 2.6 / 第 12 步）：搜索 + 三态筛选 + 最小频次。
    维度声明在 webui/js/candidate-view.js 里（视图自带自己的源，
@@ -271,16 +212,6 @@ function applyFilterFromQuery(query) {
   ui.tested = !!(st.dims && st.dims.tested);
   ui.terms = new Set(st.dims && st.dims.terms ? st.dims.terms : []);
   ui.colours = new Set(st.dims && st.dims.colours ? st.dims.colours : []);
-  // 研究样本库侧：批次 / 两轴分类 / 短语 / 拆解来源 / 生成日期
-  if (st.dims && st.dims.batch !== undefined) EXPLORE_BOARD.state.batch = st.dims.batch || '';
-  // ADR-0028：两轴分类（多选，组内任一）
-  if (st.dims && st.dims.medium !== undefined) EXPLORE_BOARD.state.mediums = new Set(st.dims.medium || []);
-  if (st.dims && st.dims.subject !== undefined) EXPLORE_BOARD.state.subjects = new Set(st.dims.subject || []);
-  if (st.dims && st.dims.phrase !== undefined) EXPLORE_BOARD.state.phrases = new Set(st.dims.phrase || []);
-  // 报告 2.5 / 2.7 的两个新维度
-  if (st.dims && st.dims.decomp !== undefined) EXPLORE_BOARD.state.decomp = new Set(st.dims.decomp || []);
-  if (st.dims && st.dims.genDate !== undefined) EXPLORE_BOARD.state.genDates = new Set(st.dims.genDate || []);
-  if (ui.view === 'samples') EXPLORE_BOARD.state.q = ui.q;
   // 候选词条侧：状态在自己的视图里（报告 2.6）
   if (ui.view === 'candidates' && typeof CANDIDATE_VIEW !== 'undefined') {
     CANDIDATE_VIEW.stateFromDims({ q: ui.q, status: st.dims.status || [], minDf: st.dims.minDf || '' });
@@ -295,19 +226,12 @@ function applyFilterFromQuery(query) {
       date: (st.dims && st.dims.date) || '',
     });
   }
-  /* 已下线的样本库参数静默丢弃（ADR-0028）：它们没有对应维度了，
-     本已无法复现原来的筛选意图，弹「已忽略」只会让用户困惑该改什么。
-     其它不认识的参数仍按 ADR-0010 提示一次 —— 别把这条豁免扩大成通例。 */
-  const unknown = parsed.ignored || [];
-  ui.ignoredParams = ui.view === 'samples'
-    ? unknown.filter((k) => !LEGACY_SAMPLES_PARAMS.includes(k))
-    : unknown;
+  ui.ignoredParams = parsed.ignored || [];
   return ui.ignoredParams;
 }
 
 /* 当前视图的筛选源（引擎的白名单） */
 function filterSourceOf(view) {
-  if (view === 'samples') return EXPLORE_FILTER_SOURCE;
   if (view === 'library') return LIBRARY_FILTER_SOURCE;
   if (view === 'candidates') return CANDIDATE_FILTER_SOURCE;
   if (view === 'materials') return MATERIALS_FILTER_SOURCE;
@@ -351,20 +275,6 @@ function currentFilterState() {
         source: d.source || '',
         tags: [...(d.tags || [])],
         date: d.date || '',
-      },
-    };
-  }
-  if (ui.view === 'samples') {
-    const s = EXPLORE_BOARD.state;
-    return {
-      q: s.q || '',
-      dims: {
-        batch: s.batch || '',
-        medium: [...(s.mediums || [])],
-        subject: [...(s.subjects || [])],
-        phrase: [...(s.phrases || [])],
-        decomp: [...(s.decomp || [])],
-        genDate: [...(s.genDates || [])],
       },
     };
   }
@@ -440,6 +350,10 @@ function viewnavHtml() {
           style="${ui.view === v.id ? 'font-size:14px;font-weight:600;padding-block:8px' : 'padding-block:8px'}">
           ${esc(v.label)}<span class="n">${viewCount(v).toLocaleString('zh-CN')}</span>
         </button>`).join('')}
+      <a class="catnav-btn" href="samples.html" data-od-id="samples-nav-link"
+        title="研究样本库已升为顶栏独立页" style="text-decoration:none">样本库 <span class="n">↗</span></a>
+      <a class="catnav-btn" href="styles-top.html" data-od-id="styles-top-nav-link"
+        title="风格榜已升为顶栏独立页" style="text-decoration:none">风格榜 <span class="n">↗</span></a>
     </div>`;
 }
 
@@ -508,37 +422,24 @@ function bodyHtml() {
 function render() {
   const page = document.getElementById('page');
   if (!page) return;
-  const isSamples = ui.view === 'samples';
   const isResearch = ui.view === 'research';
   const isCompare = ui.view === 'compare';
   const isCandidates = ui.view === 'candidates';
-  const isStylesTop = ui.view === 'styles-top';
   const isMaterials = ui.view === 'materials';
   // 对照视图的对象从 URL 读（a / b 两个引用键）
   const cmpPair = isCompare && typeof COMPARE_VIEW !== 'undefined' ? COMPARE_VIEW.readFromHash() : null;
   const cmpHasBoth = !!(cmpPair && cmpPair.a && cmpPair.b);
   page.innerHTML = `
-    ${isSamples ? EXPLORE_BOARD.headHtml() : isResearch ? RESEARCH_VIEW.headHtml() : isCompare ? COMPARE_VIEW.headHtml() : isCandidates ? CANDIDATE_VIEW.headHtml() : isStylesTop ? STYLES_TOP_VIEW.headHtml() : isMaterials ? MATERIALS_VIEW.headHtml() : headHtml()}
+    ${isResearch ? RESEARCH_VIEW.headHtml() : isCompare ? COMPARE_VIEW.headHtml() : isCandidates ? CANDIDATE_VIEW.headHtml() : isMaterials ? MATERIALS_VIEW.headHtml() : headHtml()}
     ${viewnavHtml()}
     ${catnavHtml()}
-    ${isSamples ? EXPLORE_BOARD.toolbarHtml() : isResearch ? RESEARCH_VIEW.toolbarHtml() : isCompare ? COMPARE_VIEW.toolbarHtml(cmpHasBoth) : isCandidates ? CANDIDATE_VIEW.toolbarHtml() : isStylesTop ? STYLES_TOP_VIEW.toolbarHtml() : isMaterials ? MATERIALS_VIEW.toolbarHtml() : toolbarHtml()}
+    ${isResearch ? RESEARCH_VIEW.toolbarHtml() : isCompare ? COMPARE_VIEW.toolbarHtml(cmpHasBoth) : isCandidates ? CANDIDATE_VIEW.toolbarHtml() : isMaterials ? MATERIALS_VIEW.toolbarHtml() : toolbarHtml()}
     <div class="library-body" id="library-panel" role="tabpanel"
-      aria-labelledby="${isSamples ? 'view-samples' : isResearch ? 'view-research' : isCompare ? 'view-compare' : isCandidates ? 'view-candidates' : isStylesTop ? 'view-styles-top' : isMaterials ? 'view-materials' : `tab-${esc(ui.tab)}`}" tabindex="0">
-      ${isSamples ? EXPLORE_BOARD.bodyHtml() : isResearch ? RESEARCH_VIEW.bodyHtml() : isCompare ? COMPARE_VIEW.bodyHtml(cmpPair) : isCandidates ? CANDIDATE_VIEW.bodyHtml() : isStylesTop ? STYLES_TOP_VIEW.bodyHtml() : isMaterials ? MATERIALS_VIEW.bodyHtml() : bodyHtml()}
+      aria-labelledby="${isResearch ? 'view-research' : isCompare ? 'view-compare' : isCandidates ? 'view-candidates' : isMaterials ? 'view-materials' : `tab-${esc(ui.tab)}`}" tabindex="0">
+      ${isResearch ? RESEARCH_VIEW.bodyHtml() : isCompare ? COMPARE_VIEW.bodyHtml(cmpPair) : isCandidates ? CANDIDATE_VIEW.bodyHtml() : isMaterials ? MATERIALS_VIEW.bodyHtml() : bodyHtml()}
     </div>`;
   wire();
-  if (isSamples) {
-    EXPLORE_BOARD.wire(page);
-    markImageStates(page);
-    // 深链直达：#samples?job=<key> → 打开那条作业的灯箱（报告 2.1）
-    // 只在确实有 key 时触发；openJobByKey 内部用 replaceState 回写地址栏，
-    // 不会触发 hashchange → 不会重渲染 → 不递归。
-    if (ui.hashJob) {
-      const key = ui.hashJob;
-      ui.hashJob = null;
-      EXPLORE_BOARD.openJobByKey(key);
-    }
-  } else if (isCompare) {
+  if (isCompare) {
     COMPARE_VIEW.wire(page);
     markImageStates(page);
   } else if (isCandidates) {
@@ -552,9 +453,6 @@ function render() {
       if (ui.view !== 'research') return;
       render();
     });
-  } else if (isStylesTop) {
-    STYLES_TOP_VIEW.wire(page);
-    markImageStates(page);
   } else if (isMaterials) {
     // 资料库条目在本机 IndexedDB，异步装载；wire() 里自己触发一次重绘补上数据。
     MATERIALS_VIEW.wire(page);

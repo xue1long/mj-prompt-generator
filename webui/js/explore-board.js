@@ -109,15 +109,12 @@ const EXPLORE_BOARD = (() => {
     return EXPLORE_JOBS.find((j) => jobKeyOf(j).toLowerCase() === k) || null;
   }
 
-  /** 这条作业的深链：#samples?job=<key>（报告 4.2：一级视图 id 是 samples）。
-      用相对 index.html，file:// 与 http:// 下都成立（深链是给人和笔记用的，
-      粘到别的机器上也能开）。 */
+  /** 这条作业的深链：samples.html#samples?job=<key>（ADR-0034：样本库已升为
+      顶栏独立页）。用相对路径，file:// 与 http:// 下都成立（深链是给人和笔记
+      用的，粘到别的机器上也能开）。 */
   function jobDeepLink(job) {
     const key = jobKeyOf(job);
-    const base = location.pathname.endsWith('/')
-      ? 'index.html'
-      : location.pathname.split('/').pop() || 'index.html';
-    return `${base}#samples?job=${encodeURIComponent(key)}`;
+    return `samples.html#samples?job=${encodeURIComponent(key)}`;
   }
 
   function favRead(prompt) {
@@ -529,12 +526,13 @@ const EXPLORE_BOARD = (() => {
       return;
     }
     if (typeof COMPARE_VIEW === 'undefined') return;
-    // 用 location.hash 赋值切视图，**不要**用 writeToHash（它走 replaceState）。
-    // replaceState 不触发 hashchange —— workbench 的 readHash() 就不会跑，
-    // ui.view 还停在 'samples'，render() 渲染的还是样本库。
-    // （实测踩过：hash 正确变成 #compare?a=…&b=…，但页面上还是样本库。）
-    // location.hash 赋值 → hashchange → readHash() → render()，一条链路走完。
-    location.hash = COMPARE_VIEW.hashFor(jobs[0], jobs[1]);
+    const target = COMPARE_VIEW.hashFor(jobs[0], jobs[1]);
+    /* ADR-0034：对照视图仍留在工作台「一级视图」里。样本库现在是独立页 ——
+       在本页只改 hash 不会把对照视图渲染出来（samples.js 只认 samples），
+       必须跨页跳到 index.html。用 location.assign 而非 hash 赋值。 */
+    const page = location.pathname.split('/').pop() || 'index.html';
+    if (page === 'samples.html') location.assign(`index.html${target}`);
+    else location.hash = target;
   }
 
   function bodyHtml() {

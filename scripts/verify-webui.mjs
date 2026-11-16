@@ -110,8 +110,9 @@ async function main() {
   });
 
   try {
-    /* 1. 三屏渲染 + 零错误（每屏的所有交互做完后才判定零错误） */
-    for (const name of ['index.html', 'gallery.html', 'style-library.html']) {
+    /* 1. 三屏渲染 + 零错误（每屏的所有交互做完后才判定零错误）
+       ADR-0034：样本库 / 风格榜升为顶栏独立页，纳入三屏循环基线。 */
+    for (const name of ['index.html', 'samples.html', 'styles-top.html', 'gallery.html', 'style-library.html']) {
       const { page, errs } = await openPage(browser, name);
       const info = await page.evaluate(() => ({
         appbar: document.querySelector('#appbar')?.children.length || 0,
@@ -137,25 +138,33 @@ async function main() {
           tabCounts.subTabs === tabCounts.declaredSubTabs && tabCounts.subTabs > 0,
           `实际 ${tabCounts.subTabs} / 声明 ${tabCounts.declaredSubTabs}`);
 
-        // 4.2：探索榜升为一级视图 —— 一级视图里必须有 samples，且二级页签里没有 explore
-        // 2.2：对照视图也是一级视图（用户拍板，见 ADR-0021）
+        // 2.2 / 2.4 / 2.6 / 2.9：对照、研究笔记、候选词条、资料库仍是一级视图。
+        // ADR-0034：样本库 / 风格榜已升为顶栏独立页，不再进 VIEWS。
         const viewIds = await page.evaluate(() =>
           [...document.querySelectorAll('[data-view]')].map(b => b.dataset.view));
-        check('研究样本库是一级视图',
-          viewIds.includes('samples'), viewIds.join(','));
         check('对照是一级视图',
           viewIds.includes('compare'), viewIds.join(','));
-        // 2.6：候选词条是「假设集 × 证据集」的对质界面，也是一级视图（ADR-0024）
         check('候选词条是一级视图',
           viewIds.includes('candidates'), viewIds.join(','));
-        // ADR-0026：官方风格榜升为第六个一级视图
-        check('风格榜是一级视图',
-          viewIds.includes('styles-top'), viewIds.join(','));
-        // ADR-0029：资料库是第七个一级视图（独立数据集，不是样本库的页签或导入表单）
         check('资料库是一级视图',
           viewIds.includes('materials'), viewIds.join(','));
-        check('二级页签里没有「探索榜」（它已升为一级视图）',
+        check('样本库 / 风格榜已移出工作台一级视图（ADR-0034）',
+          !viewIds.includes('samples') && !viewIds.includes('styles-top'), viewIds.join(','));
+        check('二级页签里没有「探索榜」（它已升为独立页）',
           !(await page.evaluate(() => !!document.querySelector('[data-tab="explore"]'))));
+
+        // ADR-0034：顶栏顺序 + 工作台路标。这是本次迁移的核心验收。
+        const nav = await page.evaluate(() => ({
+          labels: [...document.querySelectorAll('.mainnav a')].map(a => a.textContent.trim()),
+          sampleLink: !!document.querySelector('[data-od-id="samples-nav-link"]'),
+          styleLink: !!document.querySelector('[data-od-id="styles-top-nav-link"]'),
+        }));
+        const expectNav = ['工作台', '艺术家库', '样本库', '风格榜', '画廊', '风格库', '风格与类型库'];
+        check('顶栏顺序 = 工作台 → 艺术家库 → 样本库 → 风格榜 → 画廊 → 风格库 → 风格与类型库',
+          JSON.stringify(nav.labels) === JSON.stringify(expectNav), nav.labels.join(' / '));
+        check('工作台一级视图条末尾留样本库 / 风格榜路标',
+          nav.sampleLink && nav.styleLink,
+          `样本库 ${nav.sampleLink} / 风格榜 ${nav.styleLink}`);
 
         /* 2. 全量数据契约（config/*.yaml → js/data-*.js） */
         // 单一真相源：产物自带的统计对象与数组长度；采集后无需改任何数字。
@@ -187,10 +196,11 @@ async function main() {
         // 断言也跟着写成 0，等于把 bug 固化成验收标准。现改为与源数据条数比对。
         check('sref 如实透传（非杜撰、非丢弃）', data.sref === EXPECT_SREF, `实际 ${data.sref} / 期望 ${EXPECT_SREF}`);
 
-        /* 3. 研究样本库（一级视图）：分页、筛选、占位、灯箱 */
-        await page.click('#view-samples');
-        await page.waitForSelector('.job-card', { timeout: 15000 });
-        const board = await page.evaluate(() => ({
+        /* 3. 研究样本库（ADR-0034 顶栏独立页）：分页、筛选、占位、灯箱
+           整组在 samples.html 上跑；index.html 的 page 保留给后续会话 / 参数断言。 */
+        const { page: sp, errs: spErrs } = await openPage(browser, 'samples.html', '#samples');
+        await sp.waitForSelector('.job-card', { timeout: 15000 });
+        const board = await sp.evaluate(() => ({
           cards: document.querySelectorAll('.job-card').length,
           plates: document.querySelectorAll('.job-thumbs .img-plate').length,
           chips: document.querySelector('.head-meta')?.textContent.replace(/\s+/g, ' ').trim() || '',
@@ -231,7 +241,7 @@ async function main() {
            「每层单值互斥」是这个恒等式成立的前提（ADR-0028）——
            哪天规则改成一条多处命中，这条会先红。
            注意读的是 .msel-n（计数），不是 .msel-row（选项）。 */
-        const axisSum = await page.evaluate(() => {
+        const axisSum = await sp.evaluate(() => {
           const nums = (sel) => [...document.querySelectorAll(sel)]
             .map((e) => parseInt(e.textContent, 10) || 0);
           return {
@@ -247,7 +257,7 @@ async function main() {
 
         /* 两轴筛选端到端：勾「人像 / 人物」后命中数必须等于该档的分类计数。
            期望值用 SAMPLE_TAXONOMY 现算，不写死数字 —— 词表调一次数字就变。 */
-        const axisFiltered = await page.evaluate(async () => {
+        const axisFiltered = await sp.evaluate(async () => {
           const det = document.querySelector('#ex-subject');
           if (!det) return { picked: false };
           det.open = true;
@@ -270,28 +280,28 @@ async function main() {
         check('按画面主体筛选进 URL（subject=）',
           String(axisFiltered.hash || '').includes('subject=person'), axisFiltered.hash);
         // 复位，避免影响后续断言
-        await page.evaluate(async () => {
+        await sp.evaluate(async () => {
           const box = document.querySelector('#ex-subject .msel-row input[value="person"]');
           if (box) { box.checked = false; box.dispatchEvent(new Event('change', { bubbles: true })); }
           await new Promise((r) => setTimeout(r, 300));
         });
 
-        await page.click('[data-role="ex-more"]');
+        await sp.click('[data-role="ex-more"]');
         await new Promise((r) => setTimeout(r, 200));
-        const afterMore = await page.$$eval('.job-card', (els) => els.length);
+        const afterMore = await sp.$$eval('.job-card', (els) => els.length);
         check('加载更多 +60', afterMore === 120, `实际 ${afterMore}`);
 
         /* ── 2.2 提示词短语筛选（多选下拉，懒加载）──────────────────────
            断言口径：筛出的卡片数 == 源数据里真正含该短语的条数，
            且 URL 里带上了对应参数（ADR-0010：hash 是筛选的唯一来源）。
            逐条穷举的选项不内联：571 条短语全塞进 toolbar 会让它涨到 177 KB。 */
-        await page.evaluate(() => {
+        await sp.evaluate(() => {
           const det = document.querySelector('#ex-phrase');
           if (det) det.open = true;
         });
         await new Promise((r) => setTimeout(r, 600));
 
-        const multi = await page.evaluate(() => {
+        const multi = await sp.evaluate(() => {
           const idx = PHRASE_INDEX.build(EXPLORE_JOBS);
           const p0 = idx.phrases[0];
           return {
@@ -307,7 +317,7 @@ async function main() {
 
         /* 短语筛选：勾选最高频短语，卡片数应等于它的 df */
         if (multi.topPhrase) {
-          const phraseFiltered = await page.evaluate(async (phrase) => {
+          const phraseFiltered = await sp.evaluate(async (phrase) => {
             const det = document.querySelector('#ex-phrase');
             if (!det) return { picked: false };
             // 先展开 → 等懒加载把选项注进 DOM → 才找得到 checkbox
@@ -334,7 +344,7 @@ async function main() {
           check('按短语筛选进 URL（phrase=）',
             String(phraseFiltered.hash || '').includes('phrase='), phraseFiltered.hash);
           // 复位
-          await page.evaluate(async (phrase) => {
+          await sp.evaluate(async (phrase) => {
             const det = document.querySelector('#ex-phrase');
             if (det) { det.open = true; await new Promise((r) => setTimeout(r, 200)); }
             const box = document.querySelector(`#ex-phrase .msel-row input[value="${CSS.escape(phrase)}"]`);
@@ -345,7 +355,7 @@ async function main() {
 
         /* ── 2.2 新增：对照视图（勾选两条 → 并排比较）──────────────────
            对照视图是独立一级视图；URL 形态 #compare?a=<引用键>&b=<引用键>。 */
-        const cmpPicked = await page.evaluate(async () => {
+        const cmpPicked = await sp.evaluate(async () => {
           const boxes = [...document.querySelectorAll('.ex-card__cmp input[data-ex-cmp]')].slice(0, 2);
           if (boxes.length < 2) return { ok: false, reason: '首屏不足两个可勾选卡片' };
           boxes[0].checked = true;
@@ -366,60 +376,64 @@ async function main() {
           cmpPicked.ok && cmpPicked.bar && cmpPicked.goBtn && !cmpPicked.goDisabled,
           JSON.stringify(cmpPicked));
 
-        const cmpView = await page.evaluate(async () => {
-          const btn = document.querySelector('#ex-go-compare');
-          if (!btn) return { ok: false, reason: '没有「去对照」按钮' };
-          btn.click();
-          await new Promise((r) => setTimeout(r, 500));
-          return {
-            ok: true,
-            hash: location.hash,
-            isCompareView: !!document.querySelector('[data-od-id="compare-head"]'),
-            sides: document.querySelectorAll('.cmp-side').length,
-            diffToks: document.querySelectorAll('.cmp-tok--only').length,
-            metaRows: document.querySelectorAll('.cmp-meta tbody tr').length,
-            decompRows: document.querySelectorAll('.cmp-decomp tbody tr').length,
-            imgs: document.querySelectorAll('.cmp-side .job-sheet-imgs img').length,
-            aParam: new URLSearchParams(location.hash.split('?')[1] || '').get('a'),
-            bParam: new URLSearchParams(location.hash.split('?')[1] || '').get('b'),
-          };
-        });
-        check('对照视图是独立一级视图',
-          cmpView.ok && cmpView.isCompareView, cmpView.reason || cmpView.hash);
+        /* ADR-0034：样本库独立页点「去对照」跨页跳回工作台的对照一级视图。
+           先在 sp 上钩住跳转目标，再用新页打开同一 URL 验证并排渲染。 */
+        const cmpNav = await Promise.all([
+          sp.waitForNavigation({ timeout: 15000 }).catch(() => null),
+          sp.evaluate(() => {
+            const btn = document.querySelector('#ex-go-compare');
+            if (!btn) return false;
+            btn.click();
+            return true;
+          }),
+        ]);
+        const cmpUrl = sp.url();
+        const cmpHash = new URL(cmpUrl).hash;
+        check('样本库「去对照」跨页跳回工作台',
+          cmpNav[0] && cmpUrl.endsWith(`index.html${cmpHash}`) && cmpHash.startsWith('#compare?'),
+          cmpUrl);
+        const aParam = new URLSearchParams(cmpHash.split('?')[1] || '').get('a');
+        const bParam = new URLSearchParams(cmpHash.split('?')[1] || '').get('b');
         check('对照 URL 形态为 #compare?a=…&b=…',
-          String(cmpView.hash || '').startsWith('#compare?') && !!cmpView.aParam && !!cmpView.bParam,
-          cmpView.hash);
+          !!aParam && !!bParam, cmpHash);
+        const { page: cp } = await openPage(browser, 'index.html', cmpHash);
+        const cmpView = await cp.evaluate(() => ({
+          isCompareView: !!document.querySelector('[data-od-id="compare-head"]'),
+          sides: document.querySelectorAll('.cmp-side').length,
+          metaRows: document.querySelectorAll('.cmp-meta tbody tr').length,
+          decompRows: document.querySelectorAll('.cmp-decomp tbody tr').length,
+          imgs: document.querySelectorAll('.cmp-side .job-sheet-imgs img').length,
+        }));
+        check('对照视图是工作台一级视图',
+          cmpView.isCompareView, JSON.stringify(cmpView));
         check('对照视图并排渲染两条',
           cmpView.sides === 2 && cmpView.imgs > 0, `侧栏 ${cmpView.sides} / 图 ${cmpView.imgs}`);
         check('对照视图有措辞差异 / 元数据 / 拆解三块',
           cmpView.metaRows === 5 && cmpView.decompRows === 7,
           `元数据 ${cmpView.metaRows} 行 / 拆解 ${cmpView.decompRows} 行`);
+        await cp.close();
 
-        /* 对照链接可分享：直接用 URL 打开另一条作业，仍能并排 */
-        const cmpReload = await page.evaluate(async () => {
-          const h = location.hash;
-          location.hash = '#samples';
-          await new Promise((r) => setTimeout(r, 300));
-          location.hash = h;
-          await new Promise((r) => setTimeout(r, 500));
-          return {
-            hash: location.hash,
-            sides: document.querySelectorAll('.cmp-side').length,
-            isCompare: !!document.querySelector('[data-od-id="compare-head"]'),
-          };
-        });
+        /* 对照链接可分享：同一 URL 在独立新页打开仍并排（cp 已验证），
+           这里再开一次确认无状态残留。 */
+        const { page: cp2 } = await openPage(browser, 'index.html', cmpHash);
+        const cmpReload = await cp2.evaluate(() => ({
+          hash: location.hash,
+          sides: document.querySelectorAll('.cmp-side').length,
+          isCompare: !!document.querySelector('[data-od-id="compare-head"]'),
+        }));
         check('对照链接可分享（重进 URL 仍并排）',
           cmpReload.isCompare && cmpReload.sides === 2,
           `${cmpReload.hash} / 侧栏 ${cmpReload.sides}`);
+        await cp2.close();
 
-        // 回样本库，避免影响后续断言
-        await page.evaluate(() => { location.hash = '#samples'; });
-        await new Promise((r) => setTimeout(r, 300));
+        // sp 已被跨页导航到 index.html#compare；重新打开 samples.html 继续后续灯箱断言
+        await sp.goto(fileUrl('samples.html') + '#samples', { waitUntil: 'load', timeout: 30000 });
+        await sp.waitForSelector('.job-card', { timeout: 15000 });
 
         /* 灯箱：选首屏里有七段拆解的作业。
            第 13 步已用规则解析补齐全部缺口（942 → 971），因此下面的「空态分支」
            断言会退化为验证有拆解作业的灯箱 —— 那段逻辑本来就是自洽的。 */
-        const decomJob = await page.evaluate(() => {
+        const decomJob = await sp.evaluate(() => {
           for (const c of document.querySelectorAll('.job-card[data-job]')) {
             const j = typeof EXPLORE_JOBS !== 'undefined'
               ? EXPLORE_JOBS.find((x) => x.id === c.dataset.job) : null;
@@ -427,9 +441,9 @@ async function main() {
           }
           return null;
         });
-        await page.click(`.job-card[data-job="${decomJob}"]`);
-        await page.waitForSelector('.job-sheet', { timeout: 8000 });
-        const sheet = await page.evaluate((id) => {
+        await sp.click(`.job-card[data-job="${decomJob}"]`);
+        await sp.waitForSelector('.job-sheet', { timeout: 8000 });
+        const sheet = await sp.evaluate((id) => {
           const job = typeof EXPLORE_JOBS !== 'undefined'
             ? EXPLORE_JOBS.find((x) => x.id === id) : null;
           const src = job?.decomposition?.source || '';
@@ -452,7 +466,7 @@ async function main() {
 
         /* 2.1 稳定引用键：灯箱里展示的键必须与数据一致，且能反查到这条作业。
            键是研究结论引用作业的唯一依据 —— 展示错了或对不上，结论就挂错证据。 */
-        const refKey = await page.evaluate((id) => {
+        const refKey = await sp.evaluate((id) => {
           const job = typeof EXPLORE_JOBS !== 'undefined'
             ? EXPLORE_JOBS.find((x) => x.id === id) : null;
           const expected = job && typeof JOB_KEY !== 'undefined' ? JOB_KEY.keyOf(job) : '';
@@ -471,7 +485,7 @@ async function main() {
           JSON.stringify(refKey));
 
         /* 3.1 逐段送入「主体与环境」：空段无按钮 / 单段送入 / 多段追加 / 灯箱常开 */
-        const segCase = await page.evaluate((id) => {
+        const segCase = await sp.evaluate((id) => {
           const job = typeof EXPLORE_JOBS !== 'undefined'
             ? EXPLORE_JOBS.find((j) => j.id === id) : null;
           const segs = job?.decomposition?.segments || [];
@@ -481,14 +495,14 @@ async function main() {
             total: segs.length,
           };
         }, decomJob);
-        const btnIdx = await page.$$eval('.decomp-row [data-seg-action]',
+        const btnIdx = await sp.$$eval('.decomp-row [data-seg-action]',
           (els) => els.map((e) => Number(e.dataset.segIndex)));
         check('空段不显示送入按钮',
           segCase.total === 7 && segCase.emptyCount > 0
             && JSON.stringify(btnIdx) === JSON.stringify(segCase.nonEmpty.map((x) => x.i)),
           `按钮 ${btnIdx.length} 个 / 空段 ${segCase.emptyCount} 个 / 共 ${segCase.total} 段`);
 
-        await page.evaluate(() => {
+        await sp.evaluate(() => {
           const ta = document.getElementById('subject-input');
           if (ta) { ta.value = ''; ta.dispatchEvent(new Event('input', { bubbles: true })); }
         });
@@ -496,13 +510,13 @@ async function main() {
         const first = segCase.nonEmpty[0];
         const second = segCase.nonEmpty[1];
         if (first) {
-          await page.click(`.job-sheet [data-seg-index="${first.i}"]`);
-          const afterFirst = await page.$eval('#subject-input', (el) => el.value);
+          await sp.click(`.job-sheet [data-seg-index="${first.i}"]`);
+          const afterFirst = await sp.$eval('#subject-input', (el) => el.value);
           check('点击拆解段送入左栏', afterFirst === first.text,
             `期望 ${JSON.stringify(first.text)} / 实际 ${JSON.stringify(afterFirst)}`);
           if (second) {
-            await page.click(`.job-sheet [data-seg-index="${second.i}"]`);
-            const afterSecond = await page.$eval('#subject-input', (el) => el.value);
+            await sp.click(`.job-sheet [data-seg-index="${second.i}"]`);
+            const afterSecond = await sp.$eval('#subject-input', (el) => el.value);
             check('再点一段按 ", " 追加', afterSecond === `${first.text}, ${second.text}`,
               `期望 ${JSON.stringify(first.text + ', ' + second.text)} / 实际 ${JSON.stringify(afterSecond)}`);
           } else {
@@ -513,14 +527,14 @@ async function main() {
           check('再点一段按 ", " 追加', false, '未找到非空拆解段');
         }
 
-        const stillOpen = await page.evaluate(() => !!document.querySelector('.job-sheet'));
+        const stillOpen = await sp.evaluate(() => !!document.querySelector('.job-sheet'));
         check('逐段送入后灯箱常开且零错误', stillOpen && errs.length === 0,
           `灯箱 ${stillOpen} / 错误 ${errs.length}`);
-        await page.click('.job-sheet [data-role="close"]');
+        await sp.click('.job-sheet [data-role="close"]');
 
         /* 无拆解作业（若有）：按其真实批次筛选，验证灯箱走空态且零运行时错误。
            批次键从数据取，不写死日期；若日后补齐全部拆解，退化为验证有拆解作业的灯箱。 */
-        const sheetTarget = await page.evaluate(() => {
+        const sheetTarget = await sp.evaluate(() => {
           const jobs = typeof EXPLORE_JOBS !== 'undefined' ? EXPLORE_JOBS : [];
           const j = jobs.find((x) => !x.decomposition) || jobs.find((x) => x.decomposition);
           if (!j) return null;
@@ -529,14 +543,14 @@ async function main() {
         if (!sheetTarget) {
           check('灯箱拆解/空态与数据一致且不报错', false, '未找到可测作业');
         } else {
-          await page.select('#ex-batch', sheetTarget.batch);
+          await sp.select('#ex-batch', sheetTarget.batch);
           await new Promise((r) => setTimeout(r, 250));
-          await page.waitForSelector(`.job-card[data-job="${sheetTarget.id}"]`, { timeout: 8000 });
+          await sp.waitForSelector(`.job-card[data-job="${sheetTarget.id}"]`, { timeout: 8000 });
           const errsBeforeSheet = errs.length;
-          await page.click(`.job-card[data-job="${sheetTarget.id}"]`);
-          await page.waitForSelector('.job-sheet', { timeout: 8000 });
+          await sp.click(`.job-card[data-job="${sheetTarget.id}"]`);
+          await sp.waitForSelector('.job-sheet', { timeout: 8000 });
           await new Promise((r) => setTimeout(r, 350));
-          const targetSheet = await page.evaluate(() => ({
+          const targetSheet = await sp.evaluate(() => ({
             rows: document.querySelectorAll('.job-sheet .decomp-row').length,
             imgs: document.querySelectorAll('.job-sheet-imgs img').length,
             badge: document.querySelector('.job-sheet [data-role="decomp-source"]')?.textContent.trim() || '',
@@ -550,8 +564,8 @@ async function main() {
               && errs.length === errsBeforeSheet,
             JSON.stringify(targetSheet) + ` / 期望行 ${sheetTarget.rows} / 批次 ${sheetTarget.batch}`
               + ` / 新增错误 ${errs.length - errsBeforeSheet}`);
-          await page.click('.job-sheet [data-role="close"]');
-          await page.select('#ex-batch', '');
+          await sp.click('.job-sheet [data-role="close"]');
+          await sp.select('#ex-batch', '');
         }
 
         /* ── 7a-2b. 拆解分层与生成日期（报告 2.5 / 2.7 / 第 13 步）──────────
@@ -562,10 +576,10 @@ async function main() {
                 口径错的症状正是「显示的数和筛出的数对不上」）
            参数维度（2.8）另守一条：灯箱必须把「不可研究」说清楚。 */
         {
-          await page.evaluate(() => { location.hash = '#samples'; });
+          await sp.evaluate(() => { location.hash = '#samples'; });
           await new Promise((r) => setTimeout(r, 400));
 
-          const decompUi = await page.evaluate(() => {
+          const decompUi = await sp.evaluate(() => {
             const jobs = typeof EXPLORE_JOBS !== 'undefined' ? EXPLORE_JOBS : [];
             const counts = [...document.querySelectorAll('#ex-decomp .msel-n')].map((e) => parseInt(e.textContent, 10) || 0);
             const values = [...document.querySelectorAll('#ex-decomp input')].map((e) => e.value);
@@ -591,7 +605,7 @@ async function main() {
           /* 直接勾两项（ADR-0028 删掉了「只看可信拆解」快捷开关 —— 它只是
              decomp 多选的一种写法，独立按钮会引出「开关开着、多选里又勾了规则解析」
              的矛盾态）。这里守的是多选本身与 URL 契约。 */
-          const trusted = await page.evaluate(async () => {
+          const trusted = await sp.evaluate(async () => {
             const det = document.querySelector('#ex-decomp');
             det.open = true;
             for (const v of ['手工精拆', '逐条精拆']) {
@@ -618,12 +632,12 @@ async function main() {
 
           // 刷新复现（URL 是多选本身，不是独立开关位）
           const trustedHash = trusted.hash;
-          await page.goto(fileUrl('index.html') + trustedHash, { waitUntil: 'load', timeout: 30000 });
+          await sp.goto(fileUrl('samples.html') + trustedHash, { waitUntil: 'load', timeout: 30000 });
           await new Promise((r) => setTimeout(r, 800));
-          const trustedReload = await page.evaluate(() => ({
+          const trustedReload = await sp.evaluate(() => ({
             checked: [...document.querySelectorAll('#ex-decomp input:checked')].length,
             count: parseInt(document.querySelector('.toolbar .dock-count').textContent, 10),
-            view: document.querySelector('[data-view][aria-selected="true"]')?.dataset.view,
+            view: document.querySelector('[data-od-id="explore-head"]') ? 'samples' : '',
           }));
           check('刷新后拆解来源筛选被复现',
             trustedReload.checked === 2 && trustedReload.count === trusted.count
@@ -631,9 +645,9 @@ async function main() {
             `view=${trustedReload.view} / ${trustedReload.count} 条 / 勾 ${trustedReload.checked}`);
 
           // 生成日期：下拉计数必须等于真的筛出来的条数
-          await page.evaluate(() => { location.hash = '#samples'; });
+          await sp.evaluate(() => { location.hash = '#samples'; });
           await new Promise((r) => setTimeout(r, 500));
-          const dateProbe = await page.evaluate(async () => {
+          const dateProbe = await sp.evaluate(async () => {
             const row = document.querySelector('#ex-gendate .msel-row');
             if (!row) return { ok: false };
             const box = row.querySelector('input');
@@ -656,7 +670,7 @@ async function main() {
             `${dateProbe.date} 期望 ${dateProbe.expect} 实得 ${dateProbe.got} / ${dateProbe.rows} 行`);
 
           // 参数维度如实说明（2.8）
-          const paramNote = await page.evaluate(async () => {
+          const paramNote = await sp.evaluate(async () => {
             const card = document.querySelector('.job-card[data-job]');
             if (!card) return { ok: false, reason: '没有卡片' };
             card.click();
@@ -685,21 +699,21 @@ async function main() {
            ADR-0028：36 个比例选项不再可筛，改成两轴的 14 个档位 ——
            除「未声明 / 未判定」外，每档都必须至少命中 1 条，否则就是词表写错了
            （选项在界面上灰掉，用户会以为数据坏了而不是规则漏了）。 */
-        const countText = () => page.$eval('.toolbar .dock-count', (el) => parseInt(el.textContent, 10));
-        const options = await page.evaluate(() => ({
+        const countText = () => sp.$eval('.toolbar .dock-count', (el) => parseInt(el.textContent, 10));
+        const options = await sp.evaluate(() => ({
           batches: [...document.querySelectorAll('#ex-batch option')].filter((o) => o.value).map((o) => o.value),
           mediums: [...document.querySelectorAll('#ex-medium .msel-row input')].map((e) => e.value),
           subjects: [...document.querySelectorAll('#ex-subject .msel-row input')].map((e) => e.value),
         }));
         const empty = [];
         for (const v of options.batches) {
-          await page.select('#ex-batch', v);
+          await sp.select('#ex-batch', v);
           if (!(await countText() > 0)) empty.push('batch=' + v);
         }
-        await page.select('#ex-batch', '');
+        await sp.select('#ex-batch', '');
 
         const toggleAxis = async (id, value, on) => {
-          await page.evaluate(([mid, mv, mon]) => {
+          await sp.evaluate(([mid, mv, mon]) => {
             const box = [...document.querySelectorAll(`#${mid} .msel-row input`)]
               .find((e) => e.value === mv);
             if (box && box.checked !== mon) {
@@ -717,6 +731,8 @@ async function main() {
           }
         }
         check('所有筛选选项均有结果', empty.length === 0, empty.join(', '));
+        check('样本库独立页零运行时错误', spErrs.length === 0, spErrs.slice(0, 3).join(' | '));
+        await sp.close();
 
         /* 4. 旧会话 mj-session-v1 → v2 迁移 */
         await page.evaluate(() => {
@@ -817,13 +833,12 @@ async function main() {
       await page.close();
     }
 
-    /* 4b. 官方风格榜收编为工作台一级视图（ADR-0026）
-       旧断言挂在 style-library.html 的 #style-tab-top 上；tab 已删，
-       同一批数据契约改在 index.html#styles-top 上验。 */
+    /* 4b. 官方风格榜（ADR-0026 定义 / ADR-0034 迁为顶栏独立页）
+       同一批数据契约改在 styles-top.html 上验。 */
     {
-      const { page, errs } = await openPage(browser, 'index.html', '#styles-top');
+      const { page, errs } = await openPage(browser, 'styles-top.html');
       const top = await page.evaluate(() => ({
-        activeView: typeof ui !== 'undefined' ? ui.view : '',
+        activeView: document.title.includes('风格榜') ? 'styles-top' : '',
         head: document.querySelector('[data-od-id="styles-top-head"] h1')?.textContent.trim() || '',
         cards: document.querySelectorAll('.sref-card').length,
         plates: document.querySelectorAll('.sref-card .img-plate').length,
@@ -1364,7 +1379,7 @@ async function main() {
        页面默认只渲染 60 条，若导出只覆盖已渲染部分，会静默丢数据 ——
        那比不导出更危险，所以这条必须断言。 */
     {
-      const { page } = await openPage(browser, 'index.html', '#samples');
+      const { page } = await openPage(browser, 'samples.html', '#samples');
       await page.waitForSelector('[data-od-id="export-menu"]', { timeout: 8000 });
 
       const ex = await page.evaluate(() => {
@@ -1421,28 +1436,32 @@ async function main() {
       await page.close();
     }
 
-    /* 6. 旧独立页 explore.html 跳转到研究样本库一级视图（报告 4.2） */
+    /* 6. 旧独立页 explore.html 跳转到研究样本库独立页（ADR-0034） */
     {
       const { page } = await openPage(browser, 'explore.html');
       let ok = false;
       try {
-        await page.waitForFunction(() => location.hash === '#samples' && !!document.querySelector('#view-samples'), { timeout: 8000 });
+        await page.waitForFunction(() => location.pathname.endsWith('samples.html')
+          && location.hash === '#samples' && !!document.querySelector('[data-od-id="explore-head"]'),
+          { timeout: 8000 });
         ok = true;
       } catch { /* 超时即失败 */ }
-      check('explore.html 跳转到 #samples', ok, await page.evaluate(() => location.hash));
+      check('explore.html 跳转到 samples.html#samples', ok, await page.evaluate(() => location.href));
       await page.close();
     }
 
-    /* 7. 旧页签深链 #/explore?... → #samples（报告 4.2：探索榜升为一级视图）
-       旧的 #explore 仍要能用 —— 重定向到研究样本库，不报错、不静默。 */
+    /* 7. 旧页签深链 #/explore?... → samples.html#samples（ADR-0034）
+       旧 #/explore 仍要能用 —— 原样带 query 重定向到样本库独立页。 */
     {
       const { page } = await openPage(browser, 'index.html', '#/explore?d=2026-11-05&ar=9:16');
       const state = await page.evaluate(() => ({
+        path: location.pathname.split('/').pop(),
         hash: location.hash,
-        active: document.querySelector('#view-samples')?.getAttribute('aria-selected'),
+        head: !!document.querySelector('[data-od-id="explore-head"]'),
       }));
-      check('旧探索榜深链重定向到研究样本库',
-        state.hash === '#explore' && state.active === 'true', JSON.stringify(state));
+      check('旧探索榜深链原样带 query 跳到样本库独立页',
+        state.path === 'samples.html' && state.hash === '#samples?d=2026-11-05&ar=9:16' && state.head,
+        JSON.stringify(state));
       await page.close();
     }
 
@@ -1450,7 +1469,7 @@ async function main() {
        筛选状态以 URL hash 为唯一来源（ADR-0010）：刷新 / 后退 / 分享都能复现。 */
     {
       /* 7a-1. 研究样本库：选批次 → URL 带参数 → 刷新后复现 */
-      const { page } = await openPage(browser, 'index.html', '#samples');
+      const { page } = await openPage(browser, 'samples.html', '#samples');
       await page.waitForSelector('#ex-batch', { timeout: 15000 });
 
       const batchValue = await page.evaluate(() => {
@@ -1475,10 +1494,10 @@ async function main() {
       await page.close();
 
       // 用同一个 hash 重新打开 —— 验证「刷新后复现」
-      const { page: page2 } = await openPage(browser, 'index.html', afterFilter.hash);
+      const { page: page2 } = await openPage(browser, 'samples.html', afterFilter.hash);
       await page2.waitForSelector('#ex-batch', { timeout: 15000 });
       const afterReload = await page2.evaluate(() => ({
-        view: document.querySelector('[data-view][aria-selected="true"]')?.dataset.view,
+        view: document.querySelector('[data-od-id="explore-head"]') ? 'samples' : '',
         batch: document.querySelector('#ex-batch')?.value,
         cards: document.querySelectorAll('.job-card').length,
       }));
@@ -1511,11 +1530,11 @@ async function main() {
       /* 7a-3. 不认识的参数被丢弃并提示（ADR-0010：不静默忽略） */
       {
         // toast 只活 1.9 秒 —— openPage 已经等了 700ms，这里不能再等
-        const { page: p4 } = await openPage(browser, 'index.html', '#samples?zzz=1&q=portrait');
+        const { page: p4 } = await openPage(browser, 'samples.html', '#samples?zzz=1&q=portrait');
         await p4.waitForSelector('#ex-search', { timeout: 15000 });
         const unknown = await p4.evaluate(() => ({
-          ignored: (typeof ui !== 'undefined' && ui.ignoredParams) ? ui.ignoredParams : null,
-          q: (typeof ui !== 'undefined') ? ui.q : null,
+          ignored: (typeof SAMPLES_DIAG !== 'undefined') ? SAMPLES_DIAG.ignoredParams : null,
+          q: (typeof SAMPLES_DIAG !== 'undefined') ? SAMPLES_DIAG.q : null,
           hash: location.hash,
           toast: document.querySelector('.toast')?.textContent || '',
           // 观察器记录的全部 toast（含已过期的）—— 断言不依赖它现在还在 DOM 里
@@ -1616,16 +1635,23 @@ async function main() {
         check('点出处能打开出处弹层并列出样本',
           srcSheet.ok && srcSheet.sheet && srcSheet.cards > 0 && srcSheet.keyShape,
           srcSheet.reason || `${srcSheet.cards} 条出处`);
-        const candGoto = await pc3.evaluate(async () => {
-          const btn = document.querySelector('[data-cand-goto]');
-          if (!btn) return { ok: false, reason: '没有可点的出处' };
-          btn.click();
-          await new Promise((r) => setTimeout(r, 700));
-          return { ok: true, hash: location.hash, isSamples: !!document.querySelector('[data-od-id="explore-head"]') };
-        });
+        /* ADR-0034：点引用键跨页跳到样本库独立页，并直达该样本灯箱。 */
+        const candJump = await Promise.all([
+          pc3.waitForNavigation({ timeout: 15000 }).catch(() => null),
+          pc3.evaluate(() => {
+            const btn = document.querySelector('[data-cand-goto]');
+            if (!btn) return false;
+            btn.click();
+            return true;
+          }),
+        ]);
+        const jumpUrl = pc3.url();
         check('点引用键能跳到研究样本库并直达该样本',
-          candGoto.ok && candGoto.hash.includes('#samples?job=') && candGoto.isSamples,
-          candGoto.hash);
+          candJump[0] && jumpUrl.includes('samples.html#samples?job='), jumpUrl);
+        if (candJump[0]) {
+          const sheetOk = await pc3.waitForSelector('.job-sheet', { timeout: 8000 }).then(() => true).catch(() => false);
+          check('跨页跳转后样本灯箱自动打开', sheetOk, jumpUrl);
+        }
         await pc3.close();
 
         // 导出两种格式都出内容（内容在页面里算，不落盘）
@@ -1660,7 +1686,7 @@ async function main() {
 
       /* 7a-4. 引擎本体：URL 往返一致（build → parse 得到同一状态） */
       {
-        const { page: p5 } = await openPage(browser, 'index.html', '#samples');
+        const { page: p5 } = await openPage(browser, 'samples.html', '#samples');
         const roundTrip = await p5.evaluate(() => {
           const src = EXPLORE_FILTER_SOURCE;
           // ADR-0028：往返用的维度换成两轴分类（多选 + 枚举），
@@ -1690,7 +1716,7 @@ async function main() {
     {
       // 先开一个普通页面取一个带拆解的作业键
       const anyKey = await (async () => {
-        const { page } = await openPage(browser, 'index.html', '#samples');
+        const { page } = await openPage(browser, 'samples.html', '#samples');
         const k = await page.evaluate(() => {
           if (typeof EXPLORE_JOBS === 'undefined') return null;
           const j = EXPLORE_JOBS.find((x) => x.decomposition && x.thumbs.length);
@@ -1737,7 +1763,7 @@ async function main() {
          · 存储不可用时如实提示，不静默
        注意：断言跑完会清空本机研究库（这是测试数据，不是用户数据）。 */
     {
-      const { page } = await openPage(browser, 'index.html', '#samples');
+      const { page } = await openPage(browser, 'samples.html', '#samples');
       const key = await page.evaluate(() => {
         if (typeof EXPLORE_JOBS === 'undefined' || typeof JOB_KEY === 'undefined') return null;
         const j = EXPLORE_JOBS.find((x) => x.decomposition && x.thumbs.length);
@@ -1799,10 +1825,14 @@ async function main() {
           /观察 1/.test(inSheet.count) && inSheet.list.includes('verify 断言写入的观察'),
           inSheet.count.trim());
 
+        /* ADR-0034：研究视图仍在工作台，样本库已是独立页 —— 观察已落 IndexedDB，
+           另开工作台页读同一份数据（file:// 同源）。 */
+        await page.close();
+        const { page: rp } = await openPage(browser, 'index.html', '#research');
+        await rp.waitForSelector('[data-od-id="research-head"]', { timeout: 12000 });
+
         // 研究视图：能看到记录 + 标签聚合
-        await page.evaluate(() => { location.hash = '#research'; });
-        await new Promise((r) => setTimeout(r, 900));
-        const rv = await page.evaluate(() => ({
+        const rv = await rp.evaluate(() => ({
           head: document.querySelector('[data-od-id="research-head"]')?.textContent || '',
           cards: document.querySelectorAll('[data-rv-note]').length,
           tags: [...document.querySelectorAll('[data-rv-tag]')].map((b) => b.textContent.trim()),
@@ -1816,15 +1846,15 @@ async function main() {
           JSON.stringify(rv.tags));
 
         // 结论：能建、能挂样本
-        await page.evaluate(() => document.querySelector('[data-rv-new-conclusion]')?.click());
+        await rp.evaluate(() => document.querySelector('[data-rv-new-conclusion]')?.click());
         let cOk = false;
         try {
-          await page.waitForSelector('[data-od-id="conclusion-sheet"] #rv-c-body', { timeout: 8000 });
+          await rp.waitForSelector('[data-od-id="conclusion-sheet"] #rv-c-body', { timeout: 8000 });
           cOk = true;
         } catch { /* 超时即失败 */ }
         check('结论弹层可打开', cOk);
 
-        await page.evaluate((k) => {
+        await rp.evaluate((k) => {
           const body = document.querySelector('#rv-c-body');
           const keys = document.querySelector('#rv-c-keys');
           const title = document.querySelector('#rv-c-title');
@@ -1832,10 +1862,10 @@ async function main() {
           if (body) body.value = 'verify 断言写入的结论';
           if (keys) keys.value = k;
         }, key);
-        await page.evaluate(() => document.querySelector('[data-od-id="conclusion-sheet"] [data-role="save"]')?.click());
+        await rp.evaluate(() => document.querySelector('[data-od-id="conclusion-sheet"] [data-role="save"]')?.click());
         await new Promise((r) => setTimeout(r, 700));
 
-        const cons = await page.evaluate(async (k) => {
+        const cons = await rp.evaluate(async (k) => {
           const all = await RESEARCH_DB.allConclusions();
           const byJob = await RESEARCH_DB.conclusionsByJob(k);
           return { total: all.length, byJob: byJob.length, keys: all[0]?.jobKeys || [] };
@@ -1845,9 +1875,9 @@ async function main() {
           JSON.stringify(cons.keys));
 
         // 结论视图
-        await page.evaluate(() => document.querySelector('[data-rv-section="conclusions"]')?.click());
+        await rp.evaluate(() => document.querySelector('[data-rv-section="conclusions"]')?.click());
         await new Promise((r) => setTimeout(r, 600));
-        const cView = await page.evaluate(() => ({
+        const cView = await rp.evaluate(() => ({
           n: document.querySelectorAll('[data-rv-conclusion]').length,
           text: document.querySelector('[data-od-id="research-conclusions"]')?.textContent || '',
         }));
@@ -1856,13 +1886,13 @@ async function main() {
           `结论 ${cView.n} 条`);
 
         // 统计
-        const st = await page.evaluate(async () => await RESEARCH_DB.stats());
+        const st = await rp.evaluate(async () => await RESEARCH_DB.stats());
         check('研究数据统计正确',
           st.notes === 1 && st.conclusions === 1 && st.jobs === 1,
           JSON.stringify(st));
 
         // 导出
-        const exp = await page.evaluate(() => {
+        const exp = await rp.evaluate(() => {
           try {
             const o = JSON.parse(RESEARCH_VIEW.exportJson());
             return { ok: true, notes: o['观察记录'].length, cons: o['结论'].length };
@@ -1872,17 +1902,18 @@ async function main() {
           exp.ok && exp.notes === 1 && exp.cons === 1,
           JSON.stringify(exp));
 
-        // 灯箱里能看到结论（依据集合包含这条样本的结论）
-        await page.evaluate((k) => { location.hash = `#samples?job=${encodeURIComponent(k)}`; }, key);
-        await new Promise((r) => setTimeout(r, 900));
-        const sheetAll = await page.evaluate(() => document.querySelector('[data-role="note-list"]')?.textContent || '');
+        // 灯箱里能看到结论（依据集合包含这条样本的结论）—— 回样本库独立页
+        const { page: sp2 } = await openPage(browser, 'samples.html', `#samples?job=${encodeURIComponent(key)}`);
+        await sp2.waitForSelector('.job-sheet [data-role="note-list"]', { timeout: 12000 });
+        const sheetAll = await sp2.evaluate(() => document.querySelector('[data-role="note-list"]')?.textContent || '');
         check('灯箱同时显示该样本的观察与结论',
           sheetAll.includes('verify 断言写入的观察') && sheetAll.includes('verify 断言写入的结论'),
           sheetAll.replace(/\s+/g, ' ').trim().slice(0, 90));
 
         // 清场：断言数据不留给用户
-        await page.evaluate(async () => { try { await RESEARCH_DB.clearAll(); } catch { /* 忽略 */ } });
-        await page.close();
+        await rp.evaluate(async () => { try { await RESEARCH_DB.clearAll(); } catch { /* 忽略 */ } });
+        await sp2.close();
+        await rp.close();
       }
     }
 
@@ -1898,18 +1929,18 @@ async function main() {
       await page.close();
     }
 
-    /* 8b. 旧风格榜深链直达工作台风格榜视图（ADR-0026）
-       旧实现用 location.replace 丢掉 hash，而 styleUi.tab 又不进 URL —— 深链本来就断。 */
+    /* 8b. 旧风格榜深链直达顶栏独立页（ADR-0034）
+       旧 #/styles-top 与 index.html#styles-top 都自动跳到 styles-top.html。 */
     {
       const { page } = await openPage(browser, 'index.html', '#/styles-top');
       const ok = await page.evaluate(() => ({
         path: location.pathname.split('/').pop(),
         hash: location.hash,
-        view: typeof ui !== 'undefined' ? ui.view : '',
+        head: document.querySelector('[data-od-id="styles-top-head"] h1')?.textContent.trim() || '',
         cards: document.querySelectorAll('.sref-card').length,
       }));
-      check('旧风格榜深链直达工作台风格榜视图',
-        ok.path === 'index.html' && ok.hash === '#styles-top' && ok.view === 'styles-top' && ok.cards > 0,
+      check('旧风格榜深链直达风格榜独立页',
+        ok.path === 'styles-top.html' && ok.hash === '#styles-top' && ok.head === '风格榜' && ok.cards > 0,
         JSON.stringify(ok));
       await page.close();
     }
@@ -1925,8 +1956,8 @@ async function main() {
       for (const name of ['index.html', 'style-library.html']) {
         const { page, errs } = await openPage(browser, name, '', vp);
         const info = await page.evaluate(() => {
-          // 一级视图（报告 4.2）：探测对象是这 7 个按钮，不是旧页签
-          const ids = ['view-library', 'view-samples', 'view-candidates', 'view-compare', 'view-research', 'view-styles-top', 'view-materials'];
+          // 一级视图（ADR-0034）：样本库 / 风格榜已升为顶栏独立页，剩 5 个按钮
+          const ids = ['view-library', 'view-candidates', 'view-compare', 'view-research', 'view-materials'];
           const covered = [];
           let visible = 0;
           for (const id of ids) {
@@ -1962,8 +1993,8 @@ async function main() {
         check(`${tag} 零运行时错误`, errs.length === 0, errs.slice(0, 3).join(' | '));
         if (name === 'index.html') {
           if (vp === MOBILE) {
-            /* 手机宽度是硬要求：7 个按钮首屏全在、全可点（此时它们确实都在首屏内）。 */
-            check(`${tag} 一级视图按钮全部可点`, info.visible === 7 && info.covered.length === 0,
+            /* 手机宽度是硬要求：ADR-0034 后一级视图剩 5 个，全部首屏可见、全可点。 */
+            check(`${tag} 一级视图按钮全部可点`, info.visible === 5 && info.covered.length === 0,
               `可见 ${info.visible} 个 · 底条 ${info.barH}px · ` +
                 (info.covered.length ? JSON.stringify(info.covered.slice(0, 3)) : '全部可点'));
           } else {
@@ -2905,8 +2936,8 @@ async function main() {
       check('艺术家库 渲染', info.appbar > 0 && info.dock > 0 && info.pageEl > 0,
         JSON.stringify({ appbar: info.appbar, dock: info.dock, pageEl: info.pageEl }));
       check('艺术家库 零运行时错误', errs.length === 0, errs.slice(0, 3).join(' | '));
-      check('顶栏含「艺术家库」入口且共 5 个',
-        info.navLinks.includes('artists.html') && info.navLinks.length === 5, info.navLinks.join(','));
+      check('顶栏含「艺术家库」入口且共 7 个（ADR-0034 加样本库/风格榜）',
+        info.navLinks.includes('artists.html') && info.navLinks.length === 7, info.navLinks.join(','));
       check('艺术家库 头部标题与统计',
         info.title === '艺术家库' && info.chips.length === 4
         && info.chips.some(s => s.startsWith('带参考图')), info.chips.join(' | '));
@@ -3111,12 +3142,12 @@ async function main() {
     }
 
     /* 13b. 风格与类型库 / 风格库 / 艺术家库 窄屏回归
-       顶栏现有 5 个入口（「风格与类型库」最长；ADR-0033 新增「艺术家库」），要确认：
-         · 390×844 下主导航仍可点、不被固定底条盖住
-         · 顶栏没有横向溢出（scrollWidth 不超过视口）
+       顶栏现有 7 个入口（ADR-0034 新增「样本库」「风格榜」），要确认：
+         · 390×844 下首屏可见的入口可点、不被固定底条盖住
+         · 其余入口可横向滚动到达（导航本身就是 overflow-x:auto，不要求 7 项全挤进首屏）
+         · 文档没有横向溢出（scrollWidth 不超过视口）—— 这是真实回归的判据
        与第 9 组的口径一致：只看「首屏可见」的按钮是否点得到。
-       三个独立页共用同一套顶栏，所以逐页跑 —— 只跑一个就漏掉其它页的回归。
-       实测：390×844 下 5 个入口全部首屏可见，导航内部滚动 13px，文档零溢出。 */
+       三个独立页共用同一套顶栏，所以逐页跑 —— 只跑一个就漏掉其它页的回归。 */
     for (const pageName of ['style-types.html', 'style-library.html', 'artists.html']) {
       for (const vp of [MOBILE, NARROW]) {
         const { page, errs } = await openPage(browser, pageName, '', vp);
@@ -3133,12 +3164,15 @@ async function main() {
             visible += 1;
             const hit = document.elementFromPoint(cx, cy);
             if (!hit || (hit !== el && !el.contains(hit))) {
-              covered.push({ t: (el.textContent || '').trim(), by: hit ? hit.tagName : 'null' });
+              covered.push({ t: (el.textContent || '').trim(), by: hit ? hit.tagName : 'null', cy: Math.round(cy) });
             }
           }
+          const bar = document.getElementById('final-bar');
           return {
             visible,
             covered,
+            viewportH: window.innerHeight,
+            barH: bar ? Math.round(bar.getBoundingClientRect().height) : 0,
             navOverflow: nav ? nav.scrollWidth - nav.clientWidth : -1,
             docOverflow: document.documentElement.scrollWidth - window.innerWidth,
             links: links.length,
@@ -3151,7 +3185,12 @@ async function main() {
         check(`${tag} 渲染`, info.appbar > 0 && info.dock > 0 && info.pageEl > 0,
           JSON.stringify({ appbar: info.appbar, dock: info.dock, pageEl: info.pageEl }));
         check(`${tag} 零运行时错误`, errs.length === 0, errs.slice(0, 3).join(' | '));
-        check(`${tag} 主导航首屏可点`, info.visible === info.links && info.covered.length === 0,
+        /* 7 项在 390px 下必然有若干项要横滚才可见（导航 overflow-x:auto）。
+           elementFromPoint 在横滚容器的右边缘会命中 sticky header —— 那是
+           「需要横滚才到得了」，不是 bug。真正要防的是被**固定底条**盖住：
+           只把落在底条区（cy > innerHeight - barH）的遮挡判失败。 */
+        check(`${tag} 主导航首屏可见项可点`,
+          info.visible >= 4 && !info.covered.some((c) => c.cy > info.viewportH - info.barH),
           `可见 ${info.visible}/${info.links} · ` + (info.covered.length ? JSON.stringify(info.covered) : '全部可点'));
         check(`${tag} 顶栏无横向溢出`, info.docOverflow <= 0,
           `文档溢出 ${info.docOverflow}px · 导航溢出 ${info.navOverflow}px`);

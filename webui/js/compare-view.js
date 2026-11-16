@@ -382,7 +382,8 @@ const COMPARE_VIEW = (() => {
   function wire(host) {
     const back = host.querySelector('[data-role="cmp-back"]');
     if (back) back.addEventListener('click', () => {
-      location.hash = '#samples';
+      // ADR-0034：研究样本库已升为顶栏独立页，跨页返回。
+      location.assign('samples.html#samples');
     });
     const clear = host.querySelector('[data-role="cmp-clear"]');
     if (clear) clear.addEventListener('click', () => {

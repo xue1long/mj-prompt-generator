@@ -465,6 +465,9 @@ const NAV = [
   { href: 'index.html', label: '工作台' },
   // ADR-0033：艺术家 / 摄影师从工作台二级页签升为顶栏一级独立页，紧跟工作台。
   { href: 'artists.html', label: '艺术家库' },
+  // ADR-0034：研究样本库 / 风格榜从工作台一级视图升为顶栏独立页，排在艺术家库后。
+  { href: 'samples.html', label: '样本库' },
+  { href: 'styles-top.html', label: '风格榜' },
   { href: 'gallery.html', label: '画廊' },
   { href: 'style-library.html', label: '风格库' },
   { href: 'style-types.html', label: '风格与类型库' },
@@ -1310,10 +1313,10 @@ function fallbackToPlate(holder) {
   }
 }
 
-/* ── 旧版 URL 契约兼容（ADR-0017 / ADR-0026 / ADR-0033） ──────────────
+/* ── 旧版 URL 契约兼容（ADR-0017 / ADR-0026 / ADR-0033 / ADR-0034） ──
    旧 Vue SPA 用 #/artists?... / #/explore?d/ar/sref/q，新版用 #artists / #explore；
    旧版另有三处页签：style-codes / gallery 是独立 HTML 页，
-   styles-top 现在是工作台一级视图 #styles-top（ADR-0026），
+   styles-top / samples 现在是顶栏独立页（ADR-0034），
    artists 现在是顶栏独立页 artists.html（ADR-0033）。
    在 core.js 顶层执行：workbench.js 的 readHash() 晚于本文件加载，读到的已是新 hash。 */
 function migrateLegacyHash() {
@@ -1323,14 +1326,18 @@ function migrateLegacyHash() {
   const page = location.pathname.split('/').pop() || 'index.html';
   const isIndex = page === '' || page === 'index.html';
 
-  // 官方风格榜已收编为工作台一级视图（ADR-0026）。必须带 hash 跳，
-  // 否则会像旧实现那样丢掉视图 id —— 而 styleUi.tab 又不进 URL，深链本来就到不了官方榜。
-  if (key === 'styles-top') {
-    if (isIndex) {
-      try { history.replaceState(null, '', '#styles-top'); } catch { location.hash = 'styles-top'; }
-    } else {
-      location.replace('index.html#styles-top');
-    }
+  /* ADR-0034：旧 #/styles-top、#/explore、#/samples 直接落到顶栏独立页，
+     query 原样带过去（筛选状态、job 深链都不丢）。不再先跳 index.html 再由
+     工作台转发 —— 少一跳，也避免旧一级视图的 DOM 被渲染出来一瞬。 */
+  const standalone = {
+    'styles-top': 'styles-top.html',
+    explore: 'samples.html',
+    samples: 'samples.html',
+  };
+  if (standalone[key]) {
+    const qi = h.indexOf('?');
+    const inner = key === 'explore' ? 'samples' : key;
+    location.replace(`${standalone[key]}#${inner}${qi === -1 ? '' : h.slice(qi)}`);
     return;
   }
 
