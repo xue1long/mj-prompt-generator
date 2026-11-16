@@ -463,6 +463,8 @@ function clearAll() {
 /* ── 顶栏 ───────────────────────────────────────────────────────────── */
 const NAV = [
   { href: 'index.html', label: '工作台' },
+  // ADR-0033：艺术家 / 摄影师从工作台二级页签升为顶栏一级独立页，紧跟工作台。
+  { href: 'artists.html', label: '艺术家库' },
   { href: 'gallery.html', label: '画廊' },
   { href: 'style-library.html', label: '风格库' },
   { href: 'style-types.html', label: '风格与类型库' },
@@ -1308,10 +1310,11 @@ function fallbackToPlate(holder) {
   }
 }
 
-/* ── 旧版 URL 契约兼容（ADR-0017 / ADR-0026） ────────────────────────
+/* ── 旧版 URL 契约兼容（ADR-0017 / ADR-0026 / ADR-0033） ──────────────
    旧 Vue SPA 用 #/artists?... / #/explore?d/ar/sref/q，新版用 #artists / #explore；
    旧版另有三处页签：style-codes / gallery 是独立 HTML 页，
-   styles-top 现在是工作台一级视图 #styles-top（ADR-0026）。
+   styles-top 现在是工作台一级视图 #styles-top（ADR-0026），
+   artists 现在是顶栏独立页 artists.html（ADR-0033）。
    在 core.js 顶层执行：workbench.js 的 readHash() 晚于本文件加载，读到的已是新 hash。 */
 function migrateLegacyHash() {
   const h = location.hash;
@@ -1341,9 +1344,17 @@ function migrateLegacyHash() {
     return;
   }
 
+  // ADR-0033：旧 #/artists 直接落到独立页，query 原样带过去；
+  // 不再先跳 index.html#artists 再由工作台转发（少一跳，也避免首屏误判）。
+  if (key === 'artists') {
+    const qi = h.indexOf('?');
+    location.replace(`artists.html#artists${qi === -1 ? '' : h.slice(qi)}`);
+    return;
+  }
+
   const tabs = (typeof VOCAB_CATEGORIES === 'undefined' ? [] : VOCAB_CATEGORIES.map(c => c.id))
-    .concat('artists', 'explore');
-  const next = tabs.includes(key) ? key : 'artists';
+    .concat('explore');
+  const next = tabs.includes(key) ? key : (tabs[0] || 'library');
   if (!isIndex) { location.replace('index.html#' + next); return; }
   try { history.replaceState(null, '', '#' + next); } catch { location.hash = '#' + next; }
 }

@@ -94,6 +94,8 @@ must(Array.isArray(decomposed.jobs), 'explore-decomposed.yaml 里没有 jobs');
 must(Array.isArray(stylesTop.entries), 'styles-top.yaml 里没有 entries');
 must(Array.isArray(types.entries) && types.entries.length > 0, 'types.yaml 里没有 entries');
 must(Array.isArray(styles.codes) && styles.codes.length > 0, 'styles.yaml 里没有 codes');
+must(Array.isArray(styles.artists) && styles.artists.length > 0, 'styles.yaml 里没有 artists');
+must(Array.isArray(styles.categories) && styles.categories.length > 0, 'styles.yaml 里没有 categories');
 
 const decById = new Map(decomposed.jobs.map((j) => [j.jobId, j]));
 const unmatched = explore.jobs.filter((j) => !decById.has(j.id)).length;
@@ -314,6 +316,58 @@ const styleTermGroups = (styles.termGroups || [])
 
 const styleColours = (styles.colours || []).filter((c) => usedCodeColours.has(c.slug));
 
+/* ── 艺术家库（艺术家 / 摄影师）────────────────────────────────────────
+   4,322 条。此前的 webui/js/data-artists.js 是**手工产物**，与源
+   config/styles.yaml 严重不一致：terms 截到前 6（源最多 15）、
+   colours 截到前 4（源最多 9）、intro 截到 420 字符（源最长 1,580）、
+   observation 截到 320 字符（源最长 452）、preview 只留 328 条
+   （源 4,322 条全有，图片文件已在 tracked/）。这份截断产物让
+   「分面词最多 6 个」「只有 328 条带图」看起来像上游事实（其实不是），
+   直接导致筛选语义与配图覆盖被误判（ADR-0033）。
+
+   现在改成从 styles.yaml 全量生成。全局名保持 ARTISTS / TERM_GROUPS /
+   COLOURS / ARTIST_CATEGORIES 不变 —— core.js 的全局搜索仍在用 ARTISTS。 */
+
+const artists = styles.artists.map((a) => ({
+  id: a.id,
+  name: a.name,
+  cat: a.category,
+  en: a.promptEn,
+  preview: a.preview ? pickImage(a.preview, 'midlibrary') : null,
+  url: a.sourceUrl,
+  tested: !!a.testedMark,
+  pick: !!a.isPick,
+  terms: a.terms || [],
+  colours: a.colours || [],
+  // 简介与风格描述都如实透传，不在构建期截断（历史事故就是在这里截的）。
+  intro: a.intro || '',
+  observation: a.observation || '',
+}));
+
+const ARTIST_IMAGE_STATS = {
+  mode,
+  withImages: artists.filter((a) => !!a.preview).length,
+  total: artists.length,
+  imageFiles: artists.filter((a) => !!a.preview).length,
+  sourceFiles: styles.artists.filter((a) => !!a.preview).length,
+};
+
+/* 分面词表与色表同样**只列实际被用到的**，与风格库同一口径。 */
+const usedArtistTerms = new Set();
+for (const a of artists) for (const t of a.terms) usedArtistTerms.add(t);
+const usedArtistColours = new Set();
+for (const a of artists) for (const c of a.colours) usedArtistColours.add(c);
+
+const artistTermGroups = (styles.termGroups || [])
+  .map((g) => ({
+    id: g.id,
+    name: g.name,
+    terms: (g.terms || []).filter((t) => usedArtistTerms.has(t.slug)),
+  }))
+  .filter((g) => g.terms.length > 0);
+
+const artistColours = (styles.colours || []).filter((c) => usedArtistColours.has(c.slug));
+
 /* ── 产物 ─────────────────────────────────────────────────────────── */
 function safeJson(v) {
   return JSON.stringify(v).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
@@ -374,6 +428,21 @@ const outputs = [
     ]),
     probe: '({entries:STYLE_CODES.length,groups:STYLE_TERM_GROUPS.length,colours:STYLE_COLOURS.length,stats:STYLE_IMAGE_STATS,imgs:STYLE_CODES.map(c=>c.preview).filter(Boolean),terms:STYLE_CODES.flatMap(c=>c.terms),coloursUsed:STYLE_CODES.flatMap(c=>c.colours),tested:STYLE_CODES.filter(c=>c.tested).length,pick:STYLE_CODES.filter(c=>c.pick).length,withObs:STYLE_CODES.filter(c=>c.observation).length,withTime:STYLE_CODES.filter(c=>c.createdAt>0).length})',
   },
+  {
+    file: 'data-artists.js',
+    text: render([
+      ['ARTIST_CATEGORIES', styles.categories],
+      ['TERM_GROUPS', artistTermGroups],
+      ['COLOURS', artistColours],
+      ['ARTISTS', artists],
+      ['ARTIST_IMAGE_STATS', ARTIST_IMAGE_STATS],
+      ['ARTIST_SOURCE', styles.source],
+    ]),
+    /* 长度统计是守门用的：历史事故把 terms 截到 6 / colours 截到 4 /
+       intro 截到 420 / observation 截到 320 / preview 只留 328。
+       只比条数抓不住这种「条目在、字段被削」的截断。 */
+    probe: '({artistCats:ARTIST_CATEGORIES.length,entries:ARTISTS.length,groups:TERM_GROUPS.length,colours:COLOURS.length,stats:ARTIST_IMAGE_STATS,imgs:ARTISTS.map(a=>a.preview).filter(Boolean),terms:ARTISTS.flatMap(a=>a.terms),coloursUsed:ARTISTS.flatMap(a=>a.colours),tested:ARTISTS.filter(a=>a.tested).length,pick:ARTISTS.filter(a=>a.pick).length,withIntro:ARTISTS.filter(a=>a.intro).length,withObs:ARTISTS.filter(a=>a.observation).length,termMax:Math.max(...ARTISTS.map(a=>a.terms.length)),colMax:Math.max(...ARTISTS.map(a=>a.colours.length)),introMax:Math.max(...ARTISTS.map(a=>a.intro.length)),obsMax:Math.max(...ARTISTS.map(a=>a.observation.length))})',
+  },
 ];
 
 /* 两阶段：先把全部产物校验完，再统一落盘。
@@ -399,6 +468,36 @@ for (const out of outputs) {
     // 缺失或重复都会让「结论挂到证据上」这件事失效（报告 2.1）。
     // 引用键零碰撞已由上面的 exploreJobKeys 断言保证（构建期跑的是浏览器端同一份算法）。
     // 这里只钉住条数：键不是采集来的事实，不烘焙进产物，由浏览器端运行时算。
+  } else if (r.artistCats !== undefined) {
+    /* 艺术家库：条数、分面覆盖、配图、文本长度全部与源快照一致。
+       历史事故是「条目在、字段被削」—— 只比条数抓不住，所以这里把
+       terms / colours / intro / observation 的最大长度也钉死（ADR-0033）。 */
+    must(r.entries === styles.artists.length, `${out.file} 艺术家条数不符：${r.entries} != ${styles.artists.length}`);
+    must(r.artistCats === styles.categories.length, `${out.file} 艺术家类别数不符`);
+    must(r.groups === artistTermGroups.length, `${out.file} 分面词组数不符`);
+    must(r.colours === artistColours.length, `${out.file} 主色数不符`);
+    const knownArtistTerms = new Set();
+    for (const g of artistTermGroups) for (const t of g.terms) knownArtistTerms.add(t.slug);
+    const unknownArtistTerms = [...new Set(r.terms)].filter((s) => !knownArtistTerms.has(s));
+    must(unknownArtistTerms.length === 0, `${out.file} 有 ${unknownArtistTerms.length} 个分面词不在词表里，例如 ${unknownArtistTerms.slice(0, 3).join(', ')}`);
+    const knownArtistColours = new Set(artistColours.map((c) => c.slug));
+    const unknownArtistColours = [...new Set(r.coloursUsed)].filter((s) => !knownArtistColours.has(s));
+    must(unknownArtistColours.length === 0, `${out.file} 有 ${unknownArtistColours.length} 个主色不在色表里，例如 ${unknownArtistColours.slice(0, 3).join(', ')}`);
+    // 配图：源 4,322 条全有，产物必须同样全有（图片文件已在 tracked/）
+    const srcArtistImgs = styles.artists.filter((a) => !!a.preview).length;
+    must(r.stats.withImages === srcArtistImgs, `${out.file} 配图条数与源快照不符：${r.stats.withImages} != ${srcArtistImgs}`);
+    // 字段长度：任何再次截断都会在构建期失败
+    const maxOf = (arr, fn) => arr.reduce((m, x) => Math.max(m, fn(x)), 0);
+    must(r.termMax === maxOf(styles.artists, (a) => (a.terms || []).length), `${out.file} 分面词被截断（产物最多 ${r.termMax} 个）`);
+    must(r.colMax === maxOf(styles.artists, (a) => (a.colours || []).length), `${out.file} 主色被截断（产物最多 ${r.colMax} 个）`);
+    must(r.introMax === maxOf(styles.artists, (a) => (a.intro || '').length), `${out.file} 简介被截断（产物最长 ${r.introMax} 字符）`);
+    must(r.obsMax === maxOf(styles.artists, (a) => (a.observation || '').length), `${out.file} 风格描述被截断（产物最长 ${r.obsMax} 字符）`);
+    const srcArtistTested = styles.artists.filter((a) => a.testedMark).length;
+    const srcArtistPick = styles.artists.filter((a) => a.isPick).length;
+    must(r.tested === srcArtistTested, `${out.file} 实测条数与源快照不符：${r.tested} != ${srcArtistTested}`);
+    must(r.pick === srcArtistPick, `${out.file} 精选条数与源快照不符：${r.pick} != ${srcArtistPick}`);
+    must(r.withIntro === styles.artists.filter((a) => !!a.intro).length, `${out.file} 有简介的条数不符`);
+    must(r.withObs === styles.artists.filter((a) => !!a.observation).length, `${out.file} 有风格描述的条数不符`);
   } else if (r.pick !== undefined) {
     /* 风格码：条数、开关、分面覆盖都要与源快照一致。
        这条链历史上踩过「手工产物截断分面」的坑 —— terms 被砍到 4 个、
@@ -481,6 +580,7 @@ console.log(`  批次 ${explore.batches.length} / 比例 ${explore.aspects.lengt
 console.log(`  风格榜 ${line('', STYLES_TOP_IMAGE_STATS)}`);
 console.log(`  风格库 ${line('', STYLE_IMAGE_STATS)} · 分面词组 ${styleTermGroups.length} 个 / 分面词 ${styleTermGroups.reduce((n, g) => n + g.terms.length, 0)} 个 / 主色 ${styleColours.length} 个`);
 console.log(`  类型库 ${line('', TYPE_IMAGE_STATS)} · 分类 ${types.categories.length} 个 · 分面词 ${typeTermGroups.reduce((n, g) => n + g.terms.length, 0)} 个 / 主色 ${typeColours.length} 个`);
+console.log(`  艺术家库 ${line('', ARTIST_IMAGE_STATS)} · 类别 ${styles.categories.length} 个 · 分面词 ${artistTermGroups.reduce((n, g) => n + g.terms.length, 0)} 个 / 主色 ${artistColours.length} 个`);
 console.log(`  sref：源数据 ${jobs.filter((j) => j.sref).length} 条带真实风格参考码（透传，不杜撰）`);
 console.log('  注意：../public/ 相对路径只在项目根内有效，单独分发 dist/ 会丢图。');
 if (!dryRun) {

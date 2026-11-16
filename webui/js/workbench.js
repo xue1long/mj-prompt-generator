@@ -1,20 +1,17 @@
 /* ==========================================================================
    工作台：左会话 Dock + 右主区
    主区按**一级视图**切换（报告 4.2）：
-     · 提示词库    —— 五个分区：四个摄影词库分类 + 艺术家/摄影师（假设集）
+     · 提示词库    —— 四个摄影词库分类（假设集）
      · 研究样本库  —— 社区作业（证据集），原「探索榜」
      · 研究笔记    —— 观察记录与结论（报告 2.3）
      · 风格榜      —— 官方风格榜（styles_top）参照语料（ADR-0026）
-   艺术家为全量词库（4,322 条）；预览图按需取，没有图的落回排版版位。
+   艺术家 / 摄影师已按 ADR-0033 升为顶栏独立页「艺术家库」，本页只留跳转路标。
 
    筛选统一走 webui/js/filter-engine.js（报告 3.4）：一个引擎 + 一套 URL 契约。
    筛选状态以 URL hash 为唯一来源（ADR-0010），刷新 / 后退 / 分享都能复现。
    ========================================================================== */
 
-const ARTIST_TOTAL = ARTISTS.length;
-const ARTIST_ILLUSTRATED = ARTISTS.filter(a => a.preview).length;
-// 浏览顺序：先给有参考图的，再排纯文字条目
-const ARTISTS_SORTED = [...ARTISTS].sort((a, b) => (a.preview ? 0 : 1) - (b.preview ? 0 : 1));
+const ARTIST_TOTAL = ARTISTS.length; // head 里的可点计数，仍指向艺术家库
 const VOCAB_TOTAL = VOCAB_CATEGORIES.reduce(
   (s, c) => s + c.groups.reduce((t, g) => t + g.items.length, 0), 0);
 
@@ -39,19 +36,21 @@ const VIEWS = [
   { id: 'materials', label: '资料库', hint: '自己收集的提示词与图片 —— 未经研究的自采资料' },
 ];
 
-/* 提示词库视图下的二级页签：四个摄影词库分类 + 艺术家 */
-const LIBRARY_TABS = [
-  ...VOCAB_CATEGORIES.map(c => ({ id: c.id, label: c.name, kind: 'vocab' })),
-  { id: 'artists', label: '艺术家 / 摄影师', kind: 'artists' },
-];
+/* 提示词库视图下的二级页签：四个摄影词库分类。
+   艺术家 / 摄影师已按 ADR-0033 升为顶栏独立页「艺术家库」，
+   原位置只留一个跳转路标（见 catnavHtml）。 */
+const LIBRARY_TABS = VOCAB_CATEGORIES.map(c => ({ id: c.id, label: c.name, kind: 'vocab' }));
 const EXPLORE_TOTAL = EXPLORE_BATCHES.reduce((s, b) => s + b.jobs, 0);
 
 const ui = {
   /** 当前一级视图（报告 4.2）：library / samples / research */
   view: 'library',
-  /** 提示词库视图下的二级页签 */
-  tab: 'artists',
+  /** 提示词库视图下的二级页签（默认第一个词库分类） */
+  tab: LIBRARY_TABS[0].id,
   q: '',
+  // 下面五项曾服务艺术家页签。保留字段是为了 library 视图的 URL 契约 ——
+  // filterSourceOf / applyFilterFromQuery 是全视图共用的，抹掉会误伤深链。
+  // 提示词库视图本身已没有这些 UI 入口，实际取值为默认空。
   tested: false,
   terms: new Set(),
   colours: new Set(),
@@ -67,29 +66,7 @@ const ui = {
 };
 
 /* ── 筛选 ───────────────────────────────────────────────────────────── */
-function filteredArtists() {
-  const q = ui.q.trim().toLowerCase();
-  return ARTISTS_SORTED.filter(a => {
-    if (ui.artistCat !== 'all' && a.cat !== ui.artistCat) return false;
-    if (ui.tested && !a.tested) return false;
-    if (ui.terms.size && !a.terms.some(t => ui.terms.has(t))) return false;
-    if (ui.colours.size && !a.colours.some(c => ui.colours.has(c))) return false;
-    if (q && !a.name.toLowerCase().includes(q) && !String(a.en).toLowerCase().includes(q)) return false;
-    return true;
-  });
-}
-const visibleColours = () => {
-  const used = new Set();
-  ARTISTS.forEach(a => a.colours.forEach(c => used.add(c)));
-  return COLOURS.filter(c => used.has(c.slug));
-};
-const termCount = (slug) => ARTISTS.reduce((n, a) => n + (a.terms.includes(slug) ? 1 : 0), 0);
-const colourCount = (slug) => ARTISTS.reduce((n, a) => n + (a.colours.includes(slug) ? 1 : 0), 0);
-const catName = (id) => ARTIST_CATEGORIES.find(c => c.id === id)?.name || id;
-const tabCount = (t) => {
-  if (t.kind === 'artists') return ARTIST_TOTAL;
-  return VOCAB_CATEGORIES.find(c => c.id === t.id).groups.reduce((s, g) => s + g.items.length, 0);
-};
+const tabCount = (t) => VOCAB_CATEGORIES.find(c => c.id === t.id).groups.reduce((s, g) => s + g.items.length, 0);
 
 /* 一级视图的计数 */
 const viewCount = (v) => {
@@ -119,7 +96,8 @@ const viewCount = (v) => {
     // 资料条目存在本机 IndexedDB，异步装载；未装载时显示 0，装载后由 wire() 触发重绘补上。
     return typeof MATERIALS_VIEW !== 'undefined' ? MATERIALS_VIEW.count() : 0;
   }
-  return VOCAB_TOTAL + ARTIST_TOTAL;
+  // 艺术家已按 ADR-0033 迁出「提示词库」视图，这里只数词条。
+  return VOCAB_TOTAL;
 };
 
 /* 深链（报告 2.1 / 3.4）：
@@ -143,11 +121,19 @@ function readHash() {
   if (!view && id === 'explore') view = VIEWS.find(v => v.id === 'samples');
   ui.view = view ? view.id : 'library';
 
+  /* ADR-0033：旧深链 index.html#artists?... 原样带 query 跳到独立页。
+     必须只用「显式 id === 'artists'」判定 —— 无 hash 时 ui.tab 默认是第一个
+     词库分类，若按解析后的 tab 判定，工作台首屏会直接跳走。 */
+  if (id === 'artists') {
+    location.replace(`artists.html#artists${query ? `?${query}` : ''}`);
+    return;
+  }
+
   // 二级页签：仅提示词库视图有
   if (ui.view === 'library') {
     const legacyExplore = id === 'explore';
-    const wanted = legacyExplore ? 'artists' : id;
-    ui.tab = (wanted && LIBRARY_TABS.some(t => t.id === wanted)) ? wanted : 'artists';
+    const wanted = legacyExplore ? LIBRARY_TABS[0].id : id;
+    ui.tab = (wanted && LIBRARY_TABS.some(t => t.id === wanted)) ? wanted : LIBRARY_TABS[0].id;
   }
 
   // query 参数
@@ -417,7 +403,8 @@ function headHtml() {
       <p class="lead">挑摄影术语、艺术家风格与光线方案，实时拼成一条可直接粘进 Midjourney 的提示词。</p>
       <div class="head-meta">
         <span class="param-chip">词条 ${VOCAB_TOTAL}</span>
-        <span class="param-chip">艺术家 ${ARTIST_TOTAL.toLocaleString('zh-CN')}</span>
+        <a class="param-chip" href="artists.html" data-od-id="artist-count-link"
+          style="text-decoration:none;color:inherit" title="前往艺术家库">艺术家 ${ARTIST_TOTAL.toLocaleString('zh-CN')} ↗</a>
         <span class="param-chip">风格参考码 4,638</span>
       </div>
     </div>`;
@@ -435,6 +422,8 @@ function catnavHtml() {
           tabindex="${ui.tab === t.id ? '0' : '-1'}">
           ${esc(t.label)}<span class="n">${tabCount(t)}</span>
         </button>`).join('')}
+      <a class="catnav-btn" href="artists.html" data-od-id="artist-nav-link"
+        title="艺术家 / 摄影师已升为顶栏独立页" style="text-decoration:none">艺术家库 <span class="n">↗</span></a>
     </div>`;
 }
 
@@ -455,53 +444,21 @@ function viewnavHtml() {
 }
 
 function toolbarHtml() {
-  const isArtists = ui.tab === 'artists';
+  // 艺术家 / 摄影师的分面与「只看实测」已随页面迁到 artists.html（ADR-0033），
+  // 这里只留下词条搜索。
   return `
     <div class="toolbar" data-od-id="library-toolbar">
       <div class="search">
         ${icon('search')}
-        <input id="lib-search" type="search" aria-label="${isArtists ? '搜索艺术家' : '搜索词条'}"
-          placeholder="${isArtists ? '搜索艺术家名，例如 monet / puuung' : '搜索词条'}"
-          value="${esc(ui.q)}" autocomplete="off">
+        <input id="lib-search" type="search" aria-label="搜索词条"
+          placeholder="搜索词条" value="${esc(ui.q)}" autocomplete="off">
       </div>
-      ${isArtists ? `
-        <button class="toggle${ui.tested ? ' on' : ''}" type="button" data-toggle="tested" aria-pressed="${ui.tested}">
-          只看实测 <span class="n">${ARTISTS.reduce((n, a) => n + (a.tested ? 1 : 0), 0)}</span>
-        </button>
-        <button class="toggle${ui.facetsOpen ? ' on' : ''}" type="button" data-toggle="facets" aria-pressed="${ui.facetsOpen}"
-          ${ui.facetsOpen ? 'aria-controls="facet-panel"' : ''}>${icon('sliders')}分面</button>
-      ` : ''}
       <span class="spacer"></span>
       <span class="dock-count" id="result-count" role="status" aria-live="polite"></span>
     </div>`;
 }
 
-function facetsHtml() {
-  if (ui.tab !== 'artists' || !ui.facetsOpen) return '';
-  const colours = visibleColours();
-  return `
-    <div class="group-block" id="facet-panel" data-od-id="facet-panel"
-      style="border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:20px">
-      <div class="group-head"><h2>分面词</h2><span class="n">组内任一 · 组间全部</span></div>
-      ${TERM_GROUPS.map(g => `
-        <div style="margin-bottom:12px">
-          <div class="slot-head" style="margin-bottom:6px">${esc(g.name)}</div>
-          <div class="tag-grid" role="group" aria-label="${esc(g.name)}分面">
-            ${g.terms.map(t => `
-              <button class="tag${ui.terms.has(t.slug) ? ' on' : ''}" type="button" data-term="${esc(t.slug)}" aria-pressed="${ui.terms.has(t.slug)}">
-                ${esc(t.label)}<span class="en">${termCount(t.slug)}</span>
-              </button>`).join('')}
-          </div>
-        </div>`).join('')}
-      <div class="group-head" style="margin-top:16px"><h2>主色</h2><span class="n">${ui.colours.size ? `已选 ${ui.colours.size}` : '按占比取前几色'}</span></div>
-      <div class="swatches" style="gap:7px;flex-wrap:wrap" role="group" aria-label="按主色筛选">
-        ${colours.map(c => `
-          <button class="swatch" type="button" data-colour="${esc(c.slug)}" title="${esc(c.name)} · ${colourCount(c.slug)} 条"
-            aria-label="${esc(c.name)}，${colourCount(c.slug)} 条" aria-pressed="${ui.colours.has(c.slug)}"
-            style="width:20px;height:20px;background:${esc(c.hex)};${ui.colours.has(c.slug) ? 'box-shadow:0 0 0 2px var(--accent);' : ''}"></button>`).join('')}
-      </div>
-    </div>`;
-}
+/* 艺术家分面面板已随页面迁到 artists.html（ADR-0033）。 */
 
 function vocabBodyHtml() {
   const cat = VOCAB_CATEGORIES.find(c => c.id === ui.tab);
@@ -540,147 +497,12 @@ function vocabBodyHtml() {
       </section>`).join('')}`;
 }
 
-function artistCardHtml(a) {
-  const on = isSelected(a.id);
-  // 有参考图的给照片，没有的落回排版版位（生产环境按需取图，取不到也是这个结果）
-  const media = a.preview
-    ? `<span class="artist-thumb" data-plate-name="${esc(a.name)}">
-         <img src="${esc(midlibraryPreviewPath(a.preview))}" alt="${esc(a.name)} 的风格预览图" loading="lazy" decoding="async">
-         ${a.tested ? '<span class="badge">实测</span>' : ''}
-         ${a.pick ? '<span class="badge pick">精选</span>' : ''}
-       </span>`
-    : `<span class="artist-thumb is-plate" data-plate-name="${esc(a.name)}">
-         <span class="plate-name">${esc(a.name)}</span>
-         ${a.tested ? '<span class="badge">实测</span>' : ''}
-         ${a.pick ? '<span class="badge pick">精选</span>' : ''}
-       </span>`;
-  return `
-    <article class="artist-card${on ? ' on' : ''}" data-od-id="artist-card-${esc(a.id)}">
-      <button class="artist-pick" type="button"
-        data-item-id="${esc(a.id)}"
-        aria-pressed="${on}"
-        data-zh="${esc(a.name)}" data-en="${esc(a.en)}"
-        data-position="artist" data-category="${esc(catName(a.cat))}">
-        ${media}
-        <span class="artist-body">
-          ${a.preview ? `<span class="artist-name">${esc(a.name)}</span>` : ''}
-          <span class="artist-meta">${esc(catName(a.cat))}</span>
-          <span class="artist-intro">${esc(a.intro)}</span>
-          <span class="swatches" aria-hidden="true">
-            ${a.colours.map(slug => {
-              const c = COLOURS.find(x => x.slug === slug);
-              return c ? `<span class="swatch" style="background:${esc(c.hex)}" title="${esc(c.name)}"></span>` : '';
-            }).join('')}
-          </span>
-        </span>
-      </button>
-      <button class="artist-more" type="button" data-detail="${esc(a.id)}" aria-label="查看 ${esc(a.name)} 的详情">${icon('info')}</button>
-    </article>`;
-}
-
-function artistBodyHtml() {
-  const list = filteredArtists();
-  if (!list.length) {
-    return stateHtml({
-      title: '没有匹配的艺术家',
-      desc: '当前筛选条件下没有结果。取消「只看实测」或清空分面词试试。',
-      iconName: 'search',
-    });
-  }
-  const shown = list.slice(0, ui.limit);
-  return `
-    <div class="group-block">
-      <div class="group-head">
-        <h2>艺术家 / 摄影师</h2>
-        <span class="n">显示 ${shown.length} / ${list.length} 条 · 词库共 ${ARTIST_TOTAL.toLocaleString('zh-CN')} 条，其中 ${ARTIST_ILLUSTRATED} 条带参考图</span>
-      </div>
-      <div class="tag-grid" style="margin-bottom:16px" role="group" aria-label="艺术家类别">
-        <button class="catnav-btn" type="button" data-artist-cat="all" aria-pressed="${ui.artistCat === 'all'}">全部<span class="n">${ARTIST_TOTAL}</span></button>
-        ${ARTIST_CATEGORIES.map(c => `
-          <button class="catnav-btn" type="button" data-artist-cat="${esc(c.id)}" aria-pressed="${ui.artistCat === c.id}">
-            ${esc(c.name)}<span class="n">${c.count}</span>
-          </button>`).join('')}
-      </div>
-      <div class="artist-grid">
-        ${shown.map(artistCardHtml).join('')}
-      </div>
-      ${shown.length < list.length ? `<div style="margin-top:20px;text-align:center"><button class="btn btn-secondary" type="button" data-role="more">加载更多（还有 ${(list.length - shown.length).toLocaleString('zh-CN')} 条）</button></div>` : ''}
-    </div>`;
-}
-
+/* 艺术家卡片与列表已随页面迁到 artists.html（ADR-0033）。 */
 function bodyHtml() {
-  return ui.tab === 'artists' ? facetsHtml() + artistBodyHtml() : vocabBodyHtml();
+  return vocabBodyHtml();
 }
 
-/* ── 艺术家详情 ─────────────────────────────────────────────────────── */
-function openArtistSheet(id) {
-  const a = ARTISTS.find(x => x.id === id);
-  if (!a) return;
-  const terms = a.terms.map(slug => {
-    const t = TERM_GROUPS.flatMap(g => g.terms).find(x => x.slug === slug);
-    return t ? t.label : slug;
-  });
-  const { backdrop } = mountDialog(`
-    <div class="sheet" data-od-id="artist-sheet">
-      <div class="sheet-head">
-        <div style="flex:1">
-          <p class="eyebrow">${esc(catName(a.cat))}${a.tested ? ' · 实测' : ''}${a.pick ? ' · 精选' : ''}</p>
-          <h2 class="artist-sheet-name">${esc(a.name)}</h2>
-        </div>
-        <button class="icon-btn" type="button" data-role="close" aria-label="关闭">${icon('close')}</button>
-      </div>
-      <div class="artist-sheet-grid">
-        <div>
-          ${a.preview
-      ? `<img src="${esc(midlibraryPreviewPath(a.preview))}" alt="${esc(a.name)} 的风格预览图">`
-      : `<div class="artist-thumb is-plate" style="aspect-ratio:4/3;border-radius:8px;border:1px solid var(--border)"><span class="plate-name">${esc(a.name)}</span></div>`}
-          <div class="btn-row" style="margin-top:12px">
-            <button class="btn ${isSelected(a.id) ? 'btn-secondary' : 'btn-primary'}" type="button" data-role="pick" style="flex:1">
-              ${icon(isSelected(a.id) ? 'check' : 'plus')}${isSelected(a.id) ? '已在提示词中' : '加入提示词'}
-            </button>
-          </div>
-          ${a.url ? `<p class="dock-hint" style="margin-top:10px"><a href="${esc(a.url)}" target="_blank" rel="noopener noreferrer">在上游 Midlibrary 查看${icon('external')}</a></p>` : ''}
-        </div>
-        <div>
-          <div class="artist-sheet-block" style="margin-top:0">
-            <h3>简介</h3>
-            <p>${esc(a.intro || '上游没有提供这条简介。')}</p>
-          </div>
-          ${a.observation ? `
-            <div class="artist-sheet-block">
-              <h3>风格描述</h3>
-              <p>${esc(a.observation)}</p>
-            </div>` : ''}
-          ${terms.length ? `
-            <div class="artist-sheet-block">
-              <h3>分面词</h3>
-              <div class="term-row">${terms.map(t => `<span class="term">${esc(t)}</span>`).join('')}</div>
-            </div>` : ''}
-          ${a.colours.length ? `
-            <div class="artist-sheet-block">
-              <h3>主色</h3>
-              <div class="swatches" style="gap:8px">
-                ${a.colours.map(slug => {
-                  const c = COLOURS.find(x => x.slug === slug);
-                  return c ? `<span class="swatch" style="width:18px;height:18px;background:${esc(c.hex)}" title="${esc(c.name)}"></span>` : '';
-                }).join('')}
-              </div>
-            </div>` : ''}
-          <div class="artist-sheet-block">
-            <h3>提示词写法</h3>
-            <div class="param-tail-box" style="margin-top:0">${esc(photographyPrefix([a.en]))}</div>
-          </div>
-        </div>
-      </div>
-    </div>`, { label: `${a.name} 的详情` });
-
-  backdrop.querySelector('[data-role="pick"]').addEventListener('click', () => {
-    togglePrompt({
-      id: a.id, zh: a.name, en: a.en, position: 'artist', category: catName(a.cat),
-    });
-    toast(isSelected(a.id) ? `已加入艺术家：${a.name}` : `已移出：${a.name}`);
-  });
-}
+/* 艺术家详情弹层已随页面迁到 artists.html（ADR-0033）。 */
 
 /* ── 渲染 ───────────────────────────────────────────────────────────── */
 function render() {
@@ -746,13 +568,9 @@ function updateCount() {
   const el = document.getElementById('result-count');
   if (!el) return;
   if (ui.view !== 'library') return;
-  if (ui.tab === 'artists') {
-    el.textContent = `${filteredArtists().length.toLocaleString('zh-CN')} 条匹配`;
-  } else {
-    const cat = VOCAB_CATEGORIES.find(c => c.id === ui.tab);
-    const total = cat ? cat.groups.reduce((s, g) => s + g.items.length, 0) : 0;
-    el.textContent = ui.q ? `${total} 条中匹配` : `${total} 条`;
-  }
+  const cat = VOCAB_CATEGORIES.find(c => c.id === ui.tab);
+  const total = cat ? cat.groups.reduce((s, g) => s + g.items.length, 0) : 0;
+  el.textContent = ui.q ? `${total} 条中匹配` : `${total} 条`;
 }
 
 function syncSelection() {
@@ -909,38 +727,7 @@ function wireBody() {
     }
   });
 
-  body.querySelectorAll('[data-detail]').forEach(el => {
-    el.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openArtistSheet(el.dataset.detail);
-    });
-  });
-
-  body.querySelectorAll('[data-term]').forEach(el => {
-    el.addEventListener('click', () => {
-      const s = el.dataset.term;
-      if (ui.terms.has(s)) ui.terms.delete(s); else ui.terms.add(s);
-      writeFilterToUrl();
-      render();
-    });
-  });
-  body.querySelectorAll('[data-colour]').forEach(el => {
-    el.addEventListener('click', () => {
-      const s = el.dataset.colour;
-      if (ui.colours.has(s)) ui.colours.delete(s); else ui.colours.add(s);
-      writeFilterToUrl();
-      render();
-    });
-  });
-  body.querySelectorAll('[data-artist-cat]').forEach(el => {
-    el.addEventListener('click', () => {
-      ui.artistCat = el.dataset.artistCat;
-      ui.limit = 48;
-      render();
-    });
-  });
-  const more = body.querySelector('[data-role="more"]');
-  if (more) more.addEventListener('click', () => { ui.limit += 48; render(); });
+  // 艺术家页签的分面 / 类别 / 详情 / 加载更多已随页面迁到 artists.html（ADR-0033）。
 }
 
 window.addEventListener('scroll', hidePop, true);

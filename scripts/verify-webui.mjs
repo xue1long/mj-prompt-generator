@@ -1490,9 +1490,11 @@ async function main() {
         `${afterFilter.cards} → ${afterReload.cards}`);
       await page2.close();
 
-      /* 7a-2. 提示词库侧：分面词筛选也进 URL */
+      /* 7a-2. 艺术家库侧：分面词筛选也进 URL
+         ADR-0033：原工作台 #artists 页签已升为独立页 artists.html。
+         旧深链 index.html#artists 现在会带参数重定向过去，所以这里直接测新页。 */
       {
-        const { page: p3 } = await openPage(browser, 'index.html', '#artists');
+        const { page: p3 } = await openPage(browser, 'artists.html');
         await p3.waitForSelector('[data-toggle="facets"]', { timeout: 15000 });
         await p3.evaluate(() => document.querySelector('[data-toggle="facets"]').click());
         await new Promise((r) => setTimeout(r, 600));
@@ -2867,13 +2869,255 @@ async function main() {
       await page.close();
     }
 
-    /* 13b. 风格与类型库 / 风格库 窄屏回归
-       顶栏多了一个入口（「风格与类型库」是 4 个入口里最长的），要确认：
+    /* 15. 艺术家库独立页（2026-11 / ADR-0033）
+       原工作台「提示词库 → 艺术家 / 摄影师」二级页签升为顶栏一级独立页。
+       必须同时守住三件事：① 数据链不再截断（历史上 terms 截 6 / colours 截 4 /
+       文本截 420、320 / 3,994 条配图路径丢失）；② 筛选语义对齐引擎（分面 groupOf、
+       类别 enum 进 URL）；③ 旧深链仍能到达新页，工作台原位置留下路标。 */
+    {
+      const { page, errs } = await openPage(browser, 'artists.html');
+      const info = await page.evaluate(() => ({
+        appbar: document.querySelector('#appbar')?.children.length || 0,
+        dock: document.querySelector('#dock')?.children.length || 0,
+        pageEl: document.querySelector('#page')?.children.length || 0,
+        navLinks: [...document.querySelectorAll('.mainnav a')].map(a => a.getAttribute('href')),
+        title: document.querySelector('[data-od-id="artist-head"] h1')?.textContent.trim(),
+        chips: [...document.querySelectorAll('.head-meta .param-chip')].map(x => x.textContent.trim()),
+        count: document.querySelector('.toolbar .dock-count')?.textContent.trim(),
+        cards: document.querySelectorAll('[data-od-id^="artist-card-"]').length,
+        cats: document.querySelectorAll('[data-artist-cat]').length,
+        detailBtns: document.querySelectorAll('.artist-card .artist-more[data-detail]').length,
+        copyBtns: document.querySelectorAll('.artist-card [data-copy]').length,
+        data: {
+          total: ARTISTS.length,
+          tested: ARTISTS.filter(a => a.tested).length,
+          withPreview: ARTISTS.filter(a => !!a.preview).length,
+          cats: ARTIST_CATEGORIES.length,
+          groups: TERM_GROUPS.length,
+          terms: TERM_GROUPS.reduce((n, g) => n + g.terms.length, 0),
+          colours: COLOURS.length,
+          termMax: Math.max(...ARTISTS.map(a => a.terms.length)),
+          colMax: Math.max(...ARTISTS.map(a => a.colours.length)),
+          introMax: Math.max(...ARTISTS.map(a => a.intro.length)),
+          obsMax: Math.max(...ARTISTS.map(a => a.observation.length)),
+        },
+      }));
+      check('艺术家库 渲染', info.appbar > 0 && info.dock > 0 && info.pageEl > 0,
+        JSON.stringify({ appbar: info.appbar, dock: info.dock, pageEl: info.pageEl }));
+      check('艺术家库 零运行时错误', errs.length === 0, errs.slice(0, 3).join(' | '));
+      check('顶栏含「艺术家库」入口且共 5 个',
+        info.navLinks.includes('artists.html') && info.navLinks.length === 5, info.navLinks.join(','));
+      check('艺术家库 头部标题与统计',
+        info.title === '艺术家库' && info.chips.length === 4
+        && info.chips.some(s => s.startsWith('带参考图')), info.chips.join(' | '));
+      /* 逆向防护：与第 14 组不同，这里不写死 4,322 / 68 / 87 —— 采集后条数会变。
+         钉住的是「不再被截断」这个不变量：全量配图、字段长度超过历史截断上限。 */
+      const d = info.data;
+      check('艺术家库 数据链无截断',
+        d.total > 0 && d.withPreview === d.total && d.termMax > 6 && d.colMax > 4
+        && d.introMax > 420 && d.obsMax > 320 && d.tested > 0 && d.cats > 0,
+        JSON.stringify(d));
+      check('艺术家库 首屏卡片与按钮',
+        info.cards === 48 && info.detailBtns === 48 && info.copyBtns === 0,
+        `卡片 ${info.cards} · 详情 ${info.detailBtns} · 复制 ${info.copyBtns}`);
+
+      // 分面板：只列实际用到的词与色，数量必须与词表声明一致
+      await page.click('[data-toggle="facets"]');
+      await new Promise(r => setTimeout(r, 200));
+      const facetInfo = await page.evaluate(() => ({
+        panel: !!document.querySelector('#artist-facet-panel'),
+        declTerms: TERM_GROUPS.reduce((n, g) => n + g.terms.length, 0),
+        declColours: COLOURS.length,
+        terms: document.querySelectorAll('[data-term]').length,
+        colours: document.querySelectorAll('[data-colour]').length,
+      }));
+      check('艺术家库 分面面板打开且词色齐全',
+        facetInfo.panel && facetInfo.terms === facetInfo.declTerms && facetInfo.colours === facetInfo.declColours,
+        JSON.stringify(facetInfo));
+
+      // 分组语义：同组取或 > 跨组取与 > 上游平铺 AND（三者必须能区分）
+      const sem = await page.evaluate(() => {
+        /* 固定一组能区分三种语义的词：同组 expressive / baroque 取或，
+           跨组再与 subject 的 scenes 取与。条数现算、不写死 —— 数据变化后
+           断言仍校验「并集 > 交集 > 平铺 AND」这个不变量。
+           （反过来把 baroque 放在 a 位会得到 cross = flat = 4，测不出差别。） */
+        const a = 'expressive', b = 'baroque', c = 'scenes';
+        const has = (x, s) => (x.terms || []).includes(s);
+        return {
+          a, b, c,
+          union: ARTISTS.filter(x => has(x, a) || has(x, b)).length,
+          cross: ARTISTS.filter(x => has(x, a) && has(x, c)).length,
+          flat: ARTISTS.filter(x => has(x, a) && has(x, b) && has(x, c)).length,
+        };
+      });
+      check('艺术家库 同组并集 / 跨组交集 / 平铺 AND 三者可区分',
+        sem.union > sem.cross && sem.cross > sem.flat, JSON.stringify(sem));
+
+      // enum 类别：进 URL，计数与现算一致
+      const catRes = await page.evaluate(async () => {
+        const btn = document.querySelector('[data-artist-cat="photographers"]');
+        const expected = ARTISTS.filter(a => a.cat === 'photographers').length;
+        btn.click();
+        await new Promise(r => setTimeout(r, 200));
+        return {
+          expected,
+          shown: Number((document.querySelector('.toolbar .dock-count')?.textContent || '0').replace(/[^\d]/g, '')),
+          hash: location.hash,
+          active: document.querySelector('[data-artist-cat][aria-pressed="true"]')?.dataset.artistCat,
+        };
+      });
+      check('艺术家库 类别筛选进 URL 且计数正确',
+        catRes.shown === catRes.expected && catRes.hash.includes('artistCat=photographers')
+        && catRes.active === 'photographers', JSON.stringify(catRes));
+
+      // 只看实测：bool 维度，计数与现算一致
+      const testedRes = await page.evaluate(async () => {
+        location.hash = '#artists';
+        await new Promise(r => setTimeout(r, 150));
+        document.querySelector('[data-toggle="tested"]').click();
+        await new Promise(r => setTimeout(r, 200));
+        return {
+          expected: ARTISTS.filter(a => a.tested).length,
+          shown: Number((document.querySelector('.toolbar .dock-count')?.textContent || '0').replace(/[^\d]/g, '')),
+          hash: location.hash,
+          pressed: document.querySelector('[data-toggle="tested"]')?.getAttribute('aria-pressed'),
+        };
+      });
+      check('艺术家库 只看实测生效',
+        testedRes.shown === testedRes.expected && testedRes.hash.includes('tested=1')
+        && testedRes.pressed === 'true', JSON.stringify(testedRes));
+
+      // 会话槽位：整卡点击写入 position:'artist'（单选互斥），头部提示同步
+      // 清三键：旧会话迁移会带回 mj-session-v1，污染「单选后只有一个选中项」的断言。
+      await page.evaluate(() => {
+        for (const k of ['mj-session-v2', 'mj-session-v1', 'mj-parameter-values']) {
+          try { localStorage.removeItem(k); } catch { /* 忽略 */ }
+        }
+      });
+      await page.reload({ waitUntil: 'load' });
+      await new Promise(r => setTimeout(r, 500));
+      const pickRes = await page.evaluate(async () => {
+        const cards = [...document.querySelectorAll('.artist-card [data-item-id]')].slice(0, 2);
+        cards[0].click();
+        await new Promise(r => setTimeout(r, 80));
+        cards[1].click();
+        await new Promise(r => setTimeout(r, 150));
+        const sel = (typeof session !== 'undefined' && session.selected) ? session.selected : [];
+        return {
+          count: sel.length,
+          positions: sel.map(s => s.position),
+          only: sel[0] ? sel[0].id === cards[1].dataset.itemId : false,
+          on: cards[1].getAttribute('aria-pressed'),
+          slot: document.querySelector('[data-od-id="artist-slot"]')?.textContent.trim(),
+        };
+      });
+      check('艺术家库 整卡加进提示词且艺术家槽单选互斥',
+        pickRes.count === 1 && pickRes.positions[0] === 'artist' && pickRes.only
+        && pickRes.on === 'true' && pickRes.slot && pickRes.slot !== '当前艺术家：未选',
+        JSON.stringify(pickRes));
+
+      // 详情弹层：五段内容 + 加入按钮 + 上游回链；没有复制按钮（复制是风格码的动作）
+      const sheetRes = await page.evaluate(async () => {
+        document.querySelector('.artist-card [data-detail]').click();
+        await new Promise(r => setTimeout(r, 150));
+        const sheet = document.querySelector('[data-od-id="artist-sheet"]');
+        return {
+          open: !!sheet,
+          blocks: [...(sheet?.querySelectorAll('.artist-sheet-block h3') || [])].map(h => h.textContent.trim()),
+          pick: !!sheet?.querySelector('[data-role="pick"]'),
+          copy: !!sheet?.querySelector('[data-role="copy"]'),
+          link: !!sheet?.querySelector('a[href*="midlibrary.io"]'),
+        };
+      });
+      check('艺术家库 详情弹层五件套 + 加入按钮 + 回链',
+        sheetRes.open && ['简介', '风格描述', '分面词', '主色', '提示词写法']
+          .every(x => sheetRes.blocks.includes(x))
+        && sheetRes.pick && sheetRes.link && !sheetRes.copy, JSON.stringify(sheetRes));
+      const closed = await page.evaluate(async () => {
+        document.querySelector('[data-od-id="artist-sheet"] [data-role="close"]')?.click();
+        await new Promise(r => setTimeout(r, 150));
+        return !document.querySelector('[data-od-id="artist-sheet"]');
+      });
+      check('艺术家库 详情弹层可关闭', closed, String(closed));
+
+      // 排序：默认有图在前不写 sort；A→Z 写 sort=az 且首条按名称升序
+      const sortRes = await page.evaluate(async () => {
+        const out = {};
+        location.hash = '#artists';
+        await new Promise(r => setTimeout(r, 150));
+        out.defaultHash = location.hash;
+        const sel = document.querySelector('#artist-sort');
+        out.opts = [...sel.options].map(o => o.value);
+        sel.value = 'az';
+        sel.dispatchEvent(new Event('change'));
+        await new Promise(r => setTimeout(r, 200));
+        out.names = [...document.querySelectorAll('.artist-name')].slice(0, 5).map(n => n.textContent.trim());
+        out.sorted = out.names.every((v, i) => i === 0 || out.names[i - 1].localeCompare(v, 'en') <= 0);
+        out.hash = location.hash;
+        return out;
+      });
+      check('艺术家库 排序只有「默认 / A→Z」（无创建时间，不编造最新收录）',
+        JSON.stringify(sortRes.opts) === JSON.stringify(['curated', 'az']), JSON.stringify(sortRes.opts));
+      check('艺术家库 A→Z 生效且写进 URL',
+        sortRes.sorted && sortRes.hash.includes('sort=az') && !sortRes.defaultHash.includes('sort='),
+        JSON.stringify(sortRes));
+
+      // 深链往返：hash 是唯一状态源（ADR-0010）
+      {
+        const { page: p2 } = await openPage(browser, 'artists.html', '#artists?artistCat=photographers&tested=1&sort=az');
+        const deep = await p2.evaluate(() => ({
+          expected: ARTISTS.filter(a => a.cat === 'photographers' && a.tested).length,
+          shown: Number((document.querySelector('.toolbar .dock-count')?.textContent || '0').replace(/[^\d]/g, '')),
+          cat: document.querySelector('[data-artist-cat][aria-pressed="true"]')?.dataset.artistCat,
+          tested: document.querySelector('[data-toggle="tested"]')?.getAttribute('aria-pressed'),
+          sort: document.querySelector('#artist-sort')?.value,
+        }));
+        check('艺术家库 深链往返复现类别 / 实测 / 排序',
+          deep.shown === deep.expected && deep.cat === 'photographers'
+          && deep.tested === 'true' && deep.sort === 'az', JSON.stringify(deep));
+        await p2.close();
+      }
+
+      // 旧链兼容：index.html#artists?... 带参数落到新页；#/artists 更旧契约同样可达
+      for (const [hash, mustInclude] of [['#artists?q=monet', 'q=monet'], ['#/artists?terms=baroque', 'terms=baroque']]) {
+        const { page: p3 } = await openPage(browser, 'index.html', hash);
+        await new Promise(r => setTimeout(r, 500));
+        const redirected = await p3.evaluate(() => ({
+          path: location.pathname.split('/').pop(),
+          hash: location.hash,
+          title: document.querySelector('h1')?.textContent.trim(),
+        }));
+        check(`艺术家库 旧链 ${hash} 带参数重定向`,
+          redirected.path === 'artists.html' && redirected.hash.includes(mustInclude)
+          && redirected.title === '艺术家库', JSON.stringify(redirected));
+        await p3.close();
+      }
+
+      // 工作台侧：页签已删，只留路标与可点计数
+      {
+        const { page: wb } = await openPage(browser, 'index.html');
+        const left = await wb.evaluate(() => ({
+          path: location.pathname.split('/').pop() + location.hash,
+          tabs: [...document.querySelectorAll('[data-tab]')].map(b => b.dataset.tab),
+          navHref: document.querySelector('[data-od-id="artist-nav-link"]')?.getAttribute('href'),
+          countHref: document.querySelector('[data-od-id="artist-count-link"]')?.getAttribute('href'),
+        }));
+        check('工作台 艺术家页签已迁出且留下路标与计数链接',
+          left.path === 'index.html' && left.tabs.length === 4 && !left.tabs.includes('artists')
+          && left.navHref === 'artists.html' && left.countHref === 'artists.html', JSON.stringify(left));
+        await wb.close();
+      }
+      await page.close();
+    }
+
+    /* 13b. 风格与类型库 / 风格库 / 艺术家库 窄屏回归
+       顶栏现有 5 个入口（「风格与类型库」最长；ADR-0033 新增「艺术家库」），要确认：
          · 390×844 下主导航仍可点、不被固定底条盖住
          · 顶栏没有横向溢出（scrollWidth 不超过视口）
        与第 9 组的口径一致：只看「首屏可见」的按钮是否点得到。
-       两个独立页共用同一套顶栏，所以逐页跑 —— 只跑一个就漏掉另一个的回归。 */
-    for (const pageName of ['style-types.html', 'style-library.html']) {
+       三个独立页共用同一套顶栏，所以逐页跑 —— 只跑一个就漏掉其它页的回归。
+       实测：390×844 下 5 个入口全部首屏可见，导航内部滚动 13px，文档零溢出。 */
+    for (const pageName of ['style-types.html', 'style-library.html', 'artists.html']) {
       for (const vp of [MOBILE, NARROW]) {
         const { page, errs } = await openPage(browser, pageName, '', vp);
         const info = await page.evaluate(() => {

@@ -22,7 +22,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'webui');
 const DIST = path.join(ROOT, 'dist');
 
-const REQUIRED_HTML = ['index.html', 'explore.html', 'gallery.html', 'style-library.html', 'style-types.html'];
+const REQUIRED_HTML = ['index.html', 'explore.html', 'gallery.html', 'style-library.html', 'style-types.html', 'artists.html'];
 
 function treeStat(dir) {
   let files = 0;
