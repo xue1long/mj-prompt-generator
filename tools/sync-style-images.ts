@@ -15,6 +15,13 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
  *
  * 覆盖范围：artist / style_code（风格库）+ 5 个条目类型 kind（风格与类型库）。
  *
+ * 两个目标目录（ADR-0032）：
+ * - public/preview-images/midlibrary/ —— **生成物**，gitignored。
+ *   全量采集物都在这（约 10,140 张 / 205 MB），不进版本库。
+ * - public/preview-images/tracked/     —— **入库**，前端实际引用的那批。
+ *   风格库页 / 类型库页 / 艺术家侧统一走 midlibraryPreviewPath() 指向它，
+ *   这样 git clone 后不跑采集链也有图。
+ *
  * 幂等：已存在且大于 1KB 的文件直接跳过，重跑只补缺失的。
  */
 
@@ -114,6 +121,8 @@ if (invokedDirectly) {
   const manifestPath = process.env.MIDLIBRARY_MANIFEST ?? defaultManifestPath(root)
   const thumbsDir = process.env.MIDLIBRARY_THUMBS ?? defaultThumbsDir(root)
   const destDir = path.join(root, 'public', 'preview-images', 'midlibrary')
+  // 入库目录：前端实际引用的那批（ADR-0032）
+  const trackedDir = path.join(root, 'public', 'preview-images', 'tracked')
 
   const result = syncStyleImages(root, manifestPath, thumbsDir, destDir)
   const mb = (result.bytes / 1024 / 1024).toFixed(1)
@@ -123,4 +132,29 @@ if (invokedDirectly) {
   if (result.missing > 0) {
     console.log('[sync-style-images] 缺图需先在隔壁仓跑：python tools/fetch.py --site midlibrary --tier thumb')
   }
+
+  // 第二步：把入库所需的那批从生成物目录复制进 tracked/。
+  // 幂等 —— 已存在且大于 1KB 的直接跳过。
+  fs.mkdirSync(trackedDir, { recursive: true })
+  let tracked = 0
+  let trackedSkipped = 0
+  let trackedBytes = 0
+  const rows = JSON.parse(fs.readFileSync(manifestPath, 'utf-8')) as ManifestRow[]
+  for (const row of rows) {
+    if (!SYNCED_KINDS.has(row.kind)) continue
+    const src = path.join(destDir, `${row.id}.webp`)
+    const dest = path.join(trackedDir, `${row.id}.webp`)
+    if (fs.existsSync(dest) && fs.statSync(dest).size > MIN_SIZE) {
+      trackedSkipped++
+      continue
+    }
+    if (!fs.existsSync(src)) continue
+    fs.copyFileSync(src, dest)
+    tracked++
+    trackedBytes += fs.statSync(dest).size
+  }
+  const tmb = (trackedBytes / 1024 / 1024).toFixed(1)
+  console.log(
+    `[sync-style-images] 入库目录 tracked/ 复制 ${tracked} 张（${tmb}MB）· 跳过 ${trackedSkipped} 张`
+  )
 }

@@ -517,8 +517,13 @@ h3 { font-size: 16px; line-height: 1.3; }
 .artist-more .ic { width: 14px; height: 14px; }
 .artist-card:hover { border-color: var(--border-2); transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .artist-card.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.artist-thumb { position: relative; aspect-ratio: 4 / 3; background: var(--surface-2); }
-.artist-thumb img { width: 100%; height: 100%; object-fit: cover; }
+/* 缩略图版位：上游图本身就是 320×320 **正方形**（midlibrary 采集物实测），
+   所以这里不设 aspect-ratio —— 之前写的 4/3 会被 img 的 height:100% 覆盖，
+   实测渲染出来是 1:1，那条声明只是误导性的死代码。
+   artist-pick 是 column flex，thumb 作为 flex item 高度由内容决定；
+   去掉 aspect-ratio 后高度与宽度都由图片自然比例给出，图片完整不裁切。 */
+.artist-thumb { position: relative; background: var(--surface-2); }
+.artist-thumb img { width: 100%; height: auto; display: block; object-fit: cover; }
 .artist-card.on .artist-thumb img { filter: saturate(1.05); }
 .badge {
   position: absolute; top: 8px; left: 8px;
@@ -986,10 +991,12 @@ details[open] > summary::after { transform: rotate(-135deg) translate(-1px, -1px
 }
 
 /* ── 14. 没有预览图的条目落回排版版位 ────────────────────────────── */
+/* 版位高度跟有图时一致（正方形），否则有图/无图的卡片高度会跳。 */
 .artist-thumb.is-plate {
   display: grid; place-items: center; padding: 16px; text-align: center;
   background: var(--surface-2);
   border-bottom: 1px solid var(--border);
+  aspect-ratio: 1 / 1;
 }
 .plate-name {
   font-family: var(--font-display); font-size: 23px; line-height: 1.12;
@@ -1358,3 +1365,7 @@ details[open] > summary::after { transform: rotate(-135deg) translate(-1px, -1px
    （详情 + 复制），所以第二个要往左让位，否则两者完全重叠。
    选择器挂在卡片的 data-od-id 前缀上，不影响艺术家侧的单按钮布局。 */
 [data-od-id^="type-card-"] .artist-more[data-copy] { right: 42px; }
+
+/* ADR-0032：风格库卡片与类型库卡片同形态（详情 + 复制两个右上角按钮）。
+   同样的让位规则，用风格码自己的 id 前缀，不与上面那条互相影响。 */
+[data-od-id^="code-card-"] .artist-more[data-copy] { right: 42px; }

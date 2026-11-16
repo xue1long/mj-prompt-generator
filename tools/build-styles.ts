@@ -111,6 +111,12 @@ export interface StyleCode {
   terms: string[]
   /** 主色 slug，按占比降序（筛选维度「主色」） */
   colours: string[]
+  /** 简介：他是谁（上游详情层 a 字段；风格码实测 0/4,638 覆盖，缺失即空） */
+  intro?: string
+  /** 风格描述：这张风格图画面的样子（上游详情层 o 字段，4,638/4,638 覆盖） */
+  observation?: string
+  /** 条目创建时间（毫秒，来自 ULID 前 10 位；排序「最新收录」依赖它） */
+  createdAt: number
 }
 
 /** 画师类目（中文名 + 条数） */
@@ -529,11 +535,15 @@ export function colourSlugsOf(detail: MidlibraryDetail | undefined): string[] {
  * 把 manifest 记录 + 详情层转成风格库配置。
  * 只取两类：kind=artist（进词库）与 kind=style_code（进码面板）；
  * 其余类型（技法 / 标题 / 流派 / 修饰）不进本项目。
+ *
+ * ulidsBySlug 来自隔壁仓的 data/items.json —— manifest 里没有 ULID，
+ * 只有 items.json 才带真实 id（排序要用的创建时间从它的前 10 位解）。
  */
 export function buildStyles(
   rows: MidlibraryRow[],
   details: Record<string, MidlibraryDetail>,
-  generatedAt: string
+  generatedAt: string,
+  ulidsBySlug: Record<string, string> = {}
 ): StylesConfig {
   const artists: StyleArtist[] = []
   const codes: StyleCode[] = []
@@ -600,6 +610,12 @@ export function buildStyles(
         isPick: Boolean(row.isPick),
         terms,
         colours,
+        // 详情层的两段文字：a 说他是谁、o 说这张画面长什么样。
+        // 风格码的 a 实测 0/4,638 覆盖（上游没给），o 则是 4,638/4,638 全有 ——
+        // 所以卡片副行与详情弹层用 o 充当地图简介行（ADR-0032）。
+        intro: detail?.a?.trim() || undefined,
+        observation: detail?.o?.trim() || undefined,
+        createdAt: ulidTimestamp(ulidsBySlug[row.slug] || ''),
       })
     }
   }
@@ -878,11 +894,20 @@ export function defaultItemsPath(root: string): string {
 
 /**
  * 把风格库快照写到 config/styles.yaml，返回输出路径。
+ *
+ * itemsPath 指向隔壁仓的 data/items.json（带真实 ULID）——
+ * 风格参考码的「最新收录」排序要用的创建时间从它的前 10 位解。
  */
-export function renderStylesFile(root: string, manifestPath: string, detailsPath: string): string {
+export function renderStylesFile(
+  root: string,
+  manifestPath: string,
+  detailsPath: string,
+  itemsPath?: string
+): string {
   const rows = loadManifest(manifestPath)
   const details = loadDetails(detailsPath)
-  const config = buildStyles(rows, details, localISODate())
+  const ulids = itemsPath ? loadUlids(itemsPath) : {}
+  const config = buildStyles(rows, details, localISODate(), ulids)
   const outFile = path.join(root, 'config', 'styles.yaml')
   fs.mkdirSync(path.dirname(outFile), { recursive: true })
   fs.writeFileSync(outFile, renderStylesYaml(config), 'utf-8')
@@ -916,24 +941,28 @@ if (invokedDirectly) {
   const manifestPath = process.env.MIDLIBRARY_MANIFEST ?? defaultManifestPath(root)
   const detailsPath = process.env.MIDLIBRARY_DETAILS ?? defaultDetailsPath(root)
   const itemsPath = process.env.MIDLIBRARY_ITEMS ?? defaultItemsPath(root)
-  const out = renderStylesFile(root, manifestPath, detailsPath)
+  const ulids = loadUlids(itemsPath)
+  const out = renderStylesFile(root, manifestPath, detailsPath, itemsPath)
   const outTypes = renderTypesFile(root, manifestPath, detailsPath, itemsPath)
   const config = buildStyles(
     loadManifest(manifestPath),
     loadDetails(detailsPath),
-    localISODate()
+    localISODate(),
+    ulids
   )
   const types = buildTypes(
     loadManifest(manifestPath),
     loadDetails(detailsPath),
     localISODate(),
-    loadUlids(itemsPath)
+    ulids
   )
   const withTime = types.entries.filter((e) => e.createdAt > 0).length
+  const codeWithTime = config.codes.filter((c) => c.createdAt > 0).length
+  const codeWithObs = config.codes.filter((c) => !!c.observation).length
   console.log(
     `[build-styles] 已生成 ${out}（艺术家 ${config.artists.length} 条 / 风格参考码 ${config.codes.length} 条 / ` +
       `分面词 ${config.termGroups.reduce((n, g) => n + g.terms.length, 0)} 个 / 主色 ${config.colours.length} 个 / ` +
-      `分面覆盖 ${config.source.facetCoverage}%）`
+      `分面覆盖 ${config.source.facetCoverage}% / 有风格描述 ${codeWithObs} 条 / 有创建时间 ${codeWithTime} 条）`
   )
   console.log(
     `[build-styles] 已生成 ${outTypes}（类型条目 ${types.entries.length} 条 / ` +

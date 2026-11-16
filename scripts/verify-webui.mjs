@@ -2410,8 +2410,10 @@ async function main() {
       check('类型库 最新收录写进 URL 且可复现', sortRes.hash.includes('sort=new'), sortRes.hash);
 
       // 最新收录的首条 = 全库创建时间最大者（页内现算，不用写死名字）
+      // 比较器必须与页面一致：创建时间倒序 + 同时间按名称升序（漏掉 tiebreak 会算错）
       const newest = await page.evaluate(() => {
-        const top = [...TYPE_ENTRIES].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+        const top = [...TYPE_ENTRIES].sort((a, b) =>
+          (b.createdAt || 0) - (a.createdAt || 0) || String(a.name).localeCompare(String(b.name)))[0];
         return { name: top.name, at: top.createdAt };
       });
       check('类型库 最新收录首条 = 创建时间最新者', sortRes.newFirst[0] === newest.name,
@@ -2476,49 +2478,441 @@ async function main() {
       await page.close();
     }
 
-    /* 13b. 风格与类型库 窄屏回归
+    /* 14. 风格库独立页（2026-11 · ADR-0032）
+       风格库此前只有「搜索」一个筛选维度，卡片也是一套独立的 code-* 样式 ——
+       与「风格与类型库」页不一致。本轮把两边对齐：分面补齐、卡片形态统一。
+       这一组把对齐结果当成契约来守：
+         · 页面能渲染、零运行时错误
+         · 数据契约：条目数 / 分面组数 / 分面词数 / 主色数 与页内数据自洽
+         · 筛选语义：**组内任一、组间全部**（与类型库页同一套引擎语义）
+         · 主色维度多选取并集
+         · 开关：只看实测 / 只看精选
+         · 排序：A→Z 与「最新收录」（口径 = 创建时间倒序，不是实测时间）
+         · 卡片：与类型库页同形态（artist-card + 两个右上角按钮），缩略图 1:1
+         · 详情弹层：风格描述 / 分面词 / 主色 + 复制 --sref + 上游回链
+         · 深链往返：URL hash 是筛选状态的唯一来源（ADR-0010） */
+    {
+      const { page, errs } = await openPage(browser, 'style-library.html');
+
+      const info = await page.evaluate(() => ({
+        appbar: document.querySelector('#appbar')?.children.length || 0,
+        dock: document.querySelector('#dock')?.children.length || 0,
+        pageEl: document.querySelector('#page')?.children.length || 0,
+        navLinks: [...document.querySelectorAll('.mainnav a')].map(a => a.getAttribute('href')),
+        // 数据契约
+        codes: typeof STYLE_CODES !== 'undefined' ? STYLE_CODES.length : -1,
+        groups: typeof STYLE_TERM_GROUPS !== 'undefined' ? STYLE_TERM_GROUPS.length : -1,
+        terms: typeof STYLE_TERM_GROUPS !== 'undefined'
+          ? STYLE_TERM_GROUPS.reduce((a, g) => a + g.terms.length, 0) : -1,
+        colours: typeof STYLE_COLOURS !== 'undefined' ? STYLE_COLOURS.length : -1,
+        imageMode: typeof STYLE_IMAGE_STATS !== 'undefined' ? STYLE_IMAGE_STATS.mode : '?',
+        withImages: typeof STYLE_IMAGE_STATS !== 'undefined' ? STYLE_IMAGE_STATS.withImages : -1,
+        totalImages: typeof STYLE_IMAGE_STATS !== 'undefined' ? STYLE_IMAGE_STATS.total : -1,
+        tested: typeof STYLE_CODES !== 'undefined' ? STYLE_CODES.filter(c => c.tested).length : -1,
+        pick: typeof STYLE_CODES !== 'undefined' ? STYLE_CODES.filter(c => c.pick).length : -1,
+        withTime: typeof STYLE_CODES !== 'undefined' ? STYLE_CODES.filter(c => c.createdAt > 0).length : -1,
+        withPreview: typeof STYLE_CODES !== 'undefined' ? STYLE_CODES.filter(c => c.preview).length : -1,
+        withObs: typeof STYLE_CODES !== 'undefined' ? STYLE_CODES.filter(c => c.observation).length : -1,
+        cards: document.querySelectorAll('.artist-card').length,
+        count: document.querySelector('.toolbar .dock-count')?.textContent.trim() || '',
+        // 卡片形态：与类型库页同套 class（不是另一套 code-* 样式）
+        cardClass: document.querySelector('.artist-card')?.className || '',
+        hasPick: !!document.querySelector('.artist-card .artist-pick'),
+        moreBtns: document.querySelectorAll('.artist-card .artist-more').length,
+        hasDetail: !!document.querySelector('[data-detail]'),
+        hasCopy: !!document.querySelector('[data-copy]'),
+        hasCopySref: !!document.querySelector('[data-copy-sref]'),
+        // 缩略图：上游图是 320×320 正方形，版位必须是 1:1
+        thumb: (() => {
+          const img = document.querySelector('.artist-thumb img');
+          if (!img) return null;
+          const r = img.getBoundingClientRect();
+          return { w: Math.round(r.width), h: Math.round(r.height), nat: img.naturalWidth + 'x' + img.naturalHeight };
+        })(),
+      }));
+      check('风格库 渲染', info.appbar > 0 && info.dock > 0 && info.pageEl > 0,
+        JSON.stringify({ appbar: info.appbar, dock: info.dock, pageEl: info.pageEl }));
+      check('风格库 零运行时错误', errs.length === 0, errs.slice(0, 3).join(' | '));
+      check('顶栏含「风格库」入口', info.navLinks.includes('style-library.html'), info.navLinks.join(','));
+
+      /* 数据契约：条数写死会随上游采集漂移，所以对着页内数据自洽性断言，
+         再单独钉住几条不变量（配图全覆盖 / 每条都有创建时间 / 每条都有风格描述）。 */
+      check('风格库 数据装载完整', info.codes > 0 && info.groups > 0 && info.terms > 0 && info.colours > 0,
+        `条目 ${info.codes} / 分面组 ${info.groups} / 分面词 ${info.terms} / 主色 ${info.colours}`);
+      check('风格库 配图为 public 全量',
+        info.imageMode === 'public' && info.withImages === info.totalImages && info.withImages === info.codes,
+        `${info.imageMode} / ${info.withImages} / ${info.totalImages}`);
+      check('风格库 每条都有创建时间（最新收录口径有据）', info.withTime === info.codes,
+        `${info.withTime} / ${info.codes}`);
+      check('风格库 每条都有风格描述（充当地图简介行）', info.withObs === info.codes,
+        `${info.withObs} / ${info.codes}`);
+      check('风格库 每条都有参考图路径', info.withPreview === info.codes,
+        `${info.withPreview} / ${info.codes}`);
+      check('风格库 首屏卡片与总数一致',
+        info.cards > 0 && info.cards <= info.codes && info.count === `${info.codes.toLocaleString('zh-CN')} 条`,
+        `卡片 ${info.cards} · 计数「${info.count}」`);
+
+      /* 卡片形态：与「风格与类型库」页同套 artist-* class（ADR-0032） */
+      check('风格库 卡片沿用 artist-card / artist-pick 外壳',
+        info.cardClass.includes('artist-card') && info.hasPick,
+        `class="${info.cardClass}"`);
+      check('风格库 卡片右上角有两个按钮（详情 + 复制）',
+        info.moreBtns >= 2 && info.hasDetail && info.hasCopy,
+        `.artist-more ${info.moreBtns} 个 · 详情 ${info.hasDetail} · 复制 ${info.hasCopy}`);
+      check('风格库 整卡可点（复制 --sref）', info.hasCopySref, 'data-copy-sref');
+      check('风格库 缩略图为 1:1 正方形版位',
+        !!info.thumb && info.thumb.w === info.thumb.h,
+        info.thumb ? `${info.thumb.w}×${info.thumb.h}（原图 ${info.thumb.nat}）` : '无缩略图');
+
+      /* 筛选语义：组内任一、组间全部（与类型库页同一套引擎语义）
+         口径从数据现算，不用写死数字：
+           · 单组多值 → 并集（OR）
+           · 跨组多值 → 交集（AND）
+         三个分面词：a、b 同组，c 异组。
+           本项目语义：(a ∨ b) ∧ c
+           上游平铺 AND：a ∧ b ∧ c        ← 对照组，用来证明两者确实不同 */
+      const sem = await page.evaluate(() => {
+        const g1 = STYLE_TERM_GROUPS[0];
+        const g2 = STYLE_TERM_GROUPS.find(g => g.id !== g1.id);
+        const a = g1.terms[0].slug;
+        const b = g1.terms[1] ? g1.terms[1].slug : g1.terms[0].slug;
+        const c = g2.terms[0].slug;
+        const has = (e, s) => (e.terms || []).includes(s);
+        const hasC = (e, s) => (e.colours || []).includes(s);
+        const col0 = STYLE_COLOURS[0].slug;
+        const col1 = STYLE_COLOURS[1] ? STYLE_COLOURS[1].slug : col0;
+        return {
+          a, b, c, col0, col1,
+          sameGroupUnion: STYLE_CODES.filter(e => has(e, a) || has(e, b)).length,
+          crossGroupAnd: STYLE_CODES.filter(e => has(e, a) && has(e, c)).length,
+          projectSem: STYLE_CODES.filter(e => (has(e, a) || has(e, b)) && has(e, c)).length,
+          upstreamFlat: STYLE_CODES.filter(e => has(e, a) && has(e, b) && has(e, c)).length,
+          colUnion: STYLE_CODES.filter(e => hasC(e, col0) || hasC(e, col1)).length,
+          colOne: STYLE_CODES.filter(e => hasC(e, col0)).length,
+        };
+      });
+      const readStyleCount = async (args) => {
+        const { page: p } = await openPage(browser, 'style-library.html', args);
+        const txt = await p.evaluate(() => document.querySelector('.toolbar .dock-count')?.textContent.trim() || '');
+        await p.close();
+        return Number((txt.match(/[\d,]+/) || ['0'])[0].replace(/,/g, ''));
+      };
+      const nOr = await readStyleCount(`#style-library?terms=${sem.a}&terms=${sem.b}`);
+      const nAnd = await readStyleCount(`#style-library?terms=${sem.a}&terms=${sem.c}`);
+      const nThree = await readStyleCount(`#style-library?terms=${sem.a}&terms=${sem.b}&terms=${sem.c}`);
+      check('风格库 组内多值取并集', nOr === sem.sameGroupUnion,
+        `页面 ${nOr} / 期望 ${sem.sameGroupUnion}（${sem.a} ∪ ${sem.b}）`);
+      check('风格库 跨组多值取交集', nAnd === sem.crossGroupAnd,
+        `页面 ${nAnd} / 期望 ${sem.crossGroupAnd}（${sem.a} ∧ ${sem.c}）`);
+      check('风格库 三词 = (同组并集) ∧ 跨组', nThree === sem.projectSem,
+        `页面 ${nThree} / 期望 ${sem.projectSem}（(${sem.a} ∨ ${sem.b}) ∧ ${sem.c}）`);
+      check('风格库 语义 ≠ 上游平铺 AND（本项目更宽）', nThree !== sem.upstreamFlat,
+        `本项目 ${nThree} · 上游平铺 ${sem.upstreamFlat}`);
+
+      /* 主色维度：多选取并集（同维度内没有 groupOf） */
+      const nColUnion = await readStyleCount(`#style-library?colours=${sem.col0}&colours=${sem.col1}`);
+      const nColOne = await readStyleCount(`#style-library?colours=${sem.col0}`);
+      check('风格库 主色多选取并集', nColUnion === sem.colUnion,
+        `页面 ${nColUnion} / 期望 ${sem.colUnion}（${sem.col0} ∪ ${sem.col1}）`);
+      check('风格库 单主色取交集', nColOne === sem.colOne,
+        `页面 ${nColOne} / 期望 ${sem.colOne}（${sem.col0}）`);
+
+      /* 分面面板：必须能打开、必须按组分组列出分面词与主色，
+         且面板上的计数必须等于现算值（分面计数口径：加候选值后整链的结果条数）。 */
+      const panel = await page.evaluate(async () => {
+        location.hash = '#style-library';
+        await new Promise(r => setTimeout(r, 120));
+        const btn = document.querySelector('[data-toggle="facets"]');
+        if (!btn) return { ok: false };
+        btn.click();
+        await new Promise(r => setTimeout(r, 250));
+        const p = document.querySelector('#style-facet-panel');
+        if (!p) return { ok: false, missing: true };
+        const termRows = [...p.querySelectorAll('[data-term]')].map(b => ({
+          slug: b.dataset.term,
+          shown: Number((b.querySelector('.en')?.textContent || '0').replace(/[^\d]/g, '')),
+          real: STYLE_CODES.filter(e => (e.terms || []).includes(b.dataset.term)).length,
+        }));
+        const colourRows = [...p.querySelectorAll('[data-colour]')].map(b => ({
+          slug: b.dataset.colour,
+          shown: Number((b.getAttribute('title') || '').match(/(\d[\d,]*)/)?.[1]?.replace(/,/g, '') || 0),
+          real: STYLE_CODES.filter(e => (e.colours || []).includes(b.dataset.colour)).length,
+        }));
+        return {
+          ok: true,
+          termBtns: termRows.length,
+          colourBtns: colourRows.length,
+          groupHeads: p.querySelectorAll('.slot-head').length,
+          termMismatch: termRows.filter(r => r.shown !== r.real).length,
+          colourMismatch: colourRows.filter(r => r.shown !== r.real).length,
+          // 面板只列实际用到的词与色：零计数不该出现（列出来点了必然空）
+          zeroTerms: termRows.filter(r => r.real === 0).length,
+          zeroColours: colourRows.filter(r => r.real === 0).length,
+        };
+      });
+      check('风格库 分面面板可打开且分维度齐全',
+        panel.ok && panel.termBtns > 0 && panel.colourBtns > 0 && panel.groupHeads === info.groups,
+        JSON.stringify({ termBtns: panel.termBtns, colourBtns: panel.colourBtns, groupHeads: panel.groupHeads }));
+      check('风格库 分面计数与现算一致',
+        panel.termMismatch === 0 && panel.colourMismatch === 0,
+        `分面词不符 ${panel.termMismatch} 个 · 主色不符 ${panel.colourMismatch} 个`);
+      check('风格库 分面只列实际用到的词与色（无零计数项）',
+        panel.zeroTerms === 0 && panel.zeroColours === 0,
+        `零计数词 ${panel.zeroTerms} · 零计数色 ${panel.zeroColours}`);
+
+      /* 开关：只看实测 / 只看精选 */
+      const toggles = await page.evaluate(async () => {
+        const read = () => document.querySelector('.toolbar .dock-count')?.textContent.trim() || '';
+        const out = { before: read() };
+        const testedBtn = document.querySelector('[data-toggle="tested"]');
+        testedBtn.click();
+        await new Promise(r => setTimeout(r, 200));
+        out.tested = read();
+        out.testedHash = location.hash;
+        out.testedPressed = testedBtn.getAttribute('aria-pressed');
+        document.querySelector('[data-toggle="pick"]').click();
+        await new Promise(r => setTimeout(r, 200));
+        out.both = read();
+        out.bothHash = location.hash;
+        document.querySelector('[data-toggle="tested"]').click();
+        await new Promise(r => setTimeout(r, 200));
+        out.pickOnly = read();
+        return out;
+      });
+      const expectTested = await page.evaluate(() => STYLE_CODES.filter(c => c.tested).length);
+      const expectPick = await page.evaluate(() => STYLE_CODES.filter(c => c.pick).length);
+      const expectBoth = await page.evaluate(() => STYLE_CODES.filter(c => c.tested && c.pick).length);
+      check('风格库 只看实测生效',
+        toggles.tested === `${expectTested.toLocaleString('zh-CN')} 条` && toggles.testedPressed === 'true',
+        `页面「${toggles.tested}」/ 期望「${expectTested.toLocaleString('zh-CN')} 条」· hash ${toggles.testedHash}`);
+      check('风格库 只看精选生效',
+        toggles.pickOnly === `${expectPick.toLocaleString('zh-CN')} 条`,
+        `页面「${toggles.pickOnly}」/ 期望「${expectPick.toLocaleString('zh-CN')} 条」`);
+      check('风格库 实测 + 精选可叠加',
+        toggles.both === `${expectBoth.toLocaleString('zh-CN')} 条`
+        && toggles.bothHash.includes('tested=1') && toggles.bothHash.includes('pick=1'),
+        `页面「${toggles.both}」/ 期望「${expectBoth.toLocaleString('zh-CN')} 条」· hash ${toggles.bothHash}`);
+
+      /* 详情弹层：必须有真实入口 —— 写好但没人能打开的弹层是死代码。
+         入口是卡片右上角的「详情」按钮（data-detail）。
+         风格码是**参数**不是提示词片段（ADR-0009），所以没有「加进提示词」，
+         取而代之的是「复制 --sref」+ 上游回链。 */
+      const sheet = await page.evaluate(async () => {
+        location.hash = '#style-library';
+        await new Promise(r => setTimeout(r, 150));
+        const btn = document.querySelector('[data-detail]');
+        if (!btn) return { hasBtn: false };
+        btn.click();
+        await new Promise(r => setTimeout(r, 300));
+        const s = document.querySelector('[data-od-id="code-sheet"]');
+        return {
+          hasBtn: true,
+          open: !!s,
+          name: s?.querySelector('.artist-sheet-name')?.textContent.trim() || '',
+          heads: s ? [...s.querySelectorAll('.artist-sheet-block h3')].map(h => h.textContent.trim()) : [],
+          copyText: s?.querySelector('[data-role="copy"]')?.textContent.trim() || '',
+          hasCopy: !!s?.querySelector('[data-role="copy"]'),
+          hasAdd: !!s?.querySelector('[data-role="add"]'),
+          hasBacklink: !!s?.querySelector('a[href*="midlibrary.io"]'),
+          terms: s ? s.querySelectorAll('.term').length : 0,
+          swatches: s ? s.querySelectorAll('.swatches .swatch').length : 0,
+          blocks: s ? s.querySelectorAll('.artist-sheet-block').length : 0,
+          created: (s?.textContent || '').includes('按创建时间，非实测时间'),
+        };
+      });
+      check('风格库 详情弹层有入口且能打开',
+        sheet.hasBtn && sheet.open && sheet.name.length > 0,
+        JSON.stringify({ open: sheet.open, name: sheet.name }));
+      check('风格库 详情弹层含风格描述 / 分面词 / 主色',
+        sheet.heads.includes('风格描述') && sheet.heads.includes('分面词') && sheet.heads.includes('主色'),
+        sheet.heads.join(' | '));
+      check('风格库 详情弹层含复制 --sref 与上游回链',
+        sheet.hasCopy && sheet.hasBacklink && sheet.copyText.includes('--sref'),
+        `${sheet.copyText} · 回链 ${sheet.hasBacklink}`);
+      check('风格库 详情弹层没有「加进提示词」（风格码是参数不是片段）',
+        sheet.hasAdd === false, `加进 ${sheet.hasAdd}`);
+      check('风格库 详情弹层标注收录口径（创建时间，非实测时间）',
+        sheet.created === true, `收录口径标注 ${sheet.created}`);
+      // 关掉弹层，别挡住后面的用例
+      await page.evaluate(async () => {
+        const close = document.querySelector('[data-od-id="code-sheet"] [data-role="close"]');
+        if (close) close.click();
+        await new Promise(r => setTimeout(r, 200));
+      });
+      const sheetClosed = await page.evaluate(() => !document.querySelector('[data-od-id="code-sheet"]'));
+      check('风格库 详情弹层可关闭', sheetClosed);
+
+      /* 两个右上角按钮不能重叠（.artist-more 是右上角绝对定位） */
+      const overlap = await page.evaluate(() => {
+        const d = document.querySelector('[data-detail]');
+        const c = document.querySelector('[data-copy]');
+        if (!d || !c) return { ok: false };
+        const a = d.getBoundingClientRect();
+        const b = c.getBoundingClientRect();
+        const hit = !(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top);
+        return { ok: true, hit, a: [Math.round(a.left), Math.round(a.right)], b: [Math.round(b.left), Math.round(b.right)] };
+      });
+      check('风格库 卡片「详情」与「复制」按钮不重叠', overlap.ok && overlap.hit === false,
+        JSON.stringify(overlap));
+
+      /* 「复制」：风格码复制的是 `--sref <码>` 写法（不是裸码）。
+         捕获口径：navigator.clipboard.writeText（file:// 下不弹权限框）+ copy 事件。 */
+      const copyRes = await page.evaluate(async () => {
+        window.__copied = [];
+        const orig = navigator.clipboard && navigator.clipboard.writeText;
+        if (orig) {
+          navigator.clipboard.writeText = (t) => { window.__copied.push(String(t)); return orig.call(navigator.clipboard, t); };
+        }
+        document.addEventListener('copy', (e) => {
+          try { window.__copied.push(e.clipboardData.getData('text')); } catch { /* 忽略 */ }
+        }, true);
+        const btn = document.querySelector('[data-copy]');
+        const id = btn?.dataset.copy || '';
+        const expected = '--sref ' + ((STYLE_CODES.find(x => x.id === id) || {}).code || '');
+        btn.click();
+        await new Promise(r => setTimeout(r, 250));
+        return { id, expected, copied: window.__copied };
+      });
+      check('风格库「复制」复制的是 --sref 写法',
+        copyRes.copied.length > 0 && copyRes.copied.includes(copyRes.expected),
+        `期望「${copyRes.expected}」· 实得 ${JSON.stringify(copyRes.copied)}`);
+
+      /* 排序：A→Z 与「最新收录」
+         「最新收录」口径 = 创建时间倒序（不是上游的实测时间，快照里没有那个字段）。 */
+      const sortRes = await page.evaluate(async () => {
+        const out = {};
+        location.hash = '#style-library';
+        await new Promise(r => setTimeout(r, 150));
+        const sel = document.querySelector('#style-sort');
+        sel.value = 'az';
+        sel.dispatchEvent(new Event('change'));
+        await new Promise(r => setTimeout(r, 200));
+        out.az = [...document.querySelectorAll('.artist-name')].slice(0, 5).map(n => n.textContent.trim());
+        out.azSorted = out.az.every((v, i) => i === 0 || out.az[i - 1].localeCompare(v, 'en') <= 0);
+        sel.value = 'new';
+        sel.dispatchEvent(new Event('change'));
+        await new Promise(r => setTimeout(r, 200));
+        out.newFirst = [...document.querySelectorAll('.artist-name')].slice(0, 5).map(n => n.textContent.trim());
+        out.hash = location.hash;
+        out.sortOpts = [...document.querySelectorAll('#style-sort option')].map(o => o.value);
+        return out;
+      });
+      check('风格库 A→Z 排序生效', sortRes.azSorted, sortRes.az.join(' | '));
+      check('风格库 排序项只有 A→Z 与最新收录',
+        JSON.stringify(sortRes.sortOpts) === JSON.stringify(['az', 'new']),
+        JSON.stringify(sortRes.sortOpts));
+      check('风格库 最新收录写进 URL 且可复现', sortRes.hash.includes('sort=new'), sortRes.hash);
+
+      // 最新收录的首条 = 全库创建时间最大者（页内现算，不用写死名字）
+      // 比较器必须与页面一致：创建时间倒序 + 同时间按名称升序。
+      // 风格码里同日创建的有一大把（末批 2026-10-25 同毫秒就有多条），
+      // 漏掉 tiebreak 会算出一个「创建时间同样最新、但名字更靠后」的条目。
+      const newest = await page.evaluate(() => {
+        const top = [...STYLE_CODES].sort((a, b) =>
+          (b.createdAt || 0) - (a.createdAt || 0) || String(a.name).localeCompare(String(b.name)))[0];
+        return { name: top.name, at: top.createdAt };
+      });
+      check('风格库 最新收录首条 = 创建时间最新者', sortRes.newFirst[0] === newest.name,
+        `页面「${sortRes.newFirst[0]}」 / 现算「${newest.name}」`);
+
+      /* 搜索：按名称或码命中 */
+      const searchRes = await page.evaluate(async () => {
+        location.hash = '#style-library';
+        await new Promise(r => setTimeout(r, 150));
+        const inp = document.querySelector('#style-search');
+        inp.value = 'Acheron';
+        inp.dispatchEvent(new Event('input'));
+        await new Promise(r => setTimeout(r, 250));
+        return {
+          count: document.querySelector('.toolbar .dock-count')?.textContent.trim() || '',
+          names: [...document.querySelectorAll('.artist-name')].map(n => n.textContent.trim()),
+          hash: location.hash,
+        };
+      });
+      check('风格库 搜索按名称命中并写进 URL',
+        searchRes.names.length > 0 && searchRes.names.every(n => /acheron/i.test(n))
+        && searchRes.hash.includes('q='),
+        `${searchRes.count} · ${searchRes.names.join(' | ')} · ${searchRes.hash}`);
+
+      /* 深链往返：hash 是唯一状态源（ADR-0010） */
+      const deep = await page.evaluate(async () => {
+        const terms = STYLE_TERM_GROUPS[0].terms.slice(0, 2).map(t => t.slug);
+        const q = `#style-library?terms=${terms[0]}&terms=${terms[1]}&tested=1&pick=1&sort=new`;
+        location.hash = q;
+        await new Promise(r => setTimeout(r, 300));
+        // 同组两个词是「组内任一」（OR），不是 AND —— 口径必须与引擎一致
+        const expected = STYLE_CODES.filter(c => c.tested && c.pick
+          && ((c.terms || []).includes(terms[0]) || (c.terms || []).includes(terms[1]))).length;
+        const shown = Number((document.querySelector('.toolbar .dock-count')?.textContent || '0').replace(/[^\d]/g, ''));
+        // 分面面板要打开才读得到 [data-term] 的选中态
+        const facetsBtn = document.querySelector('[data-toggle="facets"]');
+        if (facetsBtn.getAttribute('aria-pressed') !== 'true') {
+          facetsBtn.click();
+          await new Promise(r => setTimeout(r, 250));
+        }
+        return {
+          expected, shown,
+          testedPressed: document.querySelector('[data-toggle="tested"]')?.getAttribute('aria-pressed'),
+          pickPressed: document.querySelector('[data-toggle="pick"]')?.getAttribute('aria-pressed'),
+          sortVal: document.querySelector('#style-sort')?.value,
+          termsOn: [...document.querySelectorAll('[data-term][aria-pressed="true"]')].map(b => b.dataset.term),
+          hash: location.hash,
+        };
+      });
+      check('风格库 深链往返复现筛选状态',
+        deep.shown === deep.expected && deep.testedPressed === 'true' && deep.pickPressed === 'true'
+        && deep.sortVal === 'new' && deep.termsOn.length === 2,
+        JSON.stringify(deep));
+
+      await page.close();
+    }
+
+    /* 13b. 风格与类型库 / 风格库 窄屏回归
        顶栏多了一个入口（「风格与类型库」是 4 个入口里最长的），要确认：
          · 390×844 下主导航仍可点、不被固定底条盖住
          · 顶栏没有横向溢出（scrollWidth 不超过视口）
-       与第 9 组的口径一致：只看「首屏可见」的按钮是否点得到。 */
-    for (const vp of [MOBILE, NARROW]) {
-      const { page, errs } = await openPage(browser, 'style-types.html', '', vp);
-      const info = await page.evaluate(() => {
-        const nav = document.querySelector('.mainnav');
-        const links = [...document.querySelectorAll('.mainnav a')];
-        const covered = [];
-        let visible = 0;
-        for (const el of links) {
-          const b = el.getBoundingClientRect();
-          const cx = b.left + b.width / 2;
-          const cy = b.top + b.height / 2;
-          if (cx < 0 || cx > window.innerWidth || cy < 0 || cy > window.innerHeight) continue;
-          visible += 1;
-          const hit = document.elementFromPoint(cx, cy);
-          if (!hit || (hit !== el && !el.contains(hit))) {
-            covered.push({ t: (el.textContent || '').trim(), by: hit ? hit.tagName : 'null' });
+       与第 9 组的口径一致：只看「首屏可见」的按钮是否点得到。
+       两个独立页共用同一套顶栏，所以逐页跑 —— 只跑一个就漏掉另一个的回归。 */
+    for (const pageName of ['style-types.html', 'style-library.html']) {
+      for (const vp of [MOBILE, NARROW]) {
+        const { page, errs } = await openPage(browser, pageName, '', vp);
+        const info = await page.evaluate(() => {
+          const nav = document.querySelector('.mainnav');
+          const links = [...document.querySelectorAll('.mainnav a')];
+          const covered = [];
+          let visible = 0;
+          for (const el of links) {
+            const b = el.getBoundingClientRect();
+            const cx = b.left + b.width / 2;
+            const cy = b.top + b.height / 2;
+            if (cx < 0 || cx > window.innerWidth || cy < 0 || cy > window.innerHeight) continue;
+            visible += 1;
+            const hit = document.elementFromPoint(cx, cy);
+            if (!hit || (hit !== el && !el.contains(hit))) {
+              covered.push({ t: (el.textContent || '').trim(), by: hit ? hit.tagName : 'null' });
+            }
           }
-        }
-        return {
-          visible,
-          covered,
-          navOverflow: nav ? nav.scrollWidth - nav.clientWidth : -1,
-          docOverflow: document.documentElement.scrollWidth - window.innerWidth,
-          links: links.length,
-          appbar: document.querySelector('#appbar')?.children.length || 0,
-          dock: document.querySelector('#dock')?.children.length || 0,
-          pageEl: document.querySelector('#page')?.children.length || 0,
-        };
-      });
-      const tag = `风格与类型库 ${vp.width}×${vp.height}`;
-      check(`${tag} 渲染`, info.appbar > 0 && info.dock > 0 && info.pageEl > 0,
-        JSON.stringify({ appbar: info.appbar, dock: info.dock, pageEl: info.pageEl }));
-      check(`${tag} 零运行时错误`, errs.length === 0, errs.slice(0, 3).join(' | '));
-      check(`${tag} 主导航首屏可点`, info.visible === info.links && info.covered.length === 0,
-        `可见 ${info.visible}/${info.links} · ` + (info.covered.length ? JSON.stringify(info.covered) : '全部可点'));
-      check(`${tag} 顶栏无横向溢出`, info.docOverflow <= 0,
-        `文档溢出 ${info.docOverflow}px · 导航溢出 ${info.navOverflow}px`);
-      await page.close();
+          return {
+            visible,
+            covered,
+            navOverflow: nav ? nav.scrollWidth - nav.clientWidth : -1,
+            docOverflow: document.documentElement.scrollWidth - window.innerWidth,
+            links: links.length,
+            appbar: document.querySelector('#appbar')?.children.length || 0,
+            dock: document.querySelector('#dock')?.children.length || 0,
+            pageEl: document.querySelector('#page')?.children.length || 0,
+          };
+        });
+        const tag = `${pageName.replace('.html', '')} ${vp.width}×${vp.height}`;
+        check(`${tag} 渲染`, info.appbar > 0 && info.dock > 0 && info.pageEl > 0,
+          JSON.stringify({ appbar: info.appbar, dock: info.dock, pageEl: info.pageEl }));
+        check(`${tag} 零运行时错误`, errs.length === 0, errs.slice(0, 3).join(' | '));
+        check(`${tag} 主导航首屏可点`, info.visible === info.links && info.covered.length === 0,
+          `可见 ${info.visible}/${info.links} · ` + (info.covered.length ? JSON.stringify(info.covered) : '全部可点'));
+        check(`${tag} 顶栏无横向溢出`, info.docOverflow <= 0,
+          `文档溢出 ${info.docOverflow}px · 导航溢出 ${info.navOverflow}px`);
+        await page.close();
+      }
     }
   } finally {
     await browser.close();

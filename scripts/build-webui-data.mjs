@@ -59,7 +59,8 @@ const exploreYamlPath = path.join(CFG, 'explore.yaml');
 const decomposedPath = path.join(CFG, 'explore-decomposed.yaml');
 const stylesTopPath = path.join(CFG, 'styles-top.yaml');
 const typesPath = path.join(CFG, 'types.yaml');
-for (const p of [exploreYamlPath, decomposedPath, stylesTopPath, typesPath]) {
+const stylesPath = path.join(CFG, 'styles.yaml');
+for (const p of [exploreYamlPath, decomposedPath, stylesTopPath, typesPath, stylesPath]) {
   must(fs.existsSync(p), `缺少输入文件：${p}`);
 }
 
@@ -86,11 +87,13 @@ try {
 }
 const stylesTop = yaml.load(fs.readFileSync(stylesTopPath, 'utf8'));
 const types = yaml.load(fs.readFileSync(typesPath, 'utf8'));
+const styles = yaml.load(fs.readFileSync(stylesPath, 'utf8'));
 
 must(Array.isArray(explore.jobs) && explore.jobs.length > 0, 'explore.yaml 里没有 jobs');
 must(Array.isArray(decomposed.jobs), 'explore-decomposed.yaml 里没有 jobs');
 must(Array.isArray(stylesTop.entries), 'styles-top.yaml 里没有 entries');
 must(Array.isArray(types.entries) && types.entries.length > 0, 'types.yaml 里没有 entries');
+must(Array.isArray(styles.codes) && styles.codes.length > 0, 'styles.yaml 里没有 codes');
 
 const decById = new Map(decomposed.jobs.map((j) => [j.jobId, j]));
 const unmatched = explore.jobs.filter((j) => !decById.has(j.id)).length;
@@ -110,10 +113,18 @@ must(
  *  该模式已于第 9 步废弃：抽样图零引用（当前产物一条都不引它们），
  *  且它让「图片来源」出现两套命名空间，无法回答「dist/ 拷走能不能用」。
  *  现在图片路径一律是 ../public/…，唯一例外是没有图的条目（取不到就返回 null）。
+ *
+ *  midlibrary 那一族（艺术家 / 风格码 / 类型条目）走 **tracked/**：
+ *  public/preview-images/midlibrary/ 是 gitignored 的生成物，
+ *  直接引用它等于「clone 后所有图都失效」（ADR-0032）。
+ *  tracked/ 是入库目录，前端统一经 core.js 的 midlibraryPreviewPath() 解析。
  */
 function pickImage(raw, kind) {
-  const prefix = kind === 'explore' ? '../public/explore/' : '../public/preview-images/';
-  return prefix + raw.split(path.sep).join('/');
+  if (kind === 'explore') return '../public/explore/' + raw.split(path.sep).join('/');
+  if (kind === 'midlibrary') {
+    return '../public/preview-images/tracked/' + String(raw).replace(/^midlibrary\//, '').split(path.sep).join('/');
+  }
+  return '../public/preview-images/' + raw.split(path.sep).join('/');
 }
 
 /** 路径相对 webui/ 解析，验证图片确实存在。 */
@@ -212,7 +223,7 @@ const typeEntries = types.entries.map((e) => ({
   cat: e.category,
   kind: e.kind,
   en: e.promptEn,
-  preview: e.preview ? pickImage(e.preview, 'styles-top') : null,
+  preview: e.preview ? pickImage(e.preview, 'midlibrary') : null,
   url: e.sourceUrl,
   tested: !!e.testedMark,
   publicDomain: !!e.isPublicDomain,
@@ -248,6 +259,60 @@ const typeColours = (types.colours || []).map((c) => ({
   name: c.name,
   hex: c.hex,
 }));
+
+/* ── 风格库（风格参考码）────────────────────────────────────────────────
+   4,638 条 --sref 码。此前的 webui/js/data-stylecodes.js 是**手工产物**，
+   与源 config/styles.yaml 并不一致：terms 被截断到 4 个、colours 截断到 3 个、
+   preview 只留 120 条、isPick 整个丢掉、testedMark 的映射有 3,949 条对不上。
+   那份手工产物让「分面词恒为 4 个」看起来像上游的数据结构（其实是本地截断），
+   直接导致「组间全部」的可行性被误判。
+
+   现在改成从 styles.yaml 全量生成，字段如实透传（ADR-0032）。 */
+
+const styleCodes = styles.codes.map((c) => ({
+  id: c.id,
+  name: c.name,
+  code: c.code,
+  preview: c.preview ? pickImage(c.preview, 'midlibrary') : null,
+  url: c.sourceUrl,
+  tested: !!c.testedMark,
+  pick: !!c.isPick,
+  terms: c.terms || [],
+  colours: c.colours || [],
+  // 简介：上游风格码的 a 字段实测 0/4,638 覆盖（上游没给），所以这里基本是空串。
+  intro: c.intro || '',
+  // 风格描述：上游 o 字段，4,638/4,638 全有 —— 卡片副行与详情弹层用它。
+  observation: c.observation || '',
+  // 条目创建时间（毫秒，来自 ULID 前 10 位）：排序「最新收录」依赖它。
+  createdAt: Number(c.createdAt) || 0,
+}));
+
+const STYLE_IMAGE_STATS = {
+  mode,
+  withImages: styleCodes.filter((c) => !!c.preview).length,
+  total: styleCodes.length,
+  imageFiles: styleCodes.filter((c) => !!c.preview).length,
+  sourceFiles: styles.codes.filter((c) => !!c.preview).length,
+};
+
+/* 风格码的分面词表与色表：**只列实际被用到的**。
+   上游词表有 68 词（10 组）/ 96 色，但风格码只用到 41 词（6 组）/ 94 色 ——
+   其余的词点了必然 0 条，列出来只是噪音（类型库页用全量词表 + 零计数置灰，
+   那是另一套取舍：它的数据把 10 组都用上了）。 */
+const usedCodeTerms = new Set();
+for (const c of styleCodes) for (const t of c.terms) usedCodeTerms.add(t);
+const usedCodeColours = new Set();
+for (const c of styleCodes) for (const t of c.colours) usedCodeColours.add(t);
+
+const styleTermGroups = (styles.termGroups || [])
+  .map((g) => ({
+    id: g.id,
+    name: g.name,
+    terms: (g.terms || []).filter((t) => usedCodeTerms.has(t.slug)),
+  }))
+  .filter((g) => g.terms.length > 0);
+
+const styleColours = (styles.colours || []).filter((c) => usedCodeColours.has(c.slug));
 
 /* ── 产物 ─────────────────────────────────────────────────────────── */
 function safeJson(v) {
@@ -298,6 +363,17 @@ const outputs = [
     ]),
     probe: '({entries:TYPE_ENTRIES.length,cats:TYPE_CATEGORIES.length,groups:TYPE_TERM_GROUPS.length,colours:TYPE_COLOURS.length,stats:TYPE_IMAGE_STATS,imgs:TYPE_ENTRIES.map(e=>e.preview).filter(Boolean),terms:TYPE_ENTRIES.flatMap(e=>e.terms),coloursUsed:TYPE_ENTRIES.flatMap(e=>e.colours),tested:TYPE_ENTRIES.filter(e=>e.tested).length,publicDomain:TYPE_ENTRIES.filter(e=>e.publicDomain).length,withTime:TYPE_ENTRIES.filter(e=>e.createdAt>0).length})',
   },
+  {
+    file: 'data-stylecodes.js',
+    text: render([
+      ['STYLE_TERM_GROUPS', styleTermGroups],
+      ['STYLE_COLOURS', styleColours],
+      ['STYLE_CODES', styleCodes],
+      ['STYLE_IMAGE_STATS', STYLE_IMAGE_STATS],
+      ['STYLE_SOURCE', styles.source],
+    ]),
+    probe: '({entries:STYLE_CODES.length,groups:STYLE_TERM_GROUPS.length,colours:STYLE_COLOURS.length,stats:STYLE_IMAGE_STATS,imgs:STYLE_CODES.map(c=>c.preview).filter(Boolean),terms:STYLE_CODES.flatMap(c=>c.terms),coloursUsed:STYLE_CODES.flatMap(c=>c.colours),tested:STYLE_CODES.filter(c=>c.tested).length,pick:STYLE_CODES.filter(c=>c.pick).length,withObs:STYLE_CODES.filter(c=>c.observation).length,withTime:STYLE_CODES.filter(c=>c.createdAt>0).length})',
+  },
 ];
 
 /* 两阶段：先把全部产物校验完，再统一落盘。
@@ -323,6 +399,31 @@ for (const out of outputs) {
     // 缺失或重复都会让「结论挂到证据上」这件事失效（报告 2.1）。
     // 引用键零碰撞已由上面的 exploreJobKeys 断言保证（构建期跑的是浏览器端同一份算法）。
     // 这里只钉住条数：键不是采集来的事实，不烘焙进产物，由浏览器端运行时算。
+  } else if (r.pick !== undefined) {
+    /* 风格码：条数、开关、分面覆盖都要与源快照一致。
+       这条链历史上踩过「手工产物截断分面」的坑 —— terms 被砍到 4 个、
+       colours 被砍到 3 个、preview 只留 120 条、isPick 整个丢掉。
+       所以这里把每一项都钉死，任何再次截断都会在构建期失败。 */
+    must(r.entries === styles.codes.length, `${out.file} 风格码数不符：${r.entries} != ${styles.codes.length}`);
+    must(r.groups === styleTermGroups.length, `${out.file} 分面词组数不符`);
+    must(r.colours === styleColours.length, `${out.file} 主色数不符`);
+    const knownCodeTerms = new Set();
+    for (const g of styleTermGroups) for (const t of g.terms) knownCodeTerms.add(t.slug);
+    const unknownCodeTerms = [...new Set(r.terms)].filter((s) => !knownCodeTerms.has(s));
+    must(unknownCodeTerms.length === 0, `${out.file} 有 ${unknownCodeTerms.length} 个分面词不在词表里，例如 ${unknownCodeTerms.slice(0, 3).join(', ')}`);
+    const knownCodeColours = new Set(styleColours.map((c) => c.slug));
+    const unknownCodeColours = [...new Set(r.coloursUsed)].filter((s) => !knownCodeColours.has(s));
+    must(unknownCodeColours.length === 0, `${out.file} 有 ${unknownCodeColours.length} 个主色不在色表里，例如 ${unknownCodeColours.slice(0, 3).join(', ')}`);
+    // 开关如实透传：条数必须与源快照一致
+    const srcCodeTested = styles.codes.filter((c) => c.testedMark).length;
+    const srcCodePick = styles.codes.filter((c) => c.isPick).length;
+    must(r.tested === srcCodeTested, `${out.file} 实测条数与源快照不符：产物 ${r.tested} != 源 ${srcCodeTested}`);
+    must(r.pick === srcCodePick, `${out.file} 编辑精选条数与源快照不符：产物 ${r.pick} != 源 ${srcCodePick}`);
+    // 风格描述与创建时间：卡片副行、排序都依赖它，条数必须对得上
+    const srcCodeObs = styles.codes.filter((c) => !!c.observation).length;
+    const srcCodeTime = styles.codes.filter((c) => Number(c.createdAt) > 0).length;
+    must(r.withObs === srcCodeObs, `${out.file} 有风格描述的条数与源快照不符：产物 ${r.withObs} != 源 ${srcCodeObs}`);
+    must(r.withTime === srcCodeTime, `${out.file} 有创建时间的条数与源快照不符：产物 ${r.withTime} != 源 ${srcCodeTime}`);
   } else if (r.terms !== undefined) {
     /* 类型库：条数、分类数、分面词表、主色表都要与源快照一致。
        分面覆盖是这套数据的命门（历史上 artists 侧踩过「产物截断分面」的坑），
@@ -378,6 +479,7 @@ console.log(`  配图来源：探索榜 ../public/explore/ / 风格榜 ../public
 console.log(`  探索榜 ${line('', EXPLORE_IMAGE_STATS)}`);
 console.log(`  批次 ${explore.batches.length} / 比例 ${explore.aspects.length} / 拆解匹配 ${explore.jobs.length - unmatched}（未匹配 ${unmatched}）`);
 console.log(`  风格榜 ${line('', STYLES_TOP_IMAGE_STATS)}`);
+console.log(`  风格库 ${line('', STYLE_IMAGE_STATS)} · 分面词组 ${styleTermGroups.length} 个 / 分面词 ${styleTermGroups.reduce((n, g) => n + g.terms.length, 0)} 个 / 主色 ${styleColours.length} 个`);
 console.log(`  类型库 ${line('', TYPE_IMAGE_STATS)} · 分类 ${types.categories.length} 个 · 分面词 ${typeTermGroups.reduce((n, g) => n + g.terms.length, 0)} 个 / 主色 ${typeColours.length} 个`);
 console.log(`  sref：源数据 ${jobs.filter((j) => j.sref).length} 条带真实风格参考码（透传，不杜撰）`);
 console.log('  注意：../public/ 相对路径只在项目根内有效，单独分发 dist/ 会丢图。');

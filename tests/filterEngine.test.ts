@@ -546,4 +546,47 @@ describe('统一筛选引擎（报告 3.4）', () => {
       expect(FE.sameState(back.state, s)).toBe(true);
     });
   });
+
+  /* ── 排序参数：不是筛选维度（2026-11 风格库 / 风格与类型库）──────────
+     排序（az / new）是**显示顺序**，不是「收窄条件」。两页都把它写进 URL
+     hash（上游的 sort 也是进 state 的），但它**不在引擎维度白名单里** ——
+     所以引擎遇到 sort= 时必须：
+       1. 把它记进 ignored（不静默忽略，也不当成筛选条件）
+       2. **不影响筛选结果**（条数与不加 sort 时完全一致）
+     页面自己单独解析 sort（readStyleFilterFromUrl 里那个正则），
+     引擎不参与 —— 这条断言守的就是这个分工没串味。 */
+  describe('排序参数不参与筛选', () => {
+    /* 自建数据源（不能复用上一个 describe 块里的局部变量 ——
+       块内 const 不出块，跨块引用会 ReferenceError） */
+    const GROUP_OF2: Record<string, string> = { a1: 'A', a2: 'A', b1: 'B' };
+    const items2 = [
+      { id: 'e1', terms: ['a1', 'b1'] },
+      { id: 'e2', terms: ['a2'] },
+      { id: 'e3', terms: ['a1'] },
+    ];
+    const src2 = FE.source('grouped-sort', [
+      { key: 'terms', type: 'multi', valuesOf: (x: any) => x.terms || [], groupOf: (v: string) => GROUP_OF2[v] || '' },
+    ]);
+    const gst2 = (vals: string[]): State => ({ q: '', dims: { terms: vals } });
+
+    it('sort= 不在白名单 → 被记进 ignored', () => {
+      const parsed = FE.parseHash(src2, '#style-library?sort=new');
+      expect(parsed.ignored).toContain('sort');
+      expect(parsed.state.dims.terms).toEqual([]);
+    });
+
+    it('sort= 不影响筛选结果条数', () => {
+      const withSort = FE.parseHash(src2, '#style-library?sort=new&terms=a1');
+      const without = FE.parseHash(src2, '#style-library?terms=a1');
+      const a = FE.filter(src2, items2, withSort.state).map(x => x.id);
+      const b = FE.filter(src2, items2, without.state).map(x => x.id);
+      expect(a).toEqual(b);
+    });
+
+    it('buildHash 不写 sort（排序由页面自己拼）', () => {
+      // 引擎状态里根本没有 sort 维度，所以不可能生成它
+      const hash = FE.buildHash(src2, 'style-library', gst2(['a1']));
+      expect(hash).not.toContain('sort');
+    });
+  });
 });
