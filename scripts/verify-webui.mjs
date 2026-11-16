@@ -180,6 +180,18 @@ async function main() {
           decomp: typeof EXPLORE_JOBS !== 'undefined' ? EXPLORE_JOBS.filter((j) => j.decomposition).length : -1,
           noDecomp: typeof EXPLORE_JOBS !== 'undefined' ? EXPLORE_JOBS.filter((j) => !j.decomposition).length : -1,
           sref: typeof EXPLORE_JOBS !== 'undefined' ? EXPLORE_JOBS.filter((j) => j.sref).length : -1,
+          /* 参数（报告 2.8 / ADR-0035）：只允许 number 或 null。
+             字符串（上游哪天改成 "250"）与 undefined（构建期漏写字段）都必须在这里露出来 ——
+             它们会被界面当成「有值」，然后显示成 NaN 或空。 */
+          paramTyped: typeof EXPLORE_JOBS !== 'undefined'
+            ? EXPLORE_JOBS.every((j) =>
+                (j.stylize === null || typeof j.stylize === 'number') &&
+                (j.chaos === null || typeof j.chaos === 'number'))
+            : false,
+          paramStylize: typeof EXPLORE_JOBS !== 'undefined'
+            ? EXPLORE_JOBS.filter((j) => typeof j.stylize === 'number').length : -1,
+          paramChaos: typeof EXPLORE_JOBS !== 'undefined'
+            ? EXPLORE_JOBS.filter((j) => typeof j.chaos === 'number').length : -1,
         }));
         check('探索榜作业数 = 数据源统计', data.jobs > 0 && data.jobs === data.total && data.jobs === data.totalJobs,
           `作业 ${data.jobs} / 统计 ${data.total} / 批次合计 ${data.totalJobs}`);
@@ -195,6 +207,10 @@ async function main() {
         // sref 如实透传：源快照有值就有值，无值就是 null。历史事故——构建期硬编码 null，
         // 断言也跟着写成 0，等于把 bug 固化成验收标准。现改为与源数据条数比对。
         check('sref 如实透传（非杜撰、非丢弃）', data.sref === EXPECT_SREF, `实际 ${data.sref} / 期望 ${EXPECT_SREF}`);
+        /* 参数只有两种合法形态：真数字，或 null（未记录）。0 是合法值 ——
+           故意不把 null 写成 0，也不把 0 当成 null，两者在界面上是不同结论。 */
+        check('stylize / chaos 只有数字或 null 两种形态', data.paramTyped === true,
+          `stylize 有值 ${data.paramStylize} · chaos 有值 ${data.paramChaos} · 共 ${data.jobs}`);
 
         /* 3. 研究样本库（ADR-0034 顶栏独立页）：分页、筛选、占位、灯箱
            整组在 samples.html 上跑；index.html 的 page 保留给后续会话 / 参数断言。 */
@@ -574,7 +590,8 @@ async function main() {
              2. 「只看可信拆解」= 手工 + 逐条，点一下 URL 里就是这两项，刷新能复现
              3. 生成日期的下拉计数 == 真的点下去筛出的条数（批次与生成日是两个口径，
                 口径错的症状正是「显示的数和筛出的数对不上」）
-           参数维度（2.8）另守一条：灯箱必须把「不可研究」说清楚。 */
+           参数维度（2.8 / ADR-0035）另守一条：灯箱必须把「哪些字段有值、覆盖多少、
+           没有的明说未记录」说清楚，且旧口径「不可研究」不得残留。 */
         {
           await sp.evaluate(() => { location.hash = '#samples'; });
           await new Promise((r) => setTimeout(r, 400));
@@ -669,7 +686,7 @@ async function main() {
               && dateProbe.hash.includes('genDate=') && /^\d{4}-\d{2}-\d{2}$/.test(dateProbe.date),
             `${dateProbe.date} 期望 ${dateProbe.expect} 实得 ${dateProbe.got} / ${dateProbe.rows} 行`);
 
-          // 参数维度如实说明（2.8）
+          // 参数维度如实说明（报告 2.8 / ADR-0035）
           const paramNote = await sp.evaluate(async () => {
             const card = document.querySelector('.job-card[data-job]');
             if (!card) return { ok: false, reason: '没有卡片' };
@@ -677,21 +694,44 @@ async function main() {
             await new Promise((r) => setTimeout(r, 700));
             const caveat = document.querySelector('[data-od-id="param-caveat"]');
             const text = caveat ? caveat.textContent.replace(/\s+/g, ' ').trim() : '';
+            const upstream = document.querySelector('[data-od-id="param-upstream"]');
+            const upstreamText = upstream ? upstream.textContent.replace(/\s+/g, ' ').trim() : '';
+            const job = EXPLORE_JOBS.find((j) => j.id === card.dataset.job);
             const sheetHtml = document.querySelector('.job-sheet')?.innerHTML || '';
+            const hasStylize = job && typeof job.stylize === 'number';
+            const hasChaos = job && typeof job.chaos === 'number';
+            /* 文案里的覆盖率必须是**当前快照现算**的，不能是写死的 47/200。
+               重采后条数会变，写死就等于给未来埋一条假陈述。 */
+            const realStylize = EXPLORE_JOBS.filter((j) => typeof j.stylize === 'number').length;
+            const realChaos = EXPLORE_JOBS.filter((j) => typeof j.chaos === 'number').length;
+            const caveatMatchesData = realStylize === 0 && realChaos === 0
+              ? text.includes('全部未记录') && text.includes(String(EXPLORE_JOBS.length))
+              : text.includes(`有值 ${realStylize} 条`) && text.includes(`有值 ${realChaos} 条`);
             const out = {
               ok: true,
               hasCaveat: !!caveat,
-              mentionsUnresearchable: text.includes('不可研究'),
-              mentionsVersionFlat: text.includes('8.2'),
+              // 文案必须点名两个字段：只说「参数」等于没说清哪两个有值
+              mentionsBothFields: text.includes('stylize') && text.includes('chaos'),
+              // 旧文案说「不可研究」，字段接进来后那句就是假话，必须消失
+              staleClaim: text.includes('不可研究'),
+              caveatMatchesData,
+              // 单条作业：有值显示值，没值明说「未记录」——不显示 0，也不显示 MJ 默认 100
+              upstreamState: upstream?.getAttribute('data-state') || 'missing',
+              upstreamShowsReal:
+                (hasStylize ? upstreamText.includes(`--stylize ${job.stylize}`) : true) &&
+                (hasChaos ? upstreamText.includes(`--chaos ${job.chaos}`) : true),
+              upstreamSaysAbsent: !hasStylize && !hasChaos ? upstreamText.includes('未记录') : true,
               // 渲染层不能漏出 markdown 星号（模板里手滑写 **x** 就会原样显示）
               starLeak: (sheetHtml.match(/\*\*/g) || []).length,
             };
             document.querySelector('.job-sheet [data-role="close"]')?.click();
             return out;
           });
-          check('灯箱把「参数维度不可研究」说清楚',
-            paramNote.ok && paramNote.hasCaveat && paramNote.mentionsUnresearchable
-              && paramNote.mentionsVersionFlat && paramNote.starLeak === 0,
+          check('灯箱把参数覆盖情况与「未记录」说清楚',
+            paramNote.ok && paramNote.hasCaveat && paramNote.mentionsBothFields
+              && !paramNote.staleClaim && paramNote.caveatMatchesData
+              && paramNote.upstreamShowsReal
+              && paramNote.upstreamSaysAbsent && paramNote.starLeak === 0,
             paramNote.reason || `说明 ${paramNote.hasCaveat} / 星号泄漏 ${paramNote.starLeak}`);
         }
 

@@ -162,6 +162,11 @@ const jobs = explore.jobs.map((j) => {
     // 风格参考码：源数据 config/explore.yaml 里真实采集到的字段（上游 prompt.styleRef，
     // 由 tools/collect-explore.ts 的 styleRefsOf() 提取）。缺失就是缺失，不杜撰、不补默认值。
     sref: j.sref ?? null,
+    /* 参数（报告 2.8 / ADR-0035）：上游结构化字段的**真实值**，没有就是 null。
+       不补 0、不补 MJ 默认值 100 —— 界面要能回答「这条到底写没写」。
+       旧快照采集时还没接这两个字段，所以整批是 null（如实，不是数据错）。 */
+    stylize: typeof j.stylize === 'number' ? j.stylize : null,
+    chaos: typeof j.chaos === 'number' ? j.chaos : null,
     time: j.enqueueTime ?? null,
     thumbs,
     decomposition: d

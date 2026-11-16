@@ -250,18 +250,26 @@ describe('候选词条引擎（报告 2.6 / 第 12 步）', () => {
     });
   });
 
-  describe('真实语料实测（971 条作业）', () => {
+  /* 真实语料实测。规模类数字**不写死**：快照按 14 天窗口滚动，每日采集会增减，
+     写死就等于每采一次改一次测试（而改测试的动作会掩盖真正的退化）。
+     守的是形态 —— 短语索引不塌、三态自洽、命中稀疏。
+     括号里是 2026-11-16 实测值（1044 条 / 631 短语 / 13 精确 / 12 条词库被用过），
+     留给以后对照量级用。 */
+  describe('真实语料实测', () => {
     const CV = loadEngine();
     const { P, jobs, keyOf } = loadCorpus();
     const idx = P.build(jobs);
     const vocab = loadRealVocab();
 
-    it('社区作业数是 971', () => {
-      expect(jobs).toHaveLength(971);
+    it('语料非空，且作业规模在 14 天窗口的量级上', () => {
+      // 低于 500 说明采集断档或产物没重建，不是"数据变少了"这么简单
+      expect(jobs.length).toBeGreaterThan(500);
     });
 
-    it('收录短语数是 571', () => {
-      expect(idx.phrases).toHaveLength(571);
+    it('收录短语数随语料走，没有塌', () => {
+      // 971 条时 571、1044 条时 631 —— 与作业数的比值稳定在 0.6 左右
+      expect(idx.phrases.length).toBeGreaterThan(jobs.length * 0.5);
+      expect(idx.phrases.length).toBeLessThan(jobs.length * 1.5);
     });
 
     it('真实词库是 133 条', () => {
@@ -270,10 +278,12 @@ describe('候选词条引擎（报告 2.6 / 第 12 步）', () => {
 
     it('三态分布：精确命中是个位数、零覆盖是多数', () => {
       const built = CV.build(idx.phrases, idx.byJob, jobs, vocab, { keyOf });
-      // 12 条精确命中是实测值（签名口径，词序无关）
-      expect(built.byStatus.exact).toBe(12);
+      // 精确命中是签名口径（词序无关）的实测值，量级应在个位到十几个
+      expect(built.byStatus.exact).toBeLessThan(20);
+      expect(built.byStatus.exact).toBeGreaterThan(0);
       expect(built.byStatus.missing).toBeGreaterThan(built.byStatus.near);
-      expect(built.byStatus.missing + built.byStatus.near + built.byStatus.exact).toBe(571);
+      // 硬契约：三态之和必须等于短语总数，不然就是分档漏了
+      expect(built.byStatus.missing + built.byStatus.near + built.byStatus.exact).toBe(idx.phrases.length);
     });
 
     it('df 与出处条数逐条一致（真实语料）', () => {
@@ -281,10 +291,11 @@ describe('候选词条引擎（报告 2.6 / 第 12 步）', () => {
       for (const c of built.candidates) expect(c.sourceCount).toBe(c.df);
     });
 
-    it('词库反向验证：133 条里 11 条在社区被用过', () => {
+    it('词库反向验证：133 条里被社区用过的仍是少数', () => {
       const rows = CV.validateVocab(idx.phrases, idx.byJob, jobs, vocab, { keyOf });
       expect(rows).toHaveLength(133);
-      expect(rows.filter((r: any) => r.matched)).toHaveLength(11);
+      // 词库是自家写的，社区重合度低才是正常状态；涨到 1/5 以上说明词库在追热度而非沉淀
+      expect(rows.filter((r: any) => r.matched).length).toBeLessThan(133 * 0.2);
     });
   });
 });

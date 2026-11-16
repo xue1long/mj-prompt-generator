@@ -110,6 +110,39 @@ describe('入库前的过滤规则', () => {
     expect(job.batch).toBe('2026-11-06')
     expect(job.aspect).toBe('9:16')
   })
+
+  /* 参数（ADR-0035）：这三条守的是「不伪造」——
+     0 是作者写的值必须留，null 是没写必须缺，字符串不能被静默转成数字。 */
+  it('stylize / chaos 是数字就保留，包括 0', () => {
+    const job = toExploreJob(
+      apiJob({ prompt: { decodedPrompt: [{ content: 'a quiet street at dusk' }], stylize: 0, chaos: 250 } }),
+      '2026-11-06'
+    )
+    expect(job.stylize).toBe(0)
+    expect(job.chaos).toBe(250)
+  })
+
+  it('上游给 null 时不写这个键（缺失 = 未记录，不是 0）', () => {
+    const job = toExploreJob(
+      apiJob({ prompt: { decodedPrompt: [{ content: 'a quiet street at dusk' }], stylize: null, chaos: null } }),
+      '2026-11-06'
+    )
+    expect(job.stylize).toBeUndefined()
+    expect(job.chaos).toBeUndefined()
+    // 键本身也不该出现：js-yaml dump 会整键跳过，读回来才真的是「没记录」
+    expect('stylize' in job).toBe(false)
+    expect('chaos' in job).toBe(false)
+  })
+
+  it('字符串形态的参数不做隐式转换', () => {
+    /* 上游若哪天把 stylize 改成 "250"，宁可在这里拿到 undefined（界面显示未记录），
+       也不要静默转成 250 —— 那会让「上游改了类型」这件事故彻底隐形。 */
+    const job = toExploreJob(
+      apiJob({ prompt: { decodedPrompt: [{ content: 'a quiet street' }], stylize: '250' as unknown as number } }),
+      '2026-11-06'
+    )
+    expect(job.stylize).toBeUndefined()
+  })
 })
 
 describe('隔壁仓本地数据的导入', () => {
@@ -243,6 +276,23 @@ describe('上游字段探针（--probe）', () => {
     { id: 'b', prompt: { decodedPrompt: [], ar: null, version: 7, stylize: 100, chaos: 12 } },
     { id: 'c' },
   ]
+
+  it('样例取首个**非空**值，不被首条的 null 定死', () => {
+    /* 曾在真实数据上踩到：stylize 第一条恰好是 null，样例就永远显示「null」，
+       于是「有值时是 250 还是 "250"」无从判断 —— 而字段类型全靠这一眼。 */
+    const report = describeJobShape([
+      { id: 'a', prompt: { stylize: null } },
+      { id: 'b', prompt: { stylize: 250 } },
+    ])
+    const stylize = report.promptFields.find(f => f.key === 'stylize')
+    expect(stylize?.filled).toBe(1)
+    expect(stylize?.example).toBe('250')
+  })
+
+  it('一条非空都没有时，样例仍是空值代表（如实，不编）', () => {
+    const report = describeJobShape([{ id: 'a', prompt: { quality: null } }])
+    expect(report.promptFields.find(f => f.key === 'quality')?.example).toBe('null')
+  })
 
   it('如实列出 job 与 prompt 两层的键，包括本项目没声明的', () => {
     const report = describeJobShape(raw)

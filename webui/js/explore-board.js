@@ -795,6 +795,48 @@ const EXPLORE_BOARD = (() => {
       规则推算 · 非人工标注</p>`;
   }
 
+  /** 上游参数覆盖情况。全量 971 条算一次就够（与 job-key / phrase-index 同一取舍：
+      运行时现算、算过就复用，不额外烘一份可能过期的统计进产物）。 */
+  let paramCoverageCache = null;
+  function paramCoverage() {
+    if (!paramCoverageCache) {
+      let stylize = 0;
+      let chaos = 0;
+      for (const j of EXPLORE_JOBS) {
+        if (typeof j.stylize === 'number') stylize += 1;
+        if (typeof j.chaos === 'number') chaos += 1;
+      }
+      paramCoverageCache = { stylize, chaos, total: EXPLORE_JOBS.length };
+    }
+    return paramCoverageCache;
+  }
+
+  /** 单条作业的上游参数。有值显示值，没值明说「未记录」——
+      绝不显示 0 / MJ 默认值 100：那会把「作者没写」写成「作者写了」。
+      与拆解无关，所以灯箱里放在拆解分支之外：没拆解的作业也看得到。 */
+  function upstreamParamsHtml(job) {
+    const parts = [];
+    if (typeof job.stylize === 'number') parts.push(`<code>--stylize ${job.stylize}</code>`);
+    if (typeof job.chaos === 'number') parts.push(`<code>--chaos ${job.chaos}</code>`);
+    const head = '<div class="group-head" style="margin-top:18px"><h2>上游参数</h2></div>';
+    if (!parts.length) {
+      return `${head}<p class="param-absent" data-od-id="param-upstream" data-state="absent">
+        这条<b>未记录</b> <code>--stylize</code> / <code>--chaos</code>：上游这两个字段是 <code>null</code>（作者没写）。
+        不显示成 0 或 MJ 默认值 100 —— 那是两条不同的结论。
+      </p>`;
+    }
+    return `${head}<div class="param-tail-box" data-od-id="param-upstream" data-state="present">${parts.join(' · ')}</div>`;
+  }
+
+  /** 整批数据的参数口径说明。数字从当前快照现算，所以重采后自动跟着变，不会留在文档里过期。 */
+  function paramCaveatHtml() {
+    const c = paramCoverage();
+    const head = c.stylize || c.chaos
+      ? `参数维度<b>只覆盖一部分</b>：本快照 ${c.total} 条里 <code>stylize</code> 有值 ${c.stylize} 条、<code>chaos</code> 有值 ${c.chaos} 条，其余是上游没给值（作者没写），<b>不是 0</b>。`
+      : `参数维度<b>本快照全部未记录</b>：${c.total} 条里 <code>stylize</code> 与 <code>chaos</code> 一个非空都没有 —— 这批快照采集于这两个字段接入之前，<b>不代表社区没写过参数</b>，重采后才会有值。`;
+    return `<p class="param-caveat" data-od-id="param-caveat">${head}正文里出现 <code>--</code> 的极少数是 <code>--massive</code> / <code>--perfect</code> 这类破折号误命中；画幅与版本来自上游字段，<b>不是作者写进 prompt 的</b>，别当参数用法规避结论。</p>`;
+  }
+
   function openJobSheet(id) {
     // 逐段送入的单一空值判据：与数据体检口径一致，只去首尾空白、不改内容
     const segText = (s) => String(s.text ?? '').trim();
@@ -879,7 +921,6 @@ const EXPLORE_BOARD = (() => {
               ${d.paramTail?.text
                 ? `<div class="param-tail-box">${esc(d.paramTail.text)}</div>`
                 : `<p class="param-absent" data-od-id="param-absent">正文未写 MJ 参数。社区作者多数不写 <code>--ar</code> / <code>--v</code>，而参数尾是<b>按正文里的 <code>--</code> 实打实切出来的</b>，没有就显示没有 —— 不拿推断值冒充。</p>`}
-              <p class="param-caveat" data-od-id="param-caveat">参数维度在这批数据上<b>不可研究</b>：实测 971 条里 <code>version</code> 全是 <code>8.2</code>（零区分度），正文里出现 <code>--</code> 的 9 条全是 <code>--massive</code> / <code>--perfect</code> 这类正文破折号误命中。画幅与版本来自上游字段，<b>不是作者写进 prompt 的</b>，别当参数用法规避结论。</p>
               ${tags.length ? `
                 <div class="group-head" style="margin-top:20px"><h2>词库打标</h2></div>
                 <div class="term-row">
@@ -890,6 +931,8 @@ const EXPLORE_BOARD = (() => {
                   ${d.health.map(h => `<span class="${h.ok ? 'good' : 'bad'}">${esc(h.id)} ${esc(h.note || (h.ok ? '通过' : ''))}</span>`).join('')}
                 </div>` : ''}
             ` : `<p class="dock-hint">这条作业还没有拆解结果。</p>`}
+            ${upstreamParamsHtml(job)}
+            ${paramCaveatHtml()}
           </div>
         </div>
       </div>`, { label: '作业详情与提示词拆解', onClose: () => { if (jobFromHash()) writeJobToHash(null); } });

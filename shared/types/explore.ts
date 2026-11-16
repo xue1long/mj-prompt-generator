@@ -30,6 +30,15 @@ export interface ExploreJob {
   batch: string
   /** 风格参考码（可填进 --sref）。挂的是图片型风格参考时没有数字码 */
   sref?: string
+  /**
+   * 风格化强度（上游 `prompt.stylize`，数字，MJ 默认 100）。
+   *
+   * 缺失 ≠ 0：缺失表示**这条快照没有这个信息**（作者没写，或采集时间早于本字段上线），
+   * `0` 是作者真的写了 `--stylize 0`（关掉风格化）——两者必须能区分，所以不补默认值。
+   */
+  stylize?: number
+  /** 变化度（上游 `prompt.chaos`，数字）。缺失语义同 `stylize` */
+  chaos?: number
   /** 四格缩略图路径（相对于 public/explore/） */
   thumbs: string[]
   /** 四格灯箱大图路径（640px，相对于 public/explore/） */

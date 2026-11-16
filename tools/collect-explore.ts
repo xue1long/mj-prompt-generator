@@ -46,6 +46,11 @@ export interface ExploreApiJob {
     ar?: { w?: number; h?: number } | string | null
     version?: string | number
     styleRef?: Array<{ t?: string; content?: string; weight?: number }>
+    /* 参数（报告 2.8）：上游把 `--stylize` / `--chaos` 拆成了数字字段，
+       正文里不再有 `--`。实测 200 条里 stylize 47 条有值、chaos 69 条有值，
+       其余是 null（作者没写），不是 0。 */
+    stylize?: number | null
+    chaos?: number | null
   }
   items?: Array<{ server_filtered?: boolean }>
 }
@@ -199,11 +204,26 @@ export function titleOf(prompt: string): string {
   return `${text.slice(0, TITLE_LENGTH).trimEnd()}…`
 }
 
+/** 上游数字参数 → 快照字段。
+ *
+ *  只接受有限数字：`null`（作者没写）、`undefined`（上游没这键）、字符串 `"250"`
+ *  一律返回 `undefined`。**不把 `null` 折成 0** —— `0` 是 `--stylize 0` 的真实取值，
+ *  折了之后「写了 0」与「没写」就再也分不开。字符串也不转数字：上游若哪天改成字符串，
+ *  应当在这里暴露出来（探针会显示成 string），而不是被静默转成看似正常的数。 */
+function numericParam(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+}
+
 /** 上游作业 → 快照里的作业 */
 export function toExploreJob(job: ExploreApiJob, batch: string): ExploreJob {
   const count = Math.max(1, job.items?.length ?? 4)
   const refs = styleRefsOf(job.prompt)
   const prompt = promptTextOf(job.prompt)
+  /* 参数缺失时**整键不写**，不是写个 undefined 占位：
+     内存对象、yaml、产物三处对「没有这个信息」的表达必须一致，
+     否则 `'stylize' in job`、`Object.keys()`、`JSON.stringify()` 会各说各话。 */
+  const stylize = numericParam(job.prompt?.stylize)
+  const chaos = numericParam(job.prompt?.chaos)
   return {
     id: job.id,
     prompt,
@@ -216,6 +236,8 @@ export function toExploreJob(job: ExploreApiJob, batch: string): ExploreJob {
     batch,
     // 多个码用空格分隔：Midjourney 的 --sref 就是这么写多个码的
     sref: refs.length ? refs.join(' ') : undefined,
+    ...(stylize === undefined ? {} : { stylize }),
+    ...(chaos === undefined ? {} : { chaos }),
     thumbs: Array.from({ length: count }, (_, i) => thumbPathOf(job.id, i)),
     mids: Array.from({ length: count }, (_, i) => midPathOf(job.id, i)),
   }
@@ -894,12 +916,20 @@ function tallyFields(rows: Array<Record<string, unknown> | null>): ProbeField[] 
     if (!row || typeof row !== 'object') continue
     for (const key of Object.keys(row)) {
       const value = (row as Record<string, unknown>)[key]
+      const filled = isFilled(value)
       const hit = acc.get(key)
       if (hit) {
         hit.count += 1
-        if (isFilled(value)) hit.filled += 1
+        if (filled) {
+          hit.filled += 1
+          /* 首个**非空**值优先做样例。
+             曾只看首个出现的值：`stylize` 第一条恰好是 null，于是样例永远是
+             「null」，无法回答「有值时是数字还是字符串」——而这正是决定字段类型
+             的全部依据。「存在但恒为空」已由 filled=0 表达，不必让样例再复述一遍。 */
+          if (hit.filled === 1) hit.example = exampleOf(value)
+        }
       } else {
-        acc.set(key, { key, count: 1, filled: isFilled(value) ? 1 : 0, example: exampleOf(value) })
+        acc.set(key, { key, count: 1, filled: filled ? 1 : 0, example: exampleOf(value) })
       }
     }
   }
