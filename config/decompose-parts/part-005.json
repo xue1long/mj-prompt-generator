@@ -1,0 +1,592 @@
+[
+  {
+    "jobId": "968f02b2-00d6-4a84-b3e1-22500e79b38b",
+    "framework": "物体描述",
+    "segments": [
+      {
+        "text": "Acrylic painted breakfast table",
+        "note": "Acrylic painted 把丙烯媒介直接焊在 breakfast table 上，主体只有一张早餐桌，没写桌面摆了什么食物或餐具"
+      },
+      {
+        "text": "",
+        "note": "静物命题全篇找不到任何动词或情绪词，作者压根没打算让桌子或谁去做什么"
+      },
+      {
+        "text": "",
+        "note": "除了 breakfast 这个时间暗示，场景、天气、周边物件一样没写，环境几乎全交给观者脑补"
+      },
+      {
+        "text": "",
+        "note": "9:16 竖幅是上游作业字段给的，正文连 --ar 都没露面，三个短语里也寻不到机位或构图法信号"
+      },
+      {
+        "text": "Blue, light blue, pink, peach, lilac and white colors",
+        "note": "六种颜色被平铺成一张调色清单，是全片唯一实写的信息，但只给色相不给光源方向和硬软"
+      },
+      {
+        "text": "Leon Cauvy style",
+        "note": "靠 Leon Cauvy style 借法国画家风格撑审美，Acrylic painted 作为媒介词其实也该归风格，却被嵌进主体短语里，是落段歧义"
+      },
+      {
+        "text": "",
+        "note": "三个短语全靠句号断开、零 -- 参数，9:16 比例和 v8.2 版本都由上游字段承载，正文完全看不到参数尾"
+      }
+    ],
+    "composition": [],
+    "tags": {
+      "style": ["Acrylic painted", "Leon Cauvy style"],
+      "lighting": ["Blue, light blue, pink, peach, lilac and white colors"],
+      "angle": [],
+      "emotion": []
+    },
+    "paramTail": {
+      "text": "",
+      "params": []
+    },
+    "health": [
+      {
+        "id": "R1",
+        "ok": true,
+        "note": "三个句号分隔的都是名词短语（breakfast table、Leon Cauvy style、颜色清单），没有主谓句，名词短语优先这条守住了"
+      },
+      {
+        "id": "R2",
+        "ok": true,
+        "note": "Acrylic painted breakfast table 就在第一短语，主体权重没被任何前置套话稀释"
+      },
+      {
+        "id": "R3",
+        "ok": true,
+        "note": "三个句号收尾的短语里零 -- 参数，9:16 竖幅和 v8.2 都由上游字段承载"
+      },
+      {
+        "id": "R4",
+        "ok": true,
+        "note": "全片不设排除项，Blue 到 white 这套颜色是正面列举，没用 --no 做减法也没必要减"
+      },
+      {
+        "id": "R5",
+        "ok": true,
+        "note": "仅主体、艺术家、色单三个短语，精简到极致，代价是环境与光线信息几乎为零"
+      },
+      {
+        "id": "M1",
+        "ok": true,
+        "note": "三处句点加颜色清单里的逗号都是英文半角，Leon Cauvy 这类专名也没混入中文标点"
+      },
+      {
+        "id": "M2",
+        "ok": true,
+        "note": "只有 breakfast table 一个主体，六种颜色是修饰不是并列对象，注意力不会均分"
+      },
+      {
+        "id": "M3",
+        "ok": true,
+        "note": "没有要求画面出现任何可读文字或字母，连品牌字样都没提"
+      },
+      {
+        "id": "M4",
+        "ok": true,
+        "note": "只有 Acrylic painted、Leon Cauvy style 和一串颜色词，连 sharp、detail 这类画质词都没出现，更没有 8k 堆料"
+      },
+      {
+        "id": "M5",
+        "ok": true,
+        "note": "整条都是英文短语，Leon Cauvy style 这类风格词也保持英文，不存在中文长句拖低精度的问题"
+      },
+      {
+        "id": "V1",
+        "ok": true,
+        "note": "三个短语用句号分层，没出现 :: 加权，不触发 V7+ 移除该语法的兼容问题"
+      },
+      {
+        "id": "V2",
+        "ok": true,
+        "note": "风格用 Leon Cauvy style 自然语言指定，没写 --style raw，不涉及 V7+ 改 --raw"
+      },
+      {
+        "id": "V3",
+        "ok": true,
+        "note": "完全不写 --no，颜色靠 Blue 到 white 正面列举，不存在逐词审核误伤"
+      },
+      {
+        "id": "V4",
+        "ok": true,
+        "note": "上游 sref 标的是无，连参考图都没有，自然也没碰 V8.1 起被移除的 --q / --cref"
+      }
+    ],
+    "summary": "一张丙烯画就的早餐桌只靠 Leon Cauvy 的画家风格和蓝粉紫白的调色清单撑起画面，场景、光线、构图一概留白，连画幅和版本都甩给了上游字段。"
+  },
+  {
+    "jobId": "ceb1674c-e5a1-4e7e-8d60-ecdab55b38fa",
+    "framework": "人物画像",
+    "segments": [
+      {
+        "text": "ちいかわみたいなデフォルメアニメ風のシンプルアニメミームオリジナルキャラ。二足歩行の動物",
+        "note": "主体是像吉伊卡哇的简化变形动画风原创 meme 角色，二足歩行の動物 再补它是双足行走的动物，全程没写具体长相或配色"
+      },
+      {
+        "text": "ぽつんと立っている",
+        "note": "立っている 是全片唯一的状态词，ぽつんと 给这个角色添了孤零零的寂寥感，动作信息仅止于站着"
+      },
+      {
+        "text": "フォトリアルな背景",
+        "note": "环境只给了 フォトリアルな背景 一句，用写实照片背景去反衬前面的 2D 卡通角色，没写地点和时间"
+      },
+      {
+        "text": "",
+        "note": "原文没出现 negative space 之类构图词，倒是 ぽつんと 让一个角色孤零零立在写实背景里，语义上逼出大片留白"
+      },
+      {
+        "text": "",
+        "note": "全片既无光源方向也无任何颜色词，造型与配色实际交给 225034070、4277459420 两条 sref 去锁"
+      },
+      {
+        "text": "シンプルな2Dセルアニメ調",
+        "note": "风格词最密：ちいかわ 式变形、シンプルアニメミーム、2Dセルアニメ調 三层叠加，可这些词大多粘在第一段的主体短语里没单独成段"
+      },
+      {
+        "text": "",
+        "note": "四个短句用全角句号收尾、零 -- 参数，9:16 竖幅和两条 sref 全由上游字段承载，正文看不到参数尾"
+      }
+    ],
+    "composition": ["留白 / 负空间（推断：ぽつんと立っている，孤零零一个角色立在写实背景里）"],
+    "tags": {
+      "style": ["ちいかわみたいなデフォルメアニメ風", "シンプルアニメミーム", "シンプルな2Dセルアニメ調"],
+      "lighting": [],
+      "angle": [],
+      "emotion": ["ぽつんと"]
+    },
+    "paramTail": {
+      "text": "",
+      "params": []
+    },
+    "health": [
+      {
+        "id": "R1",
+        "ok": true,
+        "note": "四个句号分段里前三个是名词短语，只有 フォトリアルな背景にぽつんと立っている 带谓语，整体仍以短语为主"
+      },
+      {
+        "id": "R2",
+        "ok": true,
+        "note": "ちいかわみたいな…オリジナルキャラ 第一个分段就是主体，二足歩行の動物 随后补充类别"
+      },
+      {
+        "id": "R3",
+        "ok": true,
+        "note": "四个分段里零 -- 参数，两条 sref（225034070、4277459420）和 9:16 都在上游字段"
+      },
+      {
+        "id": "R4",
+        "ok": true,
+        "note": "没写 --no，减法靠 シンプルな 和只留一个角色来完成"
+      },
+      {
+        "id": "R5",
+        "ok": true,
+        "note": "四个短句一个角色，没堆料，但造型配色大量压在两条 sref 上"
+      },
+      {
+        "id": "M1",
+        "ok": false,
+        "note": "四个分段全用日文全角句号而非英文半角句点，虽然正文没有参数区，标点并不符合全半角要求"
+      },
+      {
+        "id": "M2",
+        "ok": true,
+        "note": "只有一个 オリジナルキャラ（双足动物），二足歩行の動物 是同一主体的类别说明不是第二个主体"
+      },
+      {
+        "id": "M3",
+        "ok": true,
+        "note": "シンプルアニメミーム 只是风格说法，没写要在画面里出可读的字"
+      },
+      {
+        "id": "M4",
+        "ok": true,
+        "note": "四个短句里全是 デフォルメ、2Dセルアニメ調 这类风格词，没有 8k 或 masterpiece，简洁到底"
+      },
+      {
+        "id": "M5",
+        "ok": false,
+        "note": "整条是日语，2Dセルアニメ調、デフォルメアニメ風 这类关键风格词都用日文而非英文，理解精度可能打折"
+      },
+      {
+        "id": "V1",
+        "ok": true,
+        "note": "四个分段用句号而不是 :: 加权，V8.2 下无失效风险"
+      },
+      {
+        "id": "V2",
+        "ok": true,
+        "note": "风格是 デフォルメアニメ風、2Dセルアニメ調 这些日文短语，没碰 --style raw / --raw"
+      },
+      {
+        "id": "V3",
+        "ok": true,
+        "note": "减法靠 シンプルな 和单一主体完成，没写 --no，避开逐词审核"
+      },
+      {
+        "id": "V4",
+        "ok": true,
+        "note": "用的是 sref 225034070、4277459420 两条参考图，没碰 V8.1 起被移除或替代的 --q / --cref"
+      }
+    ],
+    "summary": "一个像吉伊卡哇那样简化变形的原创双足动物角色，被孤零零摆在写实照片般的背景里走 2D 赛璐珞动画调，卡通与写实的反差全靠风格词和两条 sref 撑，正文连光线颜色都没写。"
+  },
+  {
+    "jobId": "a96ba873-ee4d-4182-8dd1-fb302445f9b1",
+    "framework": null,
+    "segments": [
+      {
+        "text": "체스판 위에 사람들이",
+        "note": "主体是 사람들이（人们），却先被 체스판 위에（棋盘上）这个地点状语领起，체스말 대신에 才点明他们是顶替棋子的人"
+      },
+      {
+        "text": "체스말 대신에 서있게 해줘",
+        "note": "서있게 해줘 是让…站着吧的使役请求，整条唯一的状态就是站立，해줘 还带着直接对模型下指令的口吻"
+      },
+      {
+        "text": "체스판",
+        "note": "环境只剩 체스판 这一个平面，没写室内外、时间或棋盘外的任何东西，连格子颜色都没交代"
+      },
+      {
+        "text": "",
+        "note": "要把 체스판 拍全多半得俯视，可 bird's eye、机位、焦段一个没写；棋盘方格自带网格秩序，算没被点破的构图资源"
+      },
+      {
+        "text": "",
+        "note": "光线与色调全线空缺，连棋盘经典的黑白格都没点名，画面明暗只能靠模型自行发挥"
+      },
+      {
+        "text": "",
+        "note": "通篇找不到任何画风、媒介、流派或镜头感词，连 photorealistic 都没写，整体更像一句概念设定而非带审美的 prompt"
+      },
+      {
+        "text": "",
+        "note": "末尾只有 해줘 后一个半角句点、零 -- 参数，9:16 竖幅和 v8.2 版本全由上游作业字段承载"
+      }
+    ],
+    "composition": [],
+    "tags": {
+      "style": [],
+      "lighting": [],
+      "angle": [],
+      "emotion": []
+    },
+    "paramTail": {
+      "text": "",
+      "params": []
+    },
+    "health": [
+      {
+        "id": "R1",
+        "ok": false,
+        "note": "整条是 체스판 위에…서있게 해줘 一句带使役请求的韩语命令句，完全不是名词短语堆叠"
+      },
+      {
+        "id": "R2",
+        "ok": false,
+        "note": "开篇 체스판 위에 是地点状语，主体 사람들이 排在其后，没占到第一短语的权重"
+      },
+      {
+        "id": "R3",
+        "ok": true,
+        "note": "只有一个 해줘 后半角句点、没有 -- 参数尾，9:16 画幅由上游字段给，不存在半角全角错位"
+      },
+      {
+        "id": "R4",
+        "ok": true,
+        "note": "一句使役请求里没有任何 --no 或排除项，连减法都没做"
+      },
+      {
+        "id": "R5",
+        "ok": true,
+        "note": "全条 27 字符一句话，精简到头，代价是风格、光线、机位一概没有"
+      },
+      {
+        "id": "M1",
+        "ok": true,
+        "note": "正文没有逗号，只在 해줘 后点了一个半角句点，没混入中文标点，也没有参数区可错"
+      },
+      {
+        "id": "M2",
+        "ok": true,
+        "note": "主体类别只有 사람들 一种，没塞五种不同对象，只是人数没限定、要铺满棋盘格"
+      },
+      {
+        "id": "M3",
+        "ok": true,
+        "note": "체스말、체스판 是物件名不是要渲染的字样，没要求画面出字"
+      },
+      {
+        "id": "M4",
+        "ok": true,
+        "note": "全条就 체스판、사람들、체스말、서있게 几个词，连 photorealistic 都没写，更谈不上 8k 堆料"
+      },
+      {
+        "id": "M5",
+        "ok": false,
+        "note": "全条是一句韩语使役请求 서있게 해줘，没有任何英文风格词可兜底，语义精度全压在 MJ 对韩语句式的理解上"
+      },
+      {
+        "id": "V1",
+        "ok": true,
+        "note": "就一句 서있게 해줘，没有任何 :: 权重语法"
+      },
+      {
+        "id": "V2",
+        "ok": true,
+        "note": "本条压根没有任何风格词或风格参数，谈不上 --style raw 的版本陷阱"
+      },
+      {
+        "id": "V3",
+        "ok": true,
+        "note": "一句祈使句里没有任何 --no，也就没有逐词独立审核的坑"
+      },
+      {
+        "id": "V4",
+        "ok": true,
+        "note": "上游 sref 标的是无，正文也没 --q / --cref / --oref，参数区彻底空"
+      }
+    ],
+    "summary": "一句韩语祈使句请模型让一群人站上棋盘顶替棋子，主体是复数人群却先被「棋盘上」领起，光线、画风、机位一概没写，是个干净但几乎全靠脑补的超现实概念。"
+  },
+  {
+    "jobId": "f117d615-c2f2-4254-b6d3-1c7daf993bd5",
+    "framework": "物体描述",
+    "segments": [
+      {
+        "text": "light blue wide leg pants",
+        "note": "首个主体是浅蓝阔腿裤，但后面 vintage telephone、paper clips、beige envelopes、metallic cup 又并列出一堆物件，实为一组静物清单"
+      },
+      {
+        "text": "lies on a step with its coiled white wire draping downward",
+        "note": "静物没有真动作，lies 写电话躺姿、draping downward 写卷线垂向，靠摆放姿态和线的走向凑出一点动势"
+      },
+      {
+        "text": "stationery items like paper clips, beige envelopes, and a shiny metallic cup on a silver saucer",
+        "note": "maroon steps 当底色台阶，回形针、米色信封、银托金属杯铺成周边道具，text overlays 那几组字又另算一层画面元素"
+      },
+      {
+        "text": "vertical composition",
+        "note": "只给了竖构图这一个方向词，既不属于三分法、引导线等构图五法，也没落到景别或焦段；2:3 画幅其实由上游字段定"
+      },
+      {
+        "text": "light blue wide leg pants on maroon steps",
+        "note": "浅蓝、栗、奶油、白、黄、米、银凑成一套复古配色，却从头到尾没有一个光源或硬软光词，颜色全是物体固有色"
+      },
+      {
+        "text": "",
+        "note": "通篇找不到 oil painting、photography、editorial 之类画风或媒介词，vintage 只形容电话、handwritten yellow style text 里的 style 是字体样式，整体编辑式审美全靠物件暗示"
+      },
+      {
+        "text": "",
+        "note": "零 -- 参数，四组带引号和「[001]」方括号的 text overlays 都是画面文字不是参数尾，2:3 与 v8.2 全由上游字段承载"
+      }
+    ],
+    "composition": [],
+    "tags": {
+      "style": ["vintage"],
+      "lighting": ["light blue", "maroon", "cream", "yellow", "beige", "silver"],
+      "angle": ["vertical composition"],
+      "emotion": []
+    },
+    "paramTail": {
+      "text": "",
+      "params": []
+    },
+    "health": [
+      {
+        "id": "R1",
+        "ok": false,
+        "note": "三句都带谓语（featuring、include、lies、draping），是描写长句而非名词短语"
+      },
+      {
+        "id": "R2",
+        "ok": false,
+        "note": "开篇 vertical composition featuring 是构图状语，主体 light blue wide leg pants 被 featuring 领在后面"
+      },
+      {
+        "id": "R3",
+        "ok": true,
+        "note": "零 -- 参数，逗号句点引号方括号全英文半角，看着像参数的「[001]」其实只是画面文字，2:3 与 v8.2 都在上游字段"
+      },
+      {
+        "id": "R4",
+        "ok": true,
+        "note": "没写 --no，全靠 include、lies 正面清单，物件只增不减"
+      },
+      {
+        "id": "R5",
+        "ok": false,
+        "note": "裤子电话卷线回形针信封金属杯加四组文字叠加，422 字符，明显超出少而精"
+      },
+      {
+        "id": "M1",
+        "ok": true,
+        "note": "逗号、句点、引号、方括号全英文半角，没有中文标点；「[001]」的方括号是画面的一部分而非参数括号"
+      },
+      {
+        "id": "M2",
+        "ok": false,
+        "note": "列了 light blue wide leg pants、vintage telephone、paper clips、beige envelopes、metallic cup、silver saucer 等多个独立物件，注意力容易被均分"
+      },
+      {
+        "id": "M3",
+        "ok": false,
+        "note": "要求精确渲染「creative agency」「odd jobs」「[001]」等字样，还要 bold、small、handwritten 三种字体，正是 MJ 最容易写崩的部分"
+      },
+      {
+        "id": "M4",
+        "ok": true,
+        "note": "有 shiny metallic cup 的 shiny 这种质感形容，但 8k、masterpiece、best quality 那类失效堆砌一个没写"
+      },
+      {
+        "id": "M5",
+        "ok": true,
+        "note": "三句英文描述句里连一个画风锚点都没有，审美全靠 vintage telephone 与文字叠加堆出来，谈不上中文长句问题"
+      },
+      {
+        "id": "V1",
+        "ok": true,
+        "note": "「[001]」的方括号容易看花眼，但全条没有 :: 权重语法，V8.2 下不涉及"
+      },
+      {
+        "id": "V2",
+        "ok": true,
+        "note": "handwritten yellow style text 里的 style 是字体样式，不是 --style raw 参数"
+      },
+      {
+        "id": "V3",
+        "ok": true,
+        "note": "没写 --no，物件与文字全靠正面 include、lies 列举，避开逐词审核"
+      },
+      {
+        "id": "V4",
+        "ok": true,
+        "note": "上游 sref 标的是无，也没 --q / --cref，画面全靠正面清单堆出来"
+      }
+    ],
+    "summary": "一条浅蓝阔腿裤、奶油色复古电话和回形针信封金属杯被摆在栗色台阶上做竖幅静物排版，还压了 creative agency、odd jobs、[001] 几组精确字样，配色复古考究却没一个光线或画风词，文字与多物件正是最容易翻车的两处。"
+  },
+  {
+    "jobId": "0b9c7140-cf97-4ce2-87f4-306def85511f",
+    "framework": "人物画像",
+    "segments": [
+      {
+        "text": "a young couple driving together in a vintage red convertible",
+        "note": "主体是年轻情侣加一辆复古红敞篷车，后文又把两人拆成 The girl 坐副驾、the man 开车，车和人并列成双焦点"
+      },
+      {
+        "text": "The girl is sitting in the passenger seat, and the man is driving. They are enjoying the ride together, relaxed and natural, with subtle interaction between them",
+        "note": "动作写足了开车、坐副驾、共赏旅途，relaxed and natural 与 enjoying 补情绪，subtle interaction 还点了两人间克制的互动"
+      },
+      {
+        "text": "along a scenic coastal mountain road. The road winds along a stunning blue lake, surrounded by dramatic green mountains, Mediterranean villas, cypress trees and lush vegetation",
+        "note": "环境是全片最堆的一段：海岸山路蜿蜒过蓝湖，再套绿山、地中海别墅、柏树、茂密植被，层层加景"
+      },
+      {
+        "text": "Vertical 9:16 composition, cinematic wide shot, the entire red convertible clearly visible, beautiful landscape dominating the background",
+        "note": "给了 cinematic wide shot 景别和竖幅构图，还安排整车清晰、背景主导的主次；但 wide shot 配 9:16 竖幅略有张力，蜿蜒公路语义上又像引导线"
+      },
+      {
+        "text": "Bright sunny day, clear blue sky, warm natural sunlight",
+        "note": "晴天、清澈蓝天、暖自然光把光源和色温都交代了，红车配蓝湖绿山又是现成的互补色，是这批里光线色彩最完整的一条"
+      },
+      {
+        "text": "realistic photography, natural skin and hair, authentic proportions, high-end travel campaign aesthetic",
+        "note": "电影感、写实摄影、高端旅行广告审美三层定调，natural skin and hair 与 authentic proportions 是防 AI 畸变的写实约束"
+      },
+      {
+        "text": "",
+        "note": "正文零 -- 参数，Vertical 9:16 composition 只是被当构图写的自然语言而非 --ar 9:16，比例和 v8.2 版本实则都由上游作业字段承载"
+      }
+    ],
+    "composition": ["引导线（推断：The road winds along a stunning blue lake，蜿蜒沿海公路把视线引向湖山纵深）"],
+    "tags": {
+      "style": ["cinematic shot", "realistic photography", "high-end travel campaign aesthetic", "luxurious summer atmosphere"],
+      "lighting": ["Bright sunny day", "clear blue sky", "warm natural sunlight"],
+      "angle": ["cinematic wide shot", "Vertical 9:16 composition"],
+      "emotion": ["relaxed and natural", "enjoying the ride together"]
+    },
+    "paramTail": {
+      "text": "",
+      "params": []
+    },
+    "health": [
+      {
+        "id": "R1",
+        "ok": false,
+        "note": "The girl is sitting、They are enjoying、The road winds 一连串完整英文句，散文式描写而非名词短语"
+      },
+      {
+        "id": "R2",
+        "ok": false,
+        "note": "开篇 A beautiful cinematic shot of 是镜头套话，主体 a young couple 被 of 领在后面"
+      },
+      {
+        "id": "R3",
+        "ok": true,
+        "note": "正文把 9:16 写成 Vertical 9:16 composition 而非 --ar 9:16，冒号虽半角但不是参数，v8.2 由上游给"
+      },
+      {
+        "id": "R4",
+        "ok": true,
+        "note": "没写 --no，改用 natural skin、authentic proportions 等正面写实词反推不要畸形"
+      },
+      {
+        "id": "R5",
+        "ok": false,
+        "note": "761 字符多句长描写，湖山别墅柏树植被层层堆，beautiful、stunning、dramatic 叠用，明显堆料"
+      },
+      {
+        "id": "M1",
+        "ok": true,
+        "note": "The girl is sitting 后的逗号、句末句点都规矩，全英文半角，9:16 里的冒号也是半角，没有中文标点"
+      },
+      {
+        "id": "M2",
+        "ok": true,
+        "note": "主体是 a young couple 加一辆 vintage red convertible，虽把两人拆成 girl、man 两句写，焦点仍在这一对人和车上"
+      },
+      {
+        "id": "M3",
+        "ok": true,
+        "note": "Mediterranean、cypress 这类是地名和植物名，没要求画面出现任何可读文字"
+      },
+      {
+        "id": "M4",
+        "ok": true,
+        "note": "beautiful、stunning、dramatic 这类主观美化词不少，但 8k、masterpiece、best quality 一个没写"
+      },
+      {
+        "id": "M5",
+        "ok": true,
+        "note": "整条是英文散文句，cinematic、realistic photography 等关键风格词都用了英文，不存在中文长句的精度损耗"
+      },
+      {
+        "id": "V1",
+        "ok": true,
+        "note": "多句描写里没出现 :: 权重，靠语序和逗号分层，V8.2 下无风险"
+      },
+      {
+        "id": "V2",
+        "ok": true,
+        "note": "风格靠 cinematic、realistic photography 正文词，没写 --style raw / --raw"
+      },
+      {
+        "id": "V3",
+        "ok": true,
+        "note": "用 realistic photography、authentic proportions 等正面写实词代替 --no 减法，绕开逐词审核"
+      },
+      {
+        "id": "V4",
+        "ok": true,
+        "note": "上游 sref 标的是无，也没 --q / --cref，写实感全靠 realistic photography 等正文词兜"
+      }
+    ],
+    "summary": "一对年轻情侣开着复古红敞篷车沿蓝湖海岸山路兜风，副驾女孩与开车的男人轻松互动，用电影宽镜头加暖阳写实摄影堆出高端旅行广告的奢华夏日感，环境和形容词都铺得很满，9:16 却只写成自然语言而非参数。"
+  }
+]

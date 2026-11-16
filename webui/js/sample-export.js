@@ -110,8 +110,17 @@ const SAMPLE_EXPORT = (() => {
     return String(d.summary || '').trim();
   }
 
+  /** 两轴分类（ADR-0028）。取值是稳定 slug（`realistic` / `person`），
+      中文名只在 Markdown 渲染时转换 —— 导出文件里的值要能被脚本直接统计。 */
+  function taxonomyOf(job) {
+    if (typeof SAMPLE_TAXONOMY === 'undefined') return { medium: '', subject: '', source: '' };
+    const c = SAMPLE_TAXONOMY.classify(job);
+    return { medium: c.medium, subject: c.subject, source: c.source };
+  }
+
   /** 一条作业的规范化字段。JSON 与 Markdown 共用这一份。 */
   function rowOf(job) {
+    const t = taxonomyOf(job);
     return {
       引用键: keyOf(job),
       标题: String(job?.title || ''),
@@ -122,6 +131,9 @@ const SAMPLE_EXPORT = (() => {
       风格参考码: String(job?.sref || ''),
       采集批次: String(job?.batch || ''),
       生成日期: genDate(job),
+      表现媒介: t.medium,
+      画面主体: t.subject,
+      分类来源: t.source,
       配图数: Array.isArray(job?.thumbs) ? job.thumbs.length : 0,
       拆解来源: decompSource(job),
       拆解摘要: decompSummary(job),
@@ -152,9 +164,13 @@ const SAMPLE_EXPORT = (() => {
     const parts = [];
     if (ui.q) parts.push(`关键词「${ui.q}」`);
     if (ui.batch) parts.push(`批次 ${ui.batch}`);
-    if (ui.aspect) parts.push(`比例 ${ui.aspect}`);
-    if (ui.srefOnly) parts.push('只看有 sref');
-    if (ui.srefCodes && ui.srefCodes.size) parts.push(`sref 码 ${[...ui.srefCodes].join('/')}`);
+    // ADR-0028：两轴分类。导出文件离开界面后，读者只能靠这行字知道
+    // 它被什么口径筛过 —— 而这两个口径是**规则推算**，必须一并写明。
+    const names = (axis, set) => [...(set || [])]
+      .map((v) => (typeof SAMPLE_TAXONOMY !== 'undefined' ? SAMPLE_TAXONOMY.labelOf(axis, v) : v))
+      .join('/');
+    if (ui.mediums && ui.mediums.size) parts.push(`表现媒介 ${names('medium', ui.mediums)}`);
+    if (ui.subjects && ui.subjects.size) parts.push(`画面主体 ${names('subject', ui.subjects)}`);
     if (ui.phrases && ui.phrases.size) parts.push(`短语 ${[...ui.phrases].join('/')}`);
     // 报告 2.5 / 2.7：新维度的筛选条件也必须写进文件头 —— 导出的数据
     // 离开界面后，读者只能靠这行字知道它被什么条件筛过。
@@ -222,12 +238,20 @@ const SAMPLE_EXPORT = (() => {
 
     out.push('## 概览');
     out.push('');
-    out.push('| 引用键 | 生成日期 | 采集批次 | 比例 | 作者 | sref | 标题 |');
-    out.push('| --- | --- | --- | --- | --- | --- | --- |');
+    out.push('| 引用键 | 生成日期 | 采集批次 | 比例 | 表现媒介 | 画面主体 | 作者 | sref | 标题 |');
+    out.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+    // 两轴在 Markdown 里显示中文名（人读），JSON 里保留 slug（机器统计）——
+    // 同一份数据，两种消费方式各自取合适的形态。
+    const label = (axis, v) => (!v ? '—'
+      : (typeof SAMPLE_TAXONOMY !== 'undefined' ? SAMPLE_TAXONOMY.labelOf(axis, v) : v));
     list.forEach((r) => {
-      out.push(`| ${mdCell(r['引用键'])} | ${mdCell(r['生成日期'])} | ${mdCell(r['采集批次'])} | ${mdCell(r['宽高比'])} | ${mdCell(r['作者'])} | ${mdCell(r['风格参考码'])} | ${mdCell(r['标题'])} |`);
+      out.push(`| ${mdCell(r['引用键'])} | ${mdCell(r['生成日期'])} | ${mdCell(r['采集批次'])} | ${mdCell(r['宽高比'])} | ${mdCell(label('medium', r['表现媒介']))} | ${mdCell(label('subject', r['画面主体']))} | ${mdCell(r['作者'])} | ${mdCell(r['风格参考码'])} | ${mdCell(r['标题'])} |`);
     });
     out.push('');
+    if (list.some((r) => r['分类来源'])) {
+      out.push('> 表现媒介与画面主体是**规则推算**，不是人工标注：未声明 / 未判定单列一档，比例会随词表调整浮动，不可直接当研究结论引用。');
+      out.push('');
+    }
 
     out.push('## 详情');
     out.push('');
@@ -239,6 +263,7 @@ const SAMPLE_EXPORT = (() => {
       out.push(`- 宽高比：${r['宽高比'] || '—'}　版本：${r['版本'] || '—'}`);
       out.push(`- 风格参考码：${r['风格参考码'] || '—'}`);
       out.push(`- 生成日期：${r['生成日期'] || '—'}　采集批次：${r['采集批次'] || '—'}`);
+      out.push(`- 表现媒介：${label('medium', r['表现媒介'])}　画面主体：${label('subject', r['画面主体'])}（规则推算，非人工标注）`);
       out.push(`- 配图数：${r['配图数']}`);
       out.push('');
       out.push('**提示词**');

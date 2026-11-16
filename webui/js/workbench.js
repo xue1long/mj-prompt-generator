@@ -4,6 +4,7 @@
      · 提示词库    —— 五个分区：四个摄影词库分类 + 艺术家/摄影师（假设集）
      · 研究样本库  —— 社区作业（证据集），原「探索榜」
      · 研究笔记    —— 观察记录与结论（报告 2.3）
+     · 风格榜      —— 官方风格榜（styles_top）参照语料（ADR-0026）
    艺术家为全量词库（4,322 条）；预览图按需取，没有图的落回排版版位。
 
    筛选统一走 webui/js/filter-engine.js（报告 3.4）：一个引擎 + 一套 URL 契约。
@@ -34,6 +35,8 @@ const VIEWS = [
   { id: 'candidates', label: '候选词条', hint: '社区高频措辞 × 词库覆盖 —— 对质界面' },
   { id: 'compare', label: '对照', hint: '并排看两条 —— 固定变量再下结论' },
   { id: 'research', label: '研究笔记', hint: '观察记录与结论' },
+  { id: 'styles-top', label: '风格榜', hint: '官方热度榜的 200 个可直接引用的码' },
+  { id: 'materials', label: '资料库', hint: '自己收集的提示词与图片 —— 未经研究的自采资料' },
 ];
 
 /* 提示词库视图下的二级页签：四个摄影词库分类 + 艺术家 */
@@ -109,6 +112,13 @@ const viewCount = (v) => {
     // 研究笔记的计数来自本机 IndexedDB（异步加载）；未加载时先显示 0
     return typeof RESEARCH_VIEW !== 'undefined' ? (RESEARCH_VIEW.ui.notes.length + RESEARCH_VIEW.ui.conclusions.length) : 0;
   }
+  if (v.id === 'styles-top') {
+    return typeof STYLES_TOP_ENTRIES !== 'undefined' ? STYLES_TOP_ENTRIES.length : 0;
+  }
+  if (v.id === 'materials') {
+    // 资料条目存在本机 IndexedDB，异步装载；未装载时显示 0，装载后由 wire() 触发重绘补上。
+    return typeof MATERIALS_VIEW !== 'undefined' ? MATERIALS_VIEW.count() : 0;
+  }
   return VOCAB_TOTAL + ARTIST_TOTAL;
 };
 
@@ -150,7 +160,12 @@ function readHash() {
   // 不认识的参数：丢弃并**提示一次**（ADR-0010）。
   // 不静默忽略 —— 本地单人工具，静默失败比报错更贵。
   // 同时把 URL 修正成只含支持的参数（job 深链参数要保留）。
-  if (ignored && ignored.length) {
+  //
+  // 例外（ADR-0028）：已下线的那三个样本库参数**静默**丢弃，但仍要修正 URL ——
+  // 地址栏挂着已经失效的 aspect / sref，用户复制出去会以为筛选还在。
+  const hasLegacySampleParam = ui.view === 'samples'
+    && [...params.keys()].some((k) => LEGACY_SAMPLES_PARAMS.includes(k));
+  if ((ignored && ignored.length) || hasLegacySampleParam) {
     const known = new Set([...(filterSourceOf(ui.view) || { dims: [] }).dims.map(d => d.key)]);
     known.add('job');
     // 对照视图的参数是 a / b（引用键），不是筛选维度 —— 要放进白名单，
@@ -168,10 +183,12 @@ function readHash() {
     // 提示**一次**：同一组不支持的参数不重复刷屏。
     // 闸门按「参数名集合」判定 —— 用户改了筛选后 URL 里不再有这些参数，
     // 再次带着同样的坏参数进来才算另一次。
-    const sig = ignored.slice().sort().join(',');
-    if (sig !== ui.lastIgnoredSig) {
-      ui.lastIgnoredSig = sig;
-      toast(`已忽略不支持的筛选参数：${ignored.join('、')}`, 'close');
+    if (ignored && ignored.length) {
+      const sig = ignored.slice().sort().join(',');
+      if (sig !== ui.lastIgnoredSig) {
+        ui.lastIgnoredSig = sig;
+        toast(`已忽略不支持的筛选参数：${ignored.join('、')}`, 'close');
+      }
     }
   }
 }
@@ -208,8 +225,15 @@ const LIBRARY_FILTER_SOURCE = FILTER_ENGINE.source('library', [
   { key: 'colours', type: 'multi', valuesOf: (a) => a.colours || [] },
 ]);
 
-/* 研究样本库侧：批次 + 比例 + 只看有 sref + sref 码 + 提示词短语 + 搜索
-   （报告 2.2：后两个维度是本步新增的「按码值筛选」与「按片段聚类」） */
+/* ADR-0028 下线的三个样本库参数。改完后它们没有对应维度 ——
+   静默丢弃、不弹提示，并在修正 URL 时顺手抹掉。
+   「比例」与「sref 三件套」的筛选能力是被有意换掉的，不是坏了。 */
+const LEGACY_SAMPLES_PARAMS = ['aspect', 'sref', 'srefCode'];
+
+/* 研究样本库侧：批次 + 两轴分类 + 提示词短语 + 拆解来源 + 生成日期 + 搜索
+   （ADR-0028 收窄了范围：宽高比与 sref 三件套下线，换成可解释的两轴分类。
+     比例是唯一「确定」的结构化维度，换成的是「推算」的内容维度 —— 这是
+     有意取舍，理由与代价都记在 ADR 里。） */
 const EXPLORE_FILTER_SOURCE = FILTER_ENGINE.source('samples', [
   { key: 'q', type: 'q', matchOf: (j, text) => {
     if (String(j.title || '').toLowerCase().includes(text)) return true;
@@ -217,10 +241,15 @@ const EXPLORE_FILTER_SOURCE = FILTER_ENGINE.source('samples', [
     return String(j.prompt || '').toLowerCase().includes(text);
   } },
   { key: 'batch', type: 'enum', valueOf: (j) => j.batch },
-  { key: 'aspect', type: 'enum', valueOf: (j) => j.aspect },
-  { key: 'sref', type: 'bool', activeOf: (j) => !!j.sref },
-  // sref 码（报告 2.2）：上游是空格分隔的字符串，一条作业可能挂多个码
-  { key: 'srefCode', type: 'multi', valuesOf: (j) => String(j.sref || '').split(/\s+/).filter(Boolean) },
+  /* 两轴分类（ADR-0028）：运行时由 SAMPLE_TAXONOMY 现算，不烘焙进产物 ——
+     改一条正则不必重建 3 MB 生成物（与 job-key / phrase-index 同一取舍）。
+     每层单值互斥，故 valuesOf 只返回 0 或 1 个值，各档计数之和恒等于 971。 */
+  { key: 'medium', type: 'multi', valuesOf: (j) => (
+    typeof SAMPLE_TAXONOMY !== 'undefined' ? [SAMPLE_TAXONOMY.mediumOf(j)] : []
+  ) },
+  { key: 'subject', type: 'multi', valuesOf: (j) => (
+    typeof SAMPLE_TAXONOMY !== 'undefined' ? [SAMPLE_TAXONOMY.subjectOf(j)] : []
+  ) },
   // 提示词短语（报告 2.2）：从 prompt 现算的短语索引，不是烘焙字段
   { key: 'phrase', type: 'multi', valuesOf: (j) => (typeof PHRASE_INDEX !== 'undefined' ? phraseIndexOf(j) : []) },
   // 拆解来源（报告 2.5）：三层可信度 + 无拆解。值域与 explore-board.js 的 DECOMP_SOURCES 一致
@@ -239,6 +268,9 @@ const EXPLORE_FILTER_SOURCE = FILTER_ENGINE.source('samples', [
    工作台只做 URL 契约的搬运）。 */
 const CANDIDATE_FILTER_SOURCE = (typeof CANDIDATE_VIEW !== 'undefined') ? CANDIDATE_VIEW.source() : null;
 
+/* 资料库侧（ADR-0029）：搜索 + 有无配图 + 来源 + 标签 + 收录日，维度在视图里声明。 */
+const MATERIALS_FILTER_SOURCE = (typeof MATERIALS_VIEW !== 'undefined') ? MATERIALS_VIEW.source() : null;
+
 /* 把 URL 里的筛选参数灌进当前视图的筛选状态 */
 function applyFilterFromQuery(query) {
   const src = filterSourceOf(ui.view);
@@ -253,11 +285,11 @@ function applyFilterFromQuery(query) {
   ui.tested = !!(st.dims && st.dims.tested);
   ui.terms = new Set(st.dims && st.dims.terms ? st.dims.terms : []);
   ui.colours = new Set(st.dims && st.dims.colours ? st.dims.colours : []);
-  // 探索榜侧：批次 / 比例 / 只看有 sref / sref 码 / 提示词短语
+  // 研究样本库侧：批次 / 两轴分类 / 短语 / 拆解来源 / 生成日期
   if (st.dims && st.dims.batch !== undefined) EXPLORE_BOARD.state.batch = st.dims.batch || '';
-  if (st.dims && st.dims.aspect !== undefined) EXPLORE_BOARD.state.aspect = st.dims.aspect || '';
-  if (st.dims && st.dims.sref !== undefined) EXPLORE_BOARD.state.srefOnly = !!st.dims.sref;
-  if (st.dims && st.dims.srefCode !== undefined) EXPLORE_BOARD.state.srefCodes = new Set(st.dims.srefCode || []);
+  // ADR-0028：两轴分类（多选，组内任一）
+  if (st.dims && st.dims.medium !== undefined) EXPLORE_BOARD.state.mediums = new Set(st.dims.medium || []);
+  if (st.dims && st.dims.subject !== undefined) EXPLORE_BOARD.state.subjects = new Set(st.dims.subject || []);
   if (st.dims && st.dims.phrase !== undefined) EXPLORE_BOARD.state.phrases = new Set(st.dims.phrase || []);
   // 报告 2.5 / 2.7 的两个新维度
   if (st.dims && st.dims.decomp !== undefined) EXPLORE_BOARD.state.decomp = new Set(st.dims.decomp || []);
@@ -267,7 +299,23 @@ function applyFilterFromQuery(query) {
   if (ui.view === 'candidates' && typeof CANDIDATE_VIEW !== 'undefined') {
     CANDIDATE_VIEW.stateFromDims({ q: ui.q, status: st.dims.status || [], minDf: st.dims.minDf || '' });
   }
-  ui.ignoredParams = parsed.ignored || [];
+  // 资料库：状态住在视图自己那里（与候选词条同一约定），工作台只搬运 URL 契约
+  if (ui.view === 'materials' && typeof MATERIALS_VIEW !== 'undefined') {
+    MATERIALS_VIEW.stateFromDims({
+      q: ui.q,
+      hasImage: !!(st.dims && st.dims.hasImage),
+      source: (st.dims && st.dims.source) || '',
+      tags: (st.dims && st.dims.tags) || [],
+      date: (st.dims && st.dims.date) || '',
+    });
+  }
+  /* 已下线的样本库参数静默丢弃（ADR-0028）：它们没有对应维度了，
+     本已无法复现原来的筛选意图，弹「已忽略」只会让用户困惑该改什么。
+     其它不认识的参数仍按 ADR-0010 提示一次 —— 别把这条豁免扩大成通例。 */
+  const unknown = parsed.ignored || [];
+  ui.ignoredParams = ui.view === 'samples'
+    ? unknown.filter((k) => !LEGACY_SAMPLES_PARAMS.includes(k))
+    : unknown;
   return ui.ignoredParams;
 }
 
@@ -276,6 +324,7 @@ function filterSourceOf(view) {
   if (view === 'samples') return EXPLORE_FILTER_SOURCE;
   if (view === 'library') return LIBRARY_FILTER_SOURCE;
   if (view === 'candidates') return CANDIDATE_FILTER_SOURCE;
+  if (view === 'materials') return MATERIALS_FILTER_SOURCE;
   return null;
 }
 
@@ -307,15 +356,26 @@ function writeFilterToUrl() {
 
 /* 当前视图的筛选状态（统一成引擎的状态形状） */
 function currentFilterState() {
+  if (ui.view === 'materials' && typeof MATERIALS_VIEW !== 'undefined') {
+    const d = MATERIALS_VIEW.dims();
+    return {
+      q: d.q || '',
+      dims: {
+        hasImage: !!d.hasImage,
+        source: d.source || '',
+        tags: [...(d.tags || [])],
+        date: d.date || '',
+      },
+    };
+  }
   if (ui.view === 'samples') {
     const s = EXPLORE_BOARD.state;
     return {
       q: s.q || '',
       dims: {
         batch: s.batch || '',
-        aspect: s.aspect || '',
-        sref: !!s.srefOnly,
-        srefCode: [...(s.srefCodes || [])],
+        medium: [...(s.mediums || [])],
+        subject: [...(s.subjects || [])],
         phrase: [...(s.phrases || [])],
         decomp: [...(s.decomp || [])],
         genDate: [...(s.genDates || [])],
@@ -608,7 +668,7 @@ function openArtistSheet(id) {
             </div>` : ''}
           <div class="artist-sheet-block">
             <h3>提示词写法</h3>
-            <div class="param-tail-box" style="margin-top:0">photography by ${esc(a.en)}</div>
+            <div class="param-tail-box" style="margin-top:0">${esc(photographyPrefix([a.en]))}</div>
           </div>
         </div>
       </div>
@@ -630,17 +690,19 @@ function render() {
   const isResearch = ui.view === 'research';
   const isCompare = ui.view === 'compare';
   const isCandidates = ui.view === 'candidates';
+  const isStylesTop = ui.view === 'styles-top';
+  const isMaterials = ui.view === 'materials';
   // 对照视图的对象从 URL 读（a / b 两个引用键）
   const cmpPair = isCompare && typeof COMPARE_VIEW !== 'undefined' ? COMPARE_VIEW.readFromHash() : null;
   const cmpHasBoth = !!(cmpPair && cmpPair.a && cmpPair.b);
   page.innerHTML = `
-    ${isSamples ? EXPLORE_BOARD.headHtml() : isResearch ? RESEARCH_VIEW.headHtml() : isCompare ? COMPARE_VIEW.headHtml() : isCandidates ? CANDIDATE_VIEW.headHtml() : headHtml()}
+    ${isSamples ? EXPLORE_BOARD.headHtml() : isResearch ? RESEARCH_VIEW.headHtml() : isCompare ? COMPARE_VIEW.headHtml() : isCandidates ? CANDIDATE_VIEW.headHtml() : isStylesTop ? STYLES_TOP_VIEW.headHtml() : isMaterials ? MATERIALS_VIEW.headHtml() : headHtml()}
     ${viewnavHtml()}
     ${catnavHtml()}
-    ${isSamples ? EXPLORE_BOARD.toolbarHtml() : isResearch ? RESEARCH_VIEW.toolbarHtml() : isCompare ? COMPARE_VIEW.toolbarHtml(cmpHasBoth) : isCandidates ? CANDIDATE_VIEW.toolbarHtml() : toolbarHtml()}
+    ${isSamples ? EXPLORE_BOARD.toolbarHtml() : isResearch ? RESEARCH_VIEW.toolbarHtml() : isCompare ? COMPARE_VIEW.toolbarHtml(cmpHasBoth) : isCandidates ? CANDIDATE_VIEW.toolbarHtml() : isStylesTop ? STYLES_TOP_VIEW.toolbarHtml() : isMaterials ? MATERIALS_VIEW.toolbarHtml() : toolbarHtml()}
     <div class="library-body" id="library-panel" role="tabpanel"
-      aria-labelledby="${isSamples ? 'view-samples' : isResearch ? 'view-research' : isCompare ? 'view-compare' : isCandidates ? 'view-candidates' : `tab-${esc(ui.tab)}`}" tabindex="0">
-      ${isSamples ? EXPLORE_BOARD.bodyHtml() : isResearch ? RESEARCH_VIEW.bodyHtml() : isCompare ? COMPARE_VIEW.bodyHtml(cmpPair) : isCandidates ? CANDIDATE_VIEW.bodyHtml() : bodyHtml()}
+      aria-labelledby="${isSamples ? 'view-samples' : isResearch ? 'view-research' : isCompare ? 'view-compare' : isCandidates ? 'view-candidates' : isStylesTop ? 'view-styles-top' : isMaterials ? 'view-materials' : `tab-${esc(ui.tab)}`}" tabindex="0">
+      ${isSamples ? EXPLORE_BOARD.bodyHtml() : isResearch ? RESEARCH_VIEW.bodyHtml() : isCompare ? COMPARE_VIEW.bodyHtml(cmpPair) : isCandidates ? CANDIDATE_VIEW.bodyHtml() : isStylesTop ? STYLES_TOP_VIEW.bodyHtml() : isMaterials ? MATERIALS_VIEW.bodyHtml() : bodyHtml()}
     </div>`;
   wire();
   if (isSamples) {
@@ -668,6 +730,12 @@ function render() {
       if (ui.view !== 'research') return;
       render();
     });
+  } else if (isStylesTop) {
+    STYLES_TOP_VIEW.wire(page);
+    markImageStates(page);
+  } else if (isMaterials) {
+    // 资料库条目在本机 IndexedDB，异步装载；wire() 里自己触发一次重绘补上数据。
+    MATERIALS_VIEW.wire(page);
   } else {
     updateCount();
     markImageStates(page);

@@ -1,0 +1,167 @@
+[
+  {
+    "jobId": "237f7a53-84a6-4bbb-b2b5-bd7330a14b1a",
+    "framework": "人物画像",
+    "segments": [
+      {"text": "Two midgets", "note": "主体是两个侏儒，一上来就用数量词 Two 把人数锁死，但除了 midgets 这个带冒犯色彩的旧称，没有任何年龄、容貌或服饰属性，形象全靠模型补；背景那群兔子其实也是强视觉主体。"},
+      {"text": "in a sword fight", "note": "in a sword fight 是全条唯一的动作信息，用介词短语点出正在斗剑这件事，但没写谁攻谁守、什么姿势，动作只到有这场打斗为止，两个侏儒各自的动态是缺的。"},
+      {"text": "in space with rabbits in tie dye space suits", "note": "in space 把场景直接丢到太空，后面又用 with 拉出一群穿 tie dye space suits 的兔子当背景；扎染宇航服这记嬉皮配色是全条最有记忆点的环境细节，比主体还抢眼。"},
+      {"text": "in the background", "note": "全条没有景别、机位、焦段，唯一的空间指令是 in the background 把兔子压到后景、把侏儒留在前景，属于用位置词代替镜头的隐式分层，也没命中五法里 rule of thirds / framed / negative space 等任一条原词。"},
+      {"text": "", "note": "tie dye 的斑斓色只属于兔子宇航服的图案，不是全画的光源方向或整体色调指令，本段没有任何打光词、色温或明暗关系，太空该有的冷光也一个没写。"},
+      {"text": "", "note": "全条没有任何画风、媒介或流派词，也没有摄影感或情感词，既没写超写实也没写卡通，成像风格完全交给模型默认；侏儒、剑斗、扎染太空兔这组荒诞搭配本身有黑色幽默味，但那是题材趣味不是写出来的风格词。"},
+      {"text": "", "note": "正文零 -- 参数，1:1 方幅和 sref=无 都由上游作业字段承载；整条只有 91 字符、连 --ar 都没出现，比例是最容易看漏的由上游代劳信息。"}
+    ],
+    "composition": [],
+    "tags": {"style": ["tie dye"], "lighting": [], "angle": [], "emotion": []},
+    "paramTail": {"text": "", "params": []},
+    "health": [
+      {"id": "R1", "ok": false, "note": "全条是 Two midgets 后面连挂 in a sword fight / in space / with rabbits / in the background 四段介词短语，一口气串成 91 字符的长串，没用逗号切成名词短语模块，读起来就是一句场景描述。"},
+      {"id": "R2", "ok": true, "note": "Two midgets 就在最开头，两个侏儒的身份和数量第一眼就锁住，没有被体裁词或风格词抢走首短语，权重落点干净。"},
+      {"id": "R3", "ok": true, "note": "正文里连一个 -- 参数都没有，1:1 方幅来自上游作业字段，也就谈不上参数位置错误或全角冒号问题。"},
+      {"id": "R4", "ok": true, "note": "没有写 --no，也没有任何要剔除的画面元素，侏儒、剑、太空、扎染兔子全是正向加进来的，本条根本用不上减法。"},
+      {"id": "R5", "ok": true, "note": "全条只有 91 字符、一个句子，把侏儒斗剑、太空、扎染宇航服兔子三件事一次说完，没堆一个形容词，少而精守得很干净，代价是可控信息偏薄。"},
+      {"id": "M1", "ok": true, "note": "全英文半角，只有 tie dye 分开写而非连字符 tie-dye 的习惯差异，没有中文标点混入，也没有明显拼错的词，midgets 是用词不当不是拼写问题。"},
+      {"id": "M2", "ok": false, "note": "Two midgets 已经是双主体，背景再加一群 rabbits in tie dye space suits，前景两人和后景兔子群同时争夺注意力，是典型的多主体分散。"},
+      {"id": "M3", "ok": true, "note": "没有要求画面出现任何可读文字或标语，扎染是花色不是字样，避开了 MJ 生成准确文字不可靠这个坑。"},
+      {"id": "M4", "ok": true, "note": "91 字符里没有 8k、masterpiece、best quality 这类 V6 之后基本失效的画质词，连 ultra-detailed 之类的质感词都没塞，堆料为零。"},
+      {"id": "M5", "ok": true, "note": "全条是英文短句，不存在中文长句带来的理解精度损耗；倒是 midgets 这个旧称和太空扎染兔的荒诞搭配，比语言问题更值得留意。"},
+      {"id": "V1", "ok": true, "note": "没有出现 词::2 之类的多提示词权重语法，V8.2 下不触发 V7+ 已移除该语法的兼容问题。"},
+      {"id": "V2", "ok": true, "note": "没写 --style raw，因此不涉及 V7+ 必须改用 --raw 的版本变更，风格本来就留空。"},
+      {"id": "V3", "ok": true, "note": "没有 --no，自然也不存在 V8.2 下逐词独立审核把某个短语拆开误伤的风险。"},
+      {"id": "V4", "ok": true, "note": "正文没碰 --q / --oref / --cref 这些 V8.1 起被移除或替代的旧参数，1:1 和上游 sref 为空都由字段承载。"}
+    ],
+    "summary": "两个侏儒在太空里斗剑，背景飘着一群穿扎染宇航服的兔子，作者把荒诞角色与嬉皮配色压进一个短句，没写参数也没定风格，1:1 方幅由上游字段代劳。"
+  },
+  {
+    "jobId": "99b65836-1ecc-481d-a6e8-82e6ab782f7e",
+    "framework": "人物画像",
+    "segments": [
+      {"text": "A poster with a retro vibe. The main subjects are two K-pop girl group members", "note": "开头先用 A poster with a retro vibe 把体裁和复古调子定成第一句，真正的画面主体两个 K-pop 女团成员要到第二句才由 The main subjects are 点出，主体被体裁词推迟了一层。"},
+      {"text": "不要比耶动作", "note": "这是全条唯一涉及动作的一句，而且是否定式的中文排除，明确不许两位成员比 V 字剪刀手；它从反面承认了 K-pop 摆拍最爱出现这个姿势、作者特意来堵它，但没有任何正面动作或表情被写出来。"},
+      {"text": "surrounded by a collage of stationery items such as notebooks, pencils, pencil cases, fountain pens, and erasers", "note": "用 surrounded by 把笔记本、铅笔、笔袋、钢笔、橡皮五样文具列成拼贴环绕人物，环境细节落到了具体道具，是偶像周边海报常见的置景写法，只是 such as 清单略啰嗦。"},
+      {"text": "", "note": "全条没给景别、机位或焦段，也没说两位成员是半身还是全身、海报怎么排版；拼贴环绕只暗示满版构图，没命中五法原词，3:4 竖幅由上游字段给出，正文连 --ar 都没写。"},
+      {"text": "", "note": "没有任何光源方向、软硬或色调词，复古海报本该有的泛黄、褪色、网点配色一个都没写，颜色信息全压在 retro 这一个抽象调子词和文具清单上。"},
+      {"text": "retro vibe", "note": "with a retro vibe 是全条唯一的风格调子词，还写在第一句的海报体裁里而不是独立成段，复古感靠它一个词撑，没落到具体年代、印刷媒介或画风锚点（没写 70s、没写 halftone / risograph）。"},
+      {"text": "", "note": "结尾那句中文『不要比耶动作』紧贴 erasers. 的句号、没有空格也没有 -- 前缀，是自然语言排除而非参数；正文零 -- 参数，3:4 比例与 sref=无 都由上游作业字段承载。"}
+    ],
+    "composition": [],
+    "tags": {"style": ["retro", "collage"], "lighting": [], "angle": [], "emotion": []},
+    "paramTail": {"text": "", "params": []},
+    "health": [
+      {"id": "R1", "ok": false, "note": "两句带谓语的英文（A poster with... / The main subjects are...）再加一句中文排除混在一起，不是逗号分隔的名词短语模块，叙述成分明显多于短语清单。"},
+      {"id": "R2", "ok": false, "note": "第一句 A poster with a retro vibe 先把体裁和调子占掉，两个 K-pop 女团成员要到第二句才作为主体登场，首短语权重被体裁词分走。"},
+      {"id": "R3", "ok": true, "note": "正文没有任何 -- 参数尾，结尾中文『不要比耶动作』是自然语言排除不是参数，3:4 比例与 sref=无 由上游字段承载，不存在参数错位或全角冒号问题。"},
+      {"id": "R4", "ok": false, "note": "作者明确要做『不要比耶动作』这个减法，却用中文自然语句而不是 --no 来写；考虑到 V8.2 下 --no 会逐词独立审核，用自然语言反而更稳，但严格说没走铁律 4 的参数形式。"},
+      {"id": "R5", "ok": false, "note": "文具一口气列了 notebooks、pencils、pencil cases、fountain pens、erasers 五样，还挂在冗长的 such as 后面，不算精简；好在每样都对应拼贴里的具体道具，属于可控罗列。"},
+      {"id": "M1", "ok": false, "note": "英文两句的标点是半角没问题，但结尾『不要比耶动作』是纯中文、紧贴 erasers. 的句号且中间没空格，中英混排无分隔，容易让解析把中文粘到 erasers 后面。"},
+      {"id": "M2", "ok": false, "note": "two K-pop girl group members 是双人物主体，再加五类文具拼贴铺满四周，人物与道具同时争夺注意力，和情侣双主体那类问题一样。"},
+      {"id": "M3", "ok": true, "note": "没有要求画面出现可读文字，文具是实物道具、海报也没点名要写标题或团名字样，避开了 MJ 生成准确文字不可靠的坑。"},
+      {"id": "M4", "ok": true, "note": "199 字符里没有 8k、masterpiece、best quality 这类 V6 之后失效的画质词，也没堆 ultra-detailed 之类的质感词，retro 是唯一的程度修饰。"},
+      {"id": "M5", "ok": true, "note": "中文仅『不要比耶动作』六个字、不构成误区清单点名的中文长句；真正该留意的是这句唯一的关键排除没用英文，非英语语义的解析精度通常略低。"},
+      {"id": "V1", "ok": true, "note": "没有出现 词::2 之类的多提示词权重语法，V8.2 下不触发 V7+ 已移除该语法的兼容问题。"},
+      {"id": "V2", "ok": true, "note": "未写 --style raw，因此不涉及 V7+ 必须改用 --raw 的版本变更，retro 是正文词不是参数。"},
+      {"id": "V3", "ok": true, "note": "没有 --no，那句中文排除不会被 V8.2 的逐词独立审核拆成『不要 / 比耶 / 动作』而误伤，反倒比参数形式省心。"},
+      {"id": "V4", "ok": true, "note": "正文没有 --q / --oref / --cref 这些 V8.1 起被移除或替代的旧参数，3:4 与 sref=无 都走上游字段。"}
+    ],
+    "summary": "一张复古调的 K-pop 女团双人海报，两位成员被笔记本、铅笔、笔袋、钢笔和橡皮的文具拼贴环绕，作者还特意用中文补一句『不要比耶动作』来堵住偶像摆拍的剪刀手，3:4 画幅由上游字段给出。"
+  },
+  {
+    "jobId": "6856df44-babb-4a40-a153-5f3761e20755",
+    "framework": "物体描述",
+    "segments": [
+      {"text": "rue New York années 1970's", "note": "全条没有具名人物或单个物件，rue New York années 1970's 把 1970 年代的纽约街道整个场景当主体抛出来，是街景摄影式的场景主体，années 还带着法语重音、1970's 又混了英语撇号写法。"},
+      {"text": "avec des gens qui marche", "note": "avec des gens qui marche 是全条唯一带动作的一句，写有正在走路的人，但 marche 漏了第三人称复数变位的 -nt（应为 marchent），是个语法错，动作也就止于有人在走这一笼统状态，紧接着还把 ultra realiste 粘在后面。"},
+      {"text": "du trotoir", "note": "du trotoir（trottoir 拼错少了一个 t）把观看位置落在人行道，配合 New York 与 années 1970's 给出地点和年代，环境信息就这三个词，没有天气、建筑、车辆或街灯细节。"},
+      {"text": "", "note": "没有景别、机位、焦段，du trotoir 只暗示了平视街拍的站位线索、不算标准镜头指令；也没写 deep perspective 之类能命中引导线的词，9:16 竖幅由上游字段给出，正文没写 --ar。"},
+      {"text": "", "note": "没有任何光源方向、时段光线或色调词，1970 年代纽约本可写的暖黄街灯、胶片褪色感一个都没给，画面明暗全交给 ultra realiste 这个风格词去默认。"},
+      {"text": "ultra realiste", "note": "ultra realiste（应为 ultra réaliste，缺重音）是全条唯一的风格词，还紧贴在 marche 后面没用逗号隔开，容易被解析成动作句的尾巴；除它之外没有任何画风、媒介或情感词。"},
+      {"text": "", "note": "正文零 -- 参数，9:16 竖幅和 sref=无 都由上游作业字段承载；années 1970's 里的撇号是年代写法而非权重或参数符号，别误读成语法标记。"}
+    ],
+    "composition": [],
+    "tags": {"style": ["ultra realiste"], "lighting": [], "angle": ["du trotoir"], "emotion": []},
+    "paramTail": {"text": "", "params": []},
+    "health": [
+      {"id": "R1", "ok": true, "note": "全条是逗号切开的三个短语（rue... / du trotoir / avec des gens...），没展开成带主谓的完整叙述句，短语优先这条基本守住，只是 qui marche 里藏了个漏变位的从句谓语。"},
+      {"id": "R2", "ok": true, "note": "rue New York années 1970's 把 1970 年代纽约街道放在最前，场景主体第一眼就立住，没被 ultra realiste 这类风格词抢走首位。"},
+      {"id": "R3", "ok": true, "note": "正文没有任何 -- 参数，两处逗号是英文半角，9:16 竖幅与 sref=无 由上游字段承载，不存在参数错位或全角标点问题。"},
+      {"id": "R4", "ok": true, "note": "没有写 --no，也没有任何要剔除的元素，街道、年代、人行道、行人、超写实全是正向叠加，本条用不上减法。"},
+      {"id": "R5", "ok": false, "note": "79 字符虽然短，能落的画面信息却只有街道、年代、人行道和行人四样，ultra realiste 还是个缺重音的孤词，少是少了，却没有一项具体可控的视觉细节，模型自由度过大。"},
+      {"id": "M1", "ok": false, "note": "trotoir 少了 trottoir 的一个 t、marche 漏了复数变位 -nt、realiste 与 années 的重音也不规范，1970's 还混了英语撇号，法语写法的噪声不少。"},
+      {"id": "M2", "ok": false, "note": "des gens 是未定数量的复数行人，等于把一群人丢进街景，MJ 很可能自行塞进多个主体，注意力没有单一落点。"},
+      {"id": "M3", "ok": true, "note": "没有要求画面里出现可读文字或招牌字样，1970 年代只是时间标签，避开了 MJ 生成准确文字不可靠的问题。"},
+      {"id": "M4", "ok": true, "note": "79 字符里没有 8k、masterpiece、best quality 之类失效画质词，ultra realiste 已是唯一的程度修饰，也没堆别的写实词。"},
+      {"id": "M5", "ok": true, "note": "整条是法语而非中文、更谈不上中文长句，但同样属于非英语自然语言输入，MJ 对这类语义的解析精度通常低于英文。"},
+      {"id": "V1", "ok": true, "note": "没出现 词::2 之类的多提示词权重语法，V8.2 下不触发 V7+ 已移除该语法的兼容问题；1970's 的撇号是年代写法不是权重符。"},
+      {"id": "V2", "ok": true, "note": "未写 --style raw，因此不涉及 V7+ 必须改用 --raw 的版本变更。"},
+      {"id": "V3", "ok": true, "note": "没有 --no，也就不存在 V8.2 下逐词独立审核造成的误伤风险。"},
+      {"id": "V4", "ok": true, "note": "正文没碰 --q / --oref / --cref 这些 V8.1 起被移除或替代的旧参数，9:16 与 sref=无 都走上游字段。"}
+    ],
+    "summary": "一句拼错连篇的法语街景速写：1970 年代的纽约街道、从人行道望过去有行人走过，作者只甩下 ultra realiste 一个风格词，把年代质感和光线细节全留给模型猜，9:16 竖幅由上游字段代劳。"
+  },
+  {
+    "jobId": "8168f9a6-fd5b-4ed6-95d3-81ffdffdde79",
+    "framework": "人物画像",
+    "segments": [
+      {"text": "中国古代贵族女将军", "note": "主体是身份先行的中国古代贵族女将军，性别、阶层、时代一次给全，但『古代贵族』没落到具体朝代、甲胄或服饰，形象仍偏概念化，和具名角色那条设定稿的写法不同。"},
+      {"text": "左手挺拔站立，右手握一把出鞘的直剑，表情略带不耐烦，眉毛挑起，目光强势", "note": "这段把站立、握出鞘直剑两个动作，加不耐烦、挑眉、强势目光三层微表情叠在一起，是人物画像框架里最见功力的状态段；但『左手挺拔站立』是明显语病，把站姿错安在左手上，中文长句里很容易让解析跑偏。"},
+      {"text": "眼神中的高光，眼中的倒影 … 背景化为柔和色块，轮廓与细节随焦点自然减弱", "note": "眼神高光与眼中倒影是全条最细的局部细节，专门点名要瞳孔里的映象；环境则只有背景化为柔和色块、轮廓随焦点减弱一句，用虚化把背景架空，没有任何地点、道具或时代陈设，是纯影棚人像的留白处理。"},
+      {"text": "紧凑而稳定的构图，以面部和主要主体为视觉重心", "note": "这是全文唯一直接谈构图的句子，明确要紧凑稳定、以面部和主体为视觉重心；但没给景别是特写还是半身、也没机位或焦段，紧凑稳定属于感受式描述，没命中五法里 symmetrical / negative space 等原词，2:3 竖幅由上游字段给出。"},
+      {"text": "大面积柔和主光从侧前方照射，亮部细腻，阴影边缘柔软，背光面补光较弱，保留温和而明确的面部体积 … 肤色呈自然的暖灰与细微红润，整体微反差较柔 … 少量强调色与局部反光提供层次", "note": "这是全条最扎实的一段，把主光方位（侧前方）、光质（大面积柔和）、亮部、阴影边缘、背光补光、面部体积逐项写清，又补了暖灰加微红润的肤色、微反差、强调色与局部反光，几乎是一份布光加调色单，唯一缺的是没有具体色号或色温。"},
+      {"text": "摄影写实影像，自然形体 … 材料厚度、纹理和反光行为彼此区分 … 主体和环境共享柔和光线与细腻的成像质感", "note": "用摄影写实影像定体裁，再要求材料厚度、纹理、反光行为彼此区分，最后收在柔和光线与细腻成像质感上，通篇是成像品质与材质写实的要求，没点名任何画风、流派或艺术家，风格全靠写实加柔和两个方向词兜着。"},
+      {"text": "", "note": "正文零 -- 参数，全条是中文长句、连一个英文参数都没出现；2:3 竖幅与 sref=无 都由上游作业字段承载，中文标点（，。）只出现在描述文字里、不会触发参数解析。"}
+    ],
+    "composition": [],
+    "tags": {"style": ["摄影写实影像"], "lighting": ["大面积柔和主光从侧前方照射", "亮部细腻", "阴影边缘柔软", "背光面补光较弱", "局部反光", "暖灰与细微红润"], "angle": [], "emotion": ["表情略带不耐烦", "目光强势"]},
+    "paramTail": {"text": "", "params": []},
+    "health": [
+      {"id": "R1", "ok": false, "note": "通篇是中文完整长句和分句，逗号连缀成一整段布光与成像要求，和逗号分隔的名词短语模块完全是两种写法，属于典型的需求文档式叙述。"},
+      {"id": "R2", "ok": true, "note": "中国古代贵族女将军 就在第一句开头，身份第一眼立住，后面才接动作、布光和构图，主体权重没被体裁词或风格词抢占。"},
+      {"id": "R3", "ok": true, "note": "正文没有任何 -- 参数，2:3 竖幅与 sref=无 由上游字段承载；全条中文标点只在描述文字里，不涉及参数区的全角冒号问题。"},
+      {"id": "R4", "ok": true, "note": "没有写 --no，也没出现任何不要 / 无 / 排除的字样，画面控制全靠正向的布光、色彩与材质描述堆叠，背景化为柔和色块也是弱化而非剔除，本条用不上减法。"},
+      {"id": "R5", "ok": false, "note": "278 字里从主光方位、亮部、阴影边缘、补光、肤色、微反差、强调色一直写到材料厚度与反光行为，几乎每句都在加要求，虽然每句都对应具体画质，密度仍远超少而精，是整批里最满的一条。"},
+      {"id": "M1", "ok": false, "note": "全中文标点（，。），且『左手挺拔站立』把站姿错安在左手上是明显语病；按误区清单，中文标点加关键描述用中文都会拉低解析精度，写实、柔光这类关键风格词改用英文通常更稳。"},
+      {"id": "M2", "ok": true, "note": "全条只有女将军一个人物主体，出鞘直剑是手持道具、背景被虚化成柔和色块，不存在多个强元素平分注意力的问题。"},
+      {"id": "M3", "ok": true, "note": "没有要求画面里出现任何可读文字、题字或标识，连将军甲胄都只讲材质厚度与反光、不讲纹样字样。"},
+      {"id": "M4", "ok": true, "note": "没出现 8k、masterpiece、best quality 这类 V6 之后失效的画质词，作者用的是亮部细腻、保留轻微肤理这类具体描述而非空泛堆料，只是整体要求偏密。"},
+      {"id": "M5", "ok": false, "note": "这正是误区清单点名的中文长句提示词，278 字一整段靠逗号连缀，MJ 对中文长句的语义解析精度明显低于英文，关键风格词若用英文会更稳。"},
+      {"id": "V1", "ok": true, "note": "没有出现 词::2 之类的多提示词权重语法，V8.2 下不触发 V7+ 已移除该语法的兼容问题。"},
+      {"id": "V2", "ok": true, "note": "未写 --style raw，因此不涉及 V7+ 必须改用 --raw 的版本变更；摄影写实影像是正文描述不是参数。"},
+      {"id": "V3", "ok": true, "note": "没有 --no，自然也不存在 V8.2 下逐词独立审核造成的误伤风险。"},
+      {"id": "V4", "ok": true, "note": "正文没碰 --q / --oref / --cref 这些 V8.1 起被移除或替代的旧参数，2:3 与 sref=无 都走上游字段。"}
+    ],
+    "summary": "一幅中国古代贵族女将军的摄影写实人像：握出鞘直剑、挑眉、目光强势带点不耐烦，作者用一大段中文把侧前方柔光、暖灰肤色、阴影边缘和背景虚化逐项写成布光单，信息密到几乎不给模型留白，2:3 竖幅由上游字段给出。"
+  },
+  {
+    "jobId": "9c81341d-1168-4c04-af6a-a7b4b165c5d9",
+    "framework": "人物画像",
+    "segments": [
+      {"text": "Head-only high-fashion portrait of a devastatingly handsome man with a monumental jaw, strong nose and a cool bad-boy expression", "note": "主体是仅头部的极英俊男人，一上来就用 Head-only 定死景别、用 monumental jaw / strong nose / bad-boy expression 把骨相和神态写满；但 high-fashion portrait of 这个体裁从句占在最前，人物被包在里面，主体权重被体裁分走一层。"},
+      {"text": "a cool bad-boy expression", "note": "纯头部肖像没有任何肢体动作，全靠 bad-boy expression 这一处冷傲神态撑起状态段，和用疲惫感充当状态的写法一样是拿表情替代动作；后面的 The spots must / Keep 都是给模型的制作指令，不是画面里人物的动作。"},
+      {"text": "Modern cropped buzz cut with a sharp low skin fade, clean temple line and slightly longer dense hair on top … creating large irregular rounded spots and flowing patches … Heavy polished silver hoop, stacked ear cuffs and a subtle brow piercing", "note": "细节密度是全批最高：短寸两侧低渐层铲青、干净鬓角线、顶部略长浓密，加上大块不规则圆斑与流动色块，再挂抛光银耳环、叠戴耳骨夹和一枚眉钉；周边元素几乎全压在头部这一个限定里，没有场景、时间或天气。"},
+      {"text": "Head-only … so the patterned top becomes the focal point", "note": "Head-only 把景别锁死在仅头部，又用 Keep the shaved sides mostly dark and clean so the patterned top becomes the focal point 明确把视觉重心交给顶部花纹，等于拿明暗对比做了一次构图指令；但没给机位、焦段，absolute black background 也只是背景色、未写 negative space 之类原词，3:4 竖幅由上游字段给出。"},
+      {"text": "dramatic shadow planes … poison-dart-frog-inspired blend of deep black, vivid emerald green, electric turquoise, cobalt blue and fiery orange-red … absolute black background", "note": "光线只有 dramatic shadow planes 一句讲暗面戏剧感，没有主光方向、光质或补光；真正撑起这段的是毒箭蛙那串高饱和色（emerald / turquoise / cobalt / orange-red）与 absolute black background 的高反差黑底，色彩信息极具体、打光信息几乎为零。"},
+      {"text": "high-fashion … Bold masculine silhouette, crisp realism", "note": "high-fashion 与 crisp realism 定下高级时尚写实的调子，Bold masculine silhouette 补一层阳刚轮廓，风格锚不多但都服务同一套硬朗肖像，没挂任何具名艺术家或画派；末尾那个孤零零的 4K 是画质堆料而非风格词。"},
+      {"text": "", "note": "正文零真参数，结尾写成 background.4K. 的 4K 紧贴句号、无空格也无 -- 前缀，只是失效画质堆料而非参数（也见 M4）；3:4 比例与 sref 3282860382 都由上游作业字段承载，这是本条在末段最容易把 4K 误读成参数尾的歧义点。"}
+    ],
+    "composition": [],
+    "tags": {"style": ["high-fashion", "crisp realism", "poison-dart-frog-inspired"], "lighting": ["dramatic shadow planes", "absolute black background", "vivid emerald green", "electric turquoise", "cobalt blue", "fiery orange-red"], "angle": ["Head-only"], "emotion": ["a cool bad-boy expression"]},
+    "paramTail": {"text": "", "params": []},
+    "health": [
+      {"id": "R1", "ok": false, "note": "七个带谓语的完整句（The upper hair is dyed… / The spots must feather… / Keep the shaved sides…），还有 must 和 Keep 这种命令句，完全不是逗号分隔的名词短语模块，是叙事加制作指令混着写。"},
+      {"id": "R2", "ok": false, "note": "Head-only high-fashion portrait of 把体裁和景别占掉首短语，devastatingly handsome man 被包在 portrait of 后面才出现，主体权重被体裁词分走一层。"},
+      {"id": "R3", "ok": true, "note": "正文没有任何 -- 参数尾，结尾 4K 是画质词不是参数（见 M4），3:4 比例与 sref 3282860382 由上游字段承载，不存在参数错位或全角标点问题。"},
+      {"id": "R4", "ok": true, "note": "没有写 --no，no hard printed edges 只是斑点要柔和渐变这句正面对照里的半个措辞、不是要剔除的画面元素，真正的画面收缩用的是 Keep the shaved sides mostly dark and clean 这种正向约束，本条减法意图很弱、用不上参数。"},
+      {"id": "R5", "ok": false, "note": "900 字符把一个头部肖像的发型、五色染发、斑点羽化、耳饰、暗面、黑底逐项展开，连 individual hairs、gradient edges 都写到了，信息量是这批最大的一条；好在每个细节都对应同一颗头，不算无谓堆料，但离少而精很远。"},
+      {"id": "M1", "ok": true, "note": "逗号、连字符、撇号都是英文半角，poison-dart-frog-inspired 这种多重连字符也规整；唯一别扭处是 background.4K. 把 4K 粘在句号后没空格，属于排版噪声不算拼写错。"},
+      {"id": "M2", "ok": true, "note": "全条只死盯一个男人的头部，银耳环、耳骨夹、眉钉、染发斑点都是同一颗头上的附属细节，没有第二个主体来分注意力。"},
+      {"id": "M3", "ok": true, "note": "没有要求画面出现可读文字或标识，毒箭蛙斑点是花纹不是字样，避开了 MJ 生成准确文字不可靠的问题。"},
+      {"id": "M4", "ok": false, "note": "结尾 background.4K. 里的 4K 正是 V6 之后基本失效的画质堆料词，和 HD / 8k 一个性质，孤零零挂在句号后既不加分还容易被误读成参数尾。"},
+      {"id": "M5", "ok": true, "note": "全条是英文，不存在中文长句的理解损耗；倒是 The spots must / Keep 这种命令句和 900 字符的篇幅，会让模型把制作指令和画面描述混着读。"},
+      {"id": "V1", "ok": true, "note": "没出现 词::2 之类的多提示词权重语法，V8.2 下不触发 V7+ 已移除该语法的兼容问题。"},
+      {"id": "V2", "ok": true, "note": "未写 --style raw，因此不涉及 V7+ 必须改用 --raw 的版本变更；crisp realism 是正文风格词不是参数。"},
+      {"id": "V3", "ok": true, "note": "没有 --no，那句 no hard printed edges 留在正文里，不会被 V8.2 的逐词独立审核拆成不要硬 / 不要印刷 / 不要边而误伤。"},
+      {"id": "V4", "ok": true, "note": "正文没碰 --q / --oref / --cref 这些 V8.1 起被移除或替代的旧参数，3:4 与 sref 3282860382 都走上游字段。"}
+    ],
+    "summary": "一张只拍头部的高级时尚男肖像：轮廓分明的下颌配坏小子神情，顶着毒箭蛙启发的黑绿青蓝橙红短寸斑纹，两侧铲青压暗让顶部花纹成焦点，银耳环与眉钉衬在纯黑底上，末尾还把『4K』当成画质后缀贴在句号后，比例和 sref 全由上游字段代劳。"
+  }
+]

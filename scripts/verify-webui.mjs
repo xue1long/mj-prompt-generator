@@ -6,12 +6,24 @@
  *   node scripts/verify-webui.mjs --dist    校验构建产物 dist/
  *
  * 覆盖：四屏渲染、全量数据契约、筛选无假空态、分页、配图覆盖与空态降级、会话 / 主题 / 旧 hash
- * 迁移、窄屏回归基线。窄屏页签遮挡是既有缺陷，只登记不断言失败（见 ADR-0017）。
+ * 迁移、窄屏回归基线。「首屏可见的一级视图按钮必须点得到」是**断言**，不是 NOTE：
+ * 此前用 elementFromPoint 判遮挡，元素在视口外时它返回 null，把「在视口外」误判成
+ * 「已消失」，掩盖了 166px 固定底条盖住按钮的实情（见第 9 组）。
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { spawn, execFileSync } from 'node:child_process';
+import net from 'node:net';
+
+/** 第 12 组起本机服务用：让 OS 分配一个空闲端口，避免撞上用户已开的 5173。 */
+function freePort() {
+  return new Promise((resolve) => {
+    const s = net.createServer();
+    s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); });
+  });
+}
 
 const require = createRequire(import.meta.url);
 const puppeteer = require('puppeteer-core');
@@ -29,6 +41,9 @@ const executablePath = CHROME_CANDIDATES.find((p) => fs.existsSync(p));
 const fileUrl = (name) => pathToFileURL(path.join(WEBUI, name)).href;
 const DESKTOP = { width: 1440, height: 900 };
 const NARROW = { width: 800, height: 600 };
+/* 真正的手机宽度。此前只用 800×600 当「窄屏」，恰好漏掉了固定底条盖住
+   一级视图按钮的区间（见第 9 组断言）。 */
+const MOBILE = { width: 390, height: 844 };
 
 /* sref 的期望条数：直接数源快照 config/explore.yaml，不写死数字。
    采集后条数会变，断言跟着变 —— 这正是原来写死 0 会把 bug 固化下来的教训。 */
@@ -45,13 +60,10 @@ function check(name, ok, detail = '') {
   results.push({ name, ok: !!ok, detail });
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  — ' + detail : ''}`);
 }
-function note(name, detail = '') {
-  console.log(`NOTE  ${name}${detail ? '  — ' + detail : ''}`);
-}
 
 async function openPage(browser, name, hash = '', viewport = DESKTOP) {
   const page = await browser.newPage();
-  // 桌面视口下页签中心点可点击；≤980px 单栏时固定底条会盖住页签（既有缺陷）。
+  // 桌面视口下页签中心点可点击；≤560px 固定底条已折叠成一行，不再遮挡导航。
   await page.setViewport(viewport);
   const errs = [];
   page.on('pageerror', (e) => errs.push('pageerror: ' + e.message.slice(0, 160)));
@@ -136,6 +148,12 @@ async function main() {
         // 2.6：候选词条是「假设集 × 证据集」的对质界面，也是一级视图（ADR-0024）
         check('候选词条是一级视图',
           viewIds.includes('candidates'), viewIds.join(','));
+        // ADR-0026：官方风格榜升为第六个一级视图
+        check('风格榜是一级视图',
+          viewIds.includes('styles-top'), viewIds.join(','));
+        // ADR-0029：资料库是第七个一级视图（独立数据集，不是样本库的页签或导入表单）
+        check('资料库是一级视图',
+          viewIds.includes('materials'), viewIds.join(','));
         check('二级页签里没有「探索榜」（它已升为一级视图）',
           !(await page.evaluate(() => !!document.querySelector('[data-tab="explore"]'))));
 
@@ -177,10 +195,15 @@ async function main() {
           plates: document.querySelectorAll('.job-thumbs .img-plate').length,
           chips: document.querySelector('.head-meta')?.textContent.replace(/\s+/g, ' ').trim() || '',
           batches: [...document.querySelectorAll('#ex-batch option')].filter((o) => o.value).length,
-          aspects: [...document.querySelectorAll('#ex-aspect option')].filter((o) => o.value).length,
+          mediumOpts: document.querySelectorAll('#ex-medium .msel-row').length,
+          subjectOpts: document.querySelectorAll('#ex-subject .msel-row').length,
+          mediumLabel: document.querySelector('#ex-medium .msel-label')?.textContent || '',
+          subjectLabel: document.querySelector('#ex-subject .msel-label')?.textContent || '',
+          taxHint: document.querySelector('#ex-medium')?.getAttribute('title') || '',
+          /* ADR-0028 下线的四个控件。留着空壳比删掉更糟 —— 用户会以为筛选坏了。 */
+          legacy: ['#ex-aspect', '#ex-sref', '#ex-srefcode', '#ex-decomp-trusted']
+            .filter((s) => document.querySelector(s)),
           more: !!document.querySelector('[data-role="ex-more"]'),
-          srefBtn: !!document.querySelector('#ex-sref'),
-          srefNote: (document.querySelector('.toolbar')?.textContent || '').includes('源数据未采集 sref'),
           badImgs: [...document.querySelectorAll('img')].filter((i) => {
             const s = i.getAttribute('src');
             return !s || s === 'undefined';
@@ -193,45 +216,75 @@ async function main() {
           && board.chips.includes(`批次 ${board.batches} / ${data.batches}`)
           && board.chips.includes(`配图 ${data.withImages} / ${data.total}`),
           board.chips);
-        check('批次 / 比例下拉与数据源一致', board.batches === data.batches && board.aspects === data.aspects,
-          `${board.batches} / ${board.aspects}`);
-        // sref 控件按数据实际情况二选一：有值 → 可用筛选按钮；无值 → 提示「源数据未采集」。
-        // 历史事故——构建期把 sref 丢弃成 null，前端只剩提示语；断言却写成「不该有按钮」，
-        // 等于把断链固化成验收标准。现改为与实际数据一致的分支断言。
-        check('sref 控件与数据一致',
-          EXPECT_SREF > 0 ? (board.srefBtn && !board.srefNote) : (!board.srefBtn && board.srefNote),
-          `源 sref ${EXPECT_SREF} 条 / 有按钮 ${board.srefBtn} / 有提示 ${board.srefNote}`);
+        check('批次下拉与数据源一致', board.batches === data.batches,
+          `${board.batches} / ${data.batches}`);
+        check('已下线的筛选控件不再出现', board.legacy.length === 0, board.legacy.join(','));
+        /* 两轴分类控件：档位必须来自 SAMPLE_TAXONOMY（不在这里另抄一份），
+           且标签常驻「规则推算」后缀 —— tooltip 不会被截图带走（ADR-0028）。 */
+        check('两轴分类控件存在且标明「规则推算」',
+          board.mediumOpts === 7 && board.subjectOpts === 7
+          && board.mediumLabel.includes('表现媒介') && board.mediumLabel.includes('规则推算')
+          && board.subjectLabel.includes('画面主体') && board.subjectLabel.includes('规则推算')
+          && board.taxHint.includes('规则推算'),
+          JSON.stringify(board));
+        /* 分面计数不重不漏：各档之和必须等于作业总数。
+           「每层单值互斥」是这个恒等式成立的前提（ADR-0028）——
+           哪天规则改成一条多处命中，这条会先红。
+           注意读的是 .msel-n（计数），不是 .msel-row（选项）。 */
+        const axisSum = await page.evaluate(() => {
+          const nums = (sel) => [...document.querySelectorAll(sel)]
+            .map((e) => parseInt(e.textContent, 10) || 0);
+          return {
+            medium: nums('#ex-medium .msel-n').reduce((a, b) => a + b, 0),
+            subject: nums('#ex-subject .msel-n').reduce((a, b) => a + b, 0),
+            total: EXPLORE_JOBS.length,
+          };
+        });
+        check('两轴分面计数之和 = 作业总数（不重不漏）',
+          axisSum.medium === axisSum.total && axisSum.subject === axisSum.total,
+          JSON.stringify(axisSum));
         check('无破图 img', board.badImgs === 0, `实际 ${board.badImgs}`);
 
-        /* sref 筛选端到端可用：点按钮后命中数 == 源数据条数，且展示的每张卡片都带 sref 标记。
-           这条是断链事故的直接回归防线——数据被丢弃时，按钮要么不出现、要么点了筛不出东西。 */
-        if (EXPECT_SREF > 0 && board.srefBtn) {
-          await page.click('#ex-sref');
-          await new Promise((r) => setTimeout(r, 250));
-          const srefFiltered = await page.evaluate(() => ({
+        /* 两轴筛选端到端：勾「人像 / 人物」后命中数必须等于该档的分类计数。
+           期望值用 SAMPLE_TAXONOMY 现算，不写死数字 —— 词表调一次数字就变。 */
+        const axisFiltered = await page.evaluate(async () => {
+          const det = document.querySelector('#ex-subject');
+          if (!det) return { picked: false };
+          det.open = true;
+          const box = document.querySelector('#ex-subject .msel-row input[value="person"]');
+          if (!box) return { picked: false };
+          box.checked = true;
+          box.dispatchEvent(new Event('change', { bubbles: true }));
+          await new Promise((r) => setTimeout(r, 450));
+          const expect = EXPLORE_JOBS.filter((j) => SAMPLE_TAXONOMY.subjectOf(j) === 'person').length;
+          return {
+            picked: true,
             count: parseInt(document.querySelector('.toolbar .dock-count')?.textContent || '0', 10),
-            cards: document.querySelectorAll('.job-card').length,
-            tagged: document.querySelectorAll('.job-card .sref').length,
-          }));
-          check('「只看有 sref」筛选可用且结果正确',
-            srefFiltered.count === EXPECT_SREF && srefFiltered.tagged === srefFiltered.cards,
-            `命中 ${srefFiltered.count} / 期望 ${EXPECT_SREF} / 卡片 ${srefFiltered.cards} / 带 sref 标记 ${srefFiltered.tagged}`);
-          await page.click('#ex-sref'); // 复位，避免影响后续筛选断言
-          await new Promise((r) => setTimeout(r, 200));
-        }
+            expect,
+            hash: location.hash,
+          };
+        });
+        check('按画面主体筛选结果与分类计数一致',
+          axisFiltered.picked && axisFiltered.count === axisFiltered.expect,
+          `命中 ${axisFiltered.count} / 期望 ${axisFiltered.expect}`);
+        check('按画面主体筛选进 URL（subject=）',
+          String(axisFiltered.hash || '').includes('subject=person'), axisFiltered.hash);
+        // 复位，避免影响后续断言
+        await page.evaluate(async () => {
+          const box = document.querySelector('#ex-subject .msel-row input[value="person"]');
+          if (box) { box.checked = false; box.dispatchEvent(new Event('change', { bubbles: true })); }
+          await new Promise((r) => setTimeout(r, 300));
+        });
 
         await page.click('[data-role="ex-more"]');
         await new Promise((r) => setTimeout(r, 200));
         const afterMore = await page.$$eval('.job-card', (els) => els.length);
         check('加载更多 +60', afterMore === 120, `实际 ${afterMore}`);
 
-        /* ── 2.2 新增：sref 码筛选 + 提示词短语筛选（多选下拉）────────────
-           这两个维度是「按码值筛选」与「按片段聚类」的落点。
-           断言口径：筛出的卡片数 == 源数据里真正含该码/该短语的条数，
-           且 URL 里带上了对应参数（ADR-0010：hash 是筛选的唯一来源）。 */
-        /* 短语下拉是**懒加载**的（报告 2.2：571 条短语全内联会让 toolbar 涨到 177 KB）。
-           展开 <details> 会触发 toggle → 懒加载把选项注进 DOM —— 断言前必须先展开。
-           （实测 Chrome：给 details.open 赋值也会触发 toggle，不必真的点 summary。） */
+        /* ── 2.2 提示词短语筛选（多选下拉，懒加载）──────────────────────
+           断言口径：筛出的卡片数 == 源数据里真正含该短语的条数，
+           且 URL 里带上了对应参数（ADR-0010：hash 是筛选的唯一来源）。
+           逐条穷举的选项不内联：571 条短语全塞进 toolbar 会让它涨到 177 KB。 */
         await page.evaluate(() => {
           const det = document.querySelector('#ex-phrase');
           if (det) det.open = true;
@@ -239,66 +292,18 @@ async function main() {
         await new Promise((r) => setTimeout(r, 600));
 
         const multi = await page.evaluate(() => {
-          const codes = new Map();
-          for (const j of EXPLORE_JOBS) {
-            for (const c of String(j.sref || '').split(/\s+/).filter(Boolean)) {
-              codes.set(c, (codes.get(c) || 0) + 1);
-            }
-          }
-          // 找出现次数最多的码（>1 才有筛选意义）
-          let top = null, topN = 0;
-          for (const [c, n] of codes) if (n > topN) { top = c; topN = n; }
           const idx = PHRASE_INDEX.build(EXPLORE_JOBS);
           const p0 = idx.phrases[0];
           return {
-            topCode: top, topCodeN: topN,
-            topPhrase: p0 ? p0.phrase : '', topPhraseN: p0 ? p0.df : 0,
+            topPhrase: p0 ? p0.phrase : '',
             phraseTotal: idx.phrases.length,
-            codeTotal: codes.size,
-            hasSrefMsel: !!document.querySelector('#ex-srefcode'),
             hasPhraseMsel: !!document.querySelector('#ex-phrase'),
-            mselOptions: document.querySelectorAll('#ex-srefcode .msel-row').length,
             phraseOptions: document.querySelectorAll('#ex-phrase .msel-row').length,
           };
         });
-        check('sref 码下拉存在且列出全部唯一码',
-          multi.hasSrefMsel && multi.mselOptions === multi.codeTotal && multi.codeTotal > 0,
-          `选项 ${multi.mselOptions} / 唯一码 ${multi.codeTotal}`);
         check('短语下拉存在且列出全部收录短语',
           multi.hasPhraseMsel && multi.phraseOptions === multi.phraseTotal && multi.phraseTotal > 0,
           `选项 ${multi.phraseOptions} / 短语表 ${multi.phraseTotal}`);
-
-        /* sref 码筛选：勾选出现最多的那个码，卡片数应等于源数据里含该码的条数 */
-        if (multi.topCode) {
-          const codeFiltered = await page.evaluate(async (code) => {
-            const box = document.querySelector(`#ex-srefcode .msel-row input[value="${code}"]`);
-            if (!box) return { picked: false };
-            document.querySelector('#ex-srefcode').open = true;
-            box.checked = true;
-            box.dispatchEvent(new Event('change', { bubbles: true }));
-            await new Promise((r) => setTimeout(r, 350));
-            const expect = EXPLORE_JOBS.filter((j) =>
-              String(j.sref || '').split(/\s+/).filter(Boolean).includes(code)).length;
-            return {
-              picked: true,
-              count: parseInt(document.querySelector('.toolbar .dock-count')?.textContent || '0', 10),
-              cards: document.querySelectorAll('.job-card').length,
-              expect,
-              hash: location.hash,
-            };
-          }, multi.topCode);
-          check('按 sref 码筛选结果与源数据一致',
-            codeFiltered.picked && codeFiltered.count === codeFiltered.expect,
-            `命中 ${codeFiltered.count} / 期望 ${codeFiltered.expect}`);
-          check('按 sref 码筛选进 URL（srefCode=）',
-            String(codeFiltered.hash || '').includes('srefCode='), codeFiltered.hash);
-          // 复位
-          await page.evaluate(async (code) => {
-            const box = document.querySelector(`#ex-srefcode .msel-row input[value="${code}"]`);
-            if (box) { box.checked = false; box.dispatchEvent(new Event('change', { bubbles: true })); }
-            await new Promise((r) => setTimeout(r, 250));
-          }, multi.topCode);
-        }
 
         /* 短语筛选：勾选最高频短语，卡片数应等于它的 df */
         if (multi.topPhrase) {
@@ -570,7 +575,6 @@ async function main() {
             }).length;
             return {
               hasSel: !!document.querySelector('#ex-decomp'),
-              hasTrustedBtn: !!document.querySelector('#ex-decomp-trusted'),
               values,
               counts,
               sum: counts.reduce((a, b) => a + b, 0),
@@ -584,22 +588,31 @@ async function main() {
             decompUi.hasSel && decompUi.sum === decompUi.total && !decompUi.hasNoDecomp,
             `选项 ${decompUi.values.join('/')} = ${decompUi.counts.join('+')} = ${decompUi.sum} / 作业 ${decompUi.total}`);
 
-          // 点「只看可信拆解」
-          await page.evaluate(() => document.querySelector('#ex-decomp-trusted').click());
-          await new Promise((r) => setTimeout(r, 450));
-          const trusted = await page.evaluate(() => ({
-            hash: location.hash,
-            on: document.querySelector('#ex-decomp-trusted').classList.contains('on'),
-            checked: [...document.querySelectorAll('#ex-decomp input:checked')].map((e) => e.value),
-            count: parseInt(document.querySelector('.toolbar .dock-count').textContent, 10),
-            rows: document.querySelectorAll('[data-job]').length,
-          }));
-          check('「只看可信拆解」= 手工 + 逐条，且 URL 里就是这两项',
-            trusted.on && trusted.checked.length === 2
+          /* 直接勾两项（ADR-0028 删掉了「只看可信拆解」快捷开关 —— 它只是
+             decomp 多选的一种写法，独立按钮会引出「开关开着、多选里又勾了规则解析」
+             的矛盾态）。这里守的是多选本身与 URL 契约。 */
+          const trusted = await page.evaluate(async () => {
+            const det = document.querySelector('#ex-decomp');
+            det.open = true;
+            for (const v of ['手工精拆', '逐条精拆']) {
+              const box = [...det.querySelectorAll('input')].find((e) => e.value === v);
+              if (box) { box.checked = true; box.dispatchEvent(new Event('change', { bubbles: true })); }
+              await new Promise((r) => setTimeout(r, 320));
+            }
+            await new Promise((r) => setTimeout(r, 350));
+            return {
+              hash: location.hash,
+              checked: [...document.querySelectorAll('#ex-decomp input:checked')].map((e) => e.value),
+              count: parseInt(document.querySelector('.toolbar .dock-count').textContent, 10),
+              rows: document.querySelectorAll('[data-job]').length,
+            };
+          });
+          check('拆解来源可多选，勾两项后 URL 带两个 decomp',
+            trusted.checked.length === 2
               && trusted.checked.includes('手工精拆') && trusted.checked.includes('逐条精拆')
               && trusted.hash.includes('decomp=') && trusted.count === decompUi.trustedCount,
             `${trusted.count} 条（期望 ${decompUi.trustedCount}）/ ${trusted.hash.slice(0, 80)}`);
-          check('只看可信拆解后列表同步收窄',
+          check('收窄后列表与计数一致',
             trusted.rows > 0 && trusted.rows === Math.min(trusted.count, 60),
             `${trusted.rows} 行`);
 
@@ -608,15 +621,14 @@ async function main() {
           await page.goto(fileUrl('index.html') + trustedHash, { waitUntil: 'load', timeout: 30000 });
           await new Promise((r) => setTimeout(r, 800));
           const trustedReload = await page.evaluate(() => ({
-            on: document.querySelector('#ex-decomp-trusted').classList.contains('on'),
-            checked: [...document.querySelectorAll('#ex-decomp input:checked')].map((e) => e.value).length,
+            checked: [...document.querySelectorAll('#ex-decomp input:checked')].length,
             count: parseInt(document.querySelector('.toolbar .dock-count').textContent, 10),
             view: document.querySelector('[data-view][aria-selected="true"]')?.dataset.view,
           }));
           check('刷新后拆解来源筛选被复现',
-            trustedReload.on && trustedReload.checked === 2 && trustedReload.count === trusted.count
+            trustedReload.checked === 2 && trustedReload.count === trusted.count
               && trustedReload.view === 'samples',
-            `view=${trustedReload.view} / ${trustedReload.count} 条 / 开关 ${trustedReload.on}`);
+            `view=${trustedReload.view} / ${trustedReload.count} 条 / 勾 ${trustedReload.checked}`);
 
           // 生成日期：下拉计数必须等于真的筛出来的条数
           await page.evaluate(() => { location.hash = '#samples'; });
@@ -669,11 +681,15 @@ async function main() {
             paramNote.reason || `说明 ${paramNote.hasCaveat} / 星号泄漏 ${paramNote.starLeak}`);
         }
 
-        /* 所有下拉选项均有结果（不出现假空态） */
+        /* 所有筛选选项均有结果（不出现假空态）。
+           ADR-0028：36 个比例选项不再可筛，改成两轴的 14 个档位 ——
+           除「未声明 / 未判定」外，每档都必须至少命中 1 条，否则就是词表写错了
+           （选项在界面上灰掉，用户会以为数据坏了而不是规则漏了）。 */
         const countText = () => page.$eval('.toolbar .dock-count', (el) => parseInt(el.textContent, 10));
         const options = await page.evaluate(() => ({
           batches: [...document.querySelectorAll('#ex-batch option')].filter((o) => o.value).map((o) => o.value),
-          aspects: [...document.querySelectorAll('#ex-aspect option')].filter((o) => o.value).map((o) => o.value),
+          mediums: [...document.querySelectorAll('#ex-medium .msel-row input')].map((e) => e.value),
+          subjects: [...document.querySelectorAll('#ex-subject .msel-row input')].map((e) => e.value),
         }));
         const empty = [];
         for (const v of options.batches) {
@@ -681,12 +697,26 @@ async function main() {
           if (!(await countText() > 0)) empty.push('batch=' + v);
         }
         await page.select('#ex-batch', '');
-        for (const v of options.aspects) {
-          await page.select('#ex-aspect', v);
-          if (!(await countText() > 0)) empty.push('aspect=' + v);
+
+        const toggleAxis = async (id, value, on) => {
+          await page.evaluate(([mid, mv, mon]) => {
+            const box = [...document.querySelectorAll(`#${mid} .msel-row input`)]
+              .find((e) => e.value === mv);
+            if (box && box.checked !== mon) {
+              box.checked = mon;
+              box.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }, [id, value, on]);
+          await new Promise((r) => setTimeout(r, 220));
+        };
+        for (const [id, list, tag] of [['ex-medium', options.mediums, 'medium'], ['ex-subject', options.subjects, 'subject']]) {
+          for (const v of list) {
+            await toggleAxis(id, v, true);
+            if (!(await countText() > 0)) empty.push(`${tag}=${v}`);
+            await toggleAxis(id, v, false);
+          }
         }
-        await page.select('#ex-aspect', '');
-        check('所有下拉选项均有结果', empty.length === 0, empty.join(', '));
+        check('所有筛选选项均有结果', empty.length === 0, empty.join(', '));
 
         /* 4. 旧会话 mj-session-v1 → v2 迁移 */
         await page.evaluate(() => {
@@ -771,33 +801,520 @@ async function main() {
       }
 
       if (name === 'style-library.html') {
-        await page.click('#style-tab-top');
-        await new Promise((r) => setTimeout(r, 300));
-        const top = await page.evaluate(() => ({
-          cards: document.querySelectorAll('.sref-card').length,
-          plates: document.querySelectorAll('.sref-card .img-plate').length,
+        // ADR-0026：官方榜已收编进工作台，独立页只留风格参考码，不留幽灵 tab / chip。
+        const legacy = await page.evaluate(() => ({
+          topTab: !!document.querySelector('#style-tab-top'),
+          codes: typeof STYLE_CODES !== 'undefined' ? STYLE_CODES.length : -1,
+          srefCards: document.querySelectorAll('.sref-card').length,
           chips: document.querySelector('.head-meta')?.textContent.replace(/\s+/g, ' ').trim() || '',
-          badImgs: [...document.querySelectorAll('img')].filter((i) => {
-            const s = i.getAttribute('src');
-            return !s || s === 'undefined';
-          }).length,
         }));
-        const topData = await page.evaluate(() => ({
-          entries: typeof STYLES_TOP_ENTRIES !== 'undefined' ? STYLES_TOP_ENTRIES.length : -1,
-          total: typeof STYLES_TOP_IMAGE_STATS !== 'undefined' ? STYLES_TOP_IMAGE_STATS.total : -1,
-          withImages: typeof STYLES_TOP_IMAGE_STATS !== 'undefined' ? STYLES_TOP_IMAGE_STATS.withImages : -1,
-        }));
-        check('官方风格榜数据源与统计一致', topData.entries > 0 && topData.entries === topData.total,
-          `条目 ${topData.entries} / 统计 ${topData.total}`);
-        check('官方风格榜全量渲染', top.cards === topData.total, `实际 ${top.cards} / 期望 ${topData.total}`);
-        // 每个无配图条目渲染 2 个占位（主图版位 + 题材样图版位），与统计差额对应。
-        check('官方榜占位数量与统计一致', top.plates === 2 * (topData.total - topData.withImages),
-          `占位 ${top.plates} / 期望 ${2 * (topData.total - topData.withImages)}`);
-        check('官方榜配图如实标注', top.chips.includes(`官方榜配图 ${topData.withImages} / ${topData.total}`), top.chips);
-        check('官方榜无破图 img', top.badImgs === 0, `实际 ${top.badImgs}`);
+        check('独立页只保留风格参考码（官方榜已收编）',
+          !legacy.topTab && legacy.codes > 0 && legacy.srefCards === 0 && !legacy.chips.includes('官方榜'),
+          JSON.stringify(legacy));
       }
 
       check(`${name} 零运行时错误`, errs.length === 0, errs.slice(0, 3).join(' | '));
+      await page.close();
+    }
+
+    /* 4b. 官方风格榜收编为工作台一级视图（ADR-0026）
+       旧断言挂在 style-library.html 的 #style-tab-top 上；tab 已删，
+       同一批数据契约改在 index.html#styles-top 上验。 */
+    {
+      const { page, errs } = await openPage(browser, 'index.html', '#styles-top');
+      const top = await page.evaluate(() => ({
+        activeView: typeof ui !== 'undefined' ? ui.view : '',
+        head: document.querySelector('[data-od-id="styles-top-head"] h1')?.textContent.trim() || '',
+        cards: document.querySelectorAll('.sref-card').length,
+        plates: document.querySelectorAll('.sref-card .img-plate').length,
+        chips: document.querySelector('.head-meta')?.textContent.replace(/\s+/g, ' ').trim() || '',
+        kindCount: typeof STYLES_TOP_KINDS !== 'undefined' ? STYLES_TOP_KINDS.length : -1,
+        expectedKinds: typeof STYLES_TOP_KINDS !== 'undefined' ? STYLES_TOP_KINDS.map(k => k.id) : [],
+        // 每张卡都必须渲染全部 8 个题材，不能只截前 4 个。
+        kindCounts: [...document.querySelectorAll('.sref-card')].reduce((m, c) => {
+          const n = c.querySelectorAll('.sref-kind-row .kind-thumb').length;
+          m[n] = (m[n] || 0) + 1;
+          return m;
+        }, {}),
+        badImgs: [...document.querySelectorAll('img')].filter((i) => {
+          const s = i.getAttribute('src');
+          return !s || s === 'undefined';
+        }).length,
+        // 8 张题材缩略图必须排成一行：4×2 或溢出都会破坏「点缩略图看上方大图」的对照。
+        // 缺 grid 时各占整卡宽溢出，卡片高度从 ~330px 膨胀到 500px 以上（见 ADR-0026）。
+        kindLayout: (() => {
+          const card = document.querySelector('.sref-card');
+          if (!card) return null;
+          const r = card.getBoundingClientRect();
+          const thumbs = [...card.querySelectorAll('.sref-kind-row .kind-thumb')];
+          const rects = thumbs.map((b) => b.getBoundingClientRect());
+          return {
+            n: thumbs.length,
+            kinds: thumbs.map((b) => b.dataset.kind || ''),
+            rows: new Set(rects.map((b) => Math.round(b.top))).size,
+            cardW: Math.round(r.width),
+            cardH: Math.round(r.height),
+            widths: rects.map((b) => Math.round(b.width)),
+            maxRight: Math.round(Math.max(...rects.map((b) => b.right)) - r.left),
+          };
+        })(),
+        // 两个功能按钮必须并排且都不溢出卡片（默认 .btn 尺寸会把 6 字文案挤出去）。
+        actions: (() => {
+          const card = document.querySelector('.sref-card');
+          if (!card) return null;
+          const r = card.getBoundingClientRect();
+          const apply = card.querySelector('[data-apply-sref]');
+          const copy = card.querySelector('[data-copy-sref]');
+          const ar = apply && apply.getBoundingClientRect();
+          const cr = copy && copy.getBoundingClientRect();
+          return {
+            applyText: apply ? apply.textContent.replace(/\s+/g, '').trim() : '',
+            copyText: copy ? copy.textContent.replace(/\s+/g, '').trim() : '',
+            applyCode: apply ? apply.dataset.applySref : '',
+            copyCode: copy ? copy.dataset.copySref : '',
+            cardCode: card.dataset.code || '',
+            sameRow: !!(ar && cr && Math.round(ar.top) === Math.round(cr.top)),
+            maxRight: ar && cr ? Math.round(Math.max(ar.right, cr.right) - r.left) : -1,
+            cardW: Math.round(r.width),
+            overflow: !!(apply && apply.scrollWidth > apply.clientWidth + 1) ||
+                      !!(copy && copy.scrollWidth > copy.clientWidth + 1),
+          };
+        })(),
+      }));
+      const topData = await page.evaluate(() => ({
+        entries: typeof STYLES_TOP_ENTRIES !== 'undefined' ? STYLES_TOP_ENTRIES.length : -1,
+        total: typeof STYLES_TOP_IMAGE_STATS !== 'undefined' ? STYLES_TOP_IMAGE_STATS.total : -1,
+        withImages: typeof STYLES_TOP_IMAGE_STATS !== 'undefined' ? STYLES_TOP_IMAGE_STATS.withImages : -1,
+      }));
+      check('#styles-top 直达风格榜视图',
+        top.activeView === 'styles-top' && top.head === '风格榜', `${top.activeView} / ${top.head}`);
+      check('8 张题材缩略图全量排成一行且卡片高度未膨胀',
+        top.kindCount === 8 &&
+        top.kindLayout && top.kindLayout.n === top.kindCount &&
+        top.kindLayout.kinds.join(',') === top.expectedKinds.join(',') &&
+        top.kindLayout.rows === 1 &&
+        (top.kindCounts[top.kindCount] || 0) === top.cards &&
+        top.kindLayout.widths.every((w) => w > 0 && w < top.kindLayout.cardW / 8) &&
+        top.kindLayout.maxRight <= top.kindLayout.cardW &&
+        top.kindLayout.cardH < 400,
+        JSON.stringify({ layout: top.kindLayout, counts: top.kindCounts, cards: top.cards }));
+      // 交互：点第 3 张缩略图，上方主图应换成该题材，并只留一个选中态。
+      const preview = await page.evaluate(() => {
+        const card = document.querySelector('.sref-card');
+        if (!card) return null;
+        const thumbs = [...card.querySelectorAll('.kind-thumb')];
+        const target = thumbs[2];
+        if (!target) return null;
+        const before = card.querySelector('.sref-main')?.getAttribute('src') || '';
+        target.click();
+        const main = card.querySelector('.sref-main');
+        return {
+          before,
+          after: main?.getAttribute('src') || '',
+          expected: target.dataset.previewSrc || '',
+          alt: main?.getAttribute('alt') || '',
+          label: card.querySelector('.sref-main-label')?.textContent.trim() || '',
+          expectedLabel: target.dataset.label || '',
+          active: card.querySelectorAll('.kind-thumb.is-active').length,
+          pressed: [...card.querySelectorAll('.kind-thumb')]
+            .filter((b) => b.getAttribute('aria-pressed') === 'true').length,
+          activeIsTarget: target.classList.contains('is-active'),
+        };
+      });
+      check('点击题材缩略图在上方主图展示',
+        preview && preview.before !== preview.expected &&
+        preview.after === preview.expected &&
+        preview.alt.includes(preview.expectedLabel) &&
+        preview.label === preview.expectedLabel &&
+        preview.active === 1 && preview.pressed === 1 && preview.activeIsTarget,
+        JSON.stringify(preview));
+      check('风格榜卡片两个功能按钮并排且不溢出',
+        top.actions && top.actions.applyText === '套用到工作台' &&
+        top.actions.copyText === '复制参考码' &&
+        top.actions.applyCode === top.actions.cardCode &&
+        top.actions.copyCode === top.actions.cardCode &&
+        top.actions.sameRow && top.actions.maxRight <= top.actions.cardW &&
+        !top.actions.overflow,
+        JSON.stringify(top.actions));
+
+      /* 双按钮职责边界：apply 写进会话的 styleRef 参数位（左栏 Dock 同步），
+         copy 只进剪贴板，不能改动会话。apply 与 explore-board.js 的 fill-sref
+         共用同一参数位（ADR-0013 / ADR-0016）。 */
+      const applyResult = await page.evaluate(async () => {
+        // 起点可复现：清掉同 origin 下前序断言可能留下的会话态。
+        session.params.styleRef = '';
+        session.manual = null;
+        saveSession();
+        emitChange();
+        const card = document.querySelector('.sref-card');
+        const btn = card && card.querySelector('[data-apply-sref]');
+        if (!btn) return null;
+        const code = btn.dataset.applySref;
+        const before = String(session.params.styleRef || '');
+        const toastBase = Array.isArray(window.__toasts) ? window.__toasts.length : 0;
+        btn.click();
+        await new Promise((r) => setTimeout(r, 80));
+        let saved = null;
+        try { saved = JSON.parse(localStorage.getItem('mj-session-v2') || 'null'); } catch { /* 忽略 */ }
+        return {
+          code, before,
+          after: String(session.params.styleRef || ''),
+          saved: saved && saved.params ? String(saved.params.styleRef ?? '') : null,
+          chips: document.querySelector('.param-summary')?.textContent.replace(/\s+/g, ' ').trim() || '',
+          input: document.querySelector('#p-styleRef')?.value ?? null,
+          prompt: typeof finalPrompt === 'function' ? finalPrompt() : '',
+          newToasts: (Array.isArray(window.__toasts) ? window.__toasts : []).slice(toastBase),
+        };
+      });
+      check('套用到工作台把风格码写进 --sref 参数位',
+        applyResult && applyResult.before === '' &&
+        applyResult.after === applyResult.code && applyResult.saved === applyResult.code &&
+        applyResult.chips.includes(`--sref ${applyResult.code}`) &&
+        applyResult.input === applyResult.code &&
+        applyResult.prompt.includes(`--sref ${applyResult.code}`) &&
+        applyResult.newToasts.some((t) => t.includes('已套用') && t.includes(applyResult.code)),
+        JSON.stringify(applyResult));
+
+      const copyResult = await page.evaluate(async () => {
+        let copied = null;
+        try {
+          // file:// 下 navigator.clipboard 常不可用；打桩记录 copyText 实际写入的文本。
+          Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: { writeText: async (t) => { copied = t; } },
+          });
+        } catch { return { stub: false }; }
+        const btn = document.querySelector('.sref-card [data-copy-sref]');
+        if (!btn) return { stub: true, btn: false };
+        const code = btn.dataset.copySref;
+        const before = String(session.params.styleRef || '');
+        const toastBase = Array.isArray(window.__toasts) ? window.__toasts.length : 0;
+        btn.click();
+        await new Promise((r) => setTimeout(r, 80));
+        return {
+          stub: true, btn: true, code, before, copied,
+          after: String(session.params.styleRef || ''),
+          newToasts: (Array.isArray(window.__toasts) ? window.__toasts : []).slice(toastBase),
+        };
+      });
+      check('复制参考码只复制文本、不改工作台会话',
+        copyResult && copyResult.stub && copyResult.btn &&
+        copyResult.copied === `--sref ${copyResult.code}` &&
+        copyResult.after === copyResult.before &&
+        copyResult.newToasts.some((t) => t.includes('风格参考已复制')),
+        JSON.stringify(copyResult));
+
+      // 复位会话，避免 file:// 共享 localStorage 污染后续断言。
+      await page.evaluate(() => {
+        session.params.styleRef = '';
+        saveSession();
+        emitChange();
+      });
+      check('官方风格榜数据源与统计一致', topData.entries > 0 && topData.entries === topData.total,
+        `条目 ${topData.entries} / 统计 ${topData.total}`);
+      check('官方风格榜全量渲染', top.cards === topData.total, `实际 ${top.cards} / 期望 ${topData.total}`);
+      check('官方榜占位数量与统计一致', top.plates === 2 * (topData.total - topData.withImages),
+        `占位 ${top.plates} / 期望 ${2 * (topData.total - topData.withImages)}`);
+      check('官方榜配图如实标注', top.chips.includes(`官方榜配图 ${topData.withImages} / ${topData.total}`), top.chips);
+      check('官方榜无破图 img', top.badImgs === 0, `实际 ${top.badImgs}`);
+      check('风格榜视图零运行时错误', errs.length === 0, errs.slice(0, 3).join(' | '));
+      await page.close();
+    }
+
+    /* 4c. 摄影前缀可配置（ADR-0027）
+       基词是会话字段而非常量；留空时整段消失；刷新复现；清空会话复位。 */
+    {
+      const { page, errs } = await openPage(browser, 'index.html');
+      // 起点干净：前序断言可能在 file:// 共享的 localStorage 里留下手动改写与旧参数。
+      await page.evaluate(() => {
+        session.selected = [];
+        session.subject = '';
+        session.manual = null;
+        session.photoPrefix = 'photography';
+        saveSession();
+        emitChange();
+      });
+      const base = await page.evaluate(() => ({
+        input: document.querySelector('#prefix-input')?.value ?? null,
+        session: session.photoPrefix,
+        prompt: typeof finalPrompt === 'function' ? finalPrompt() : '',
+        saved: (() => { try { return JSON.parse(localStorage.getItem('mj-session-v2') || 'null')?.photoPrefix ?? null; } catch { return null; } })(),
+      }));
+      check('摄影前缀控件与默认基词 photography',
+        base.input === 'photography' && base.session === 'photography' &&
+        base.saved === 'photography' && base.prompt.startsWith('photography'),
+        JSON.stringify(base));
+
+      // 自定义 combobox：点输入框即展开。原生 datalist 做不到，故已整体移除。
+      const combo0 = await page.evaluate(() => {
+        const el = document.querySelector('#prefix-input');
+        return {
+          role: el?.getAttribute('role') ?? null,
+          controls: el?.getAttribute('aria-controls') ?? null,
+          expanded: el?.getAttribute('aria-expanded') ?? null,
+          listAttr: el?.getAttribute('list') ?? null,
+          datalists: document.querySelectorAll('datalist').length,
+        };
+      });
+      check('前缀输入框是 combobox 且无原生 datalist',
+        combo0.role === 'combobox' && combo0.controls === 'prefix-listbox' &&
+        combo0.expanded === 'false' && combo0.listAttr === null && combo0.datalists === 0,
+        JSON.stringify(combo0));
+
+      const comboOpen = await page.evaluate(async () => {
+        const el = document.querySelector('#prefix-input');
+        el.click();
+        await new Promise((r) => setTimeout(r, 60));
+        const box = document.getElementById('prefix-listbox');
+        const opts = box ? [...box.querySelectorAll('.prefix-opt')] : [];
+        const br = box?.getBoundingClientRect();
+        const ir = el.getBoundingClientRect();
+        const banned = ['cinematic', 'photorealistic', 'ultra-detailed', 'portrait photography', 'shot on 35mm'];
+        return {
+          hidden: box ? box.hidden : null,
+          expanded: el.getAttribute('aria-expanded'),
+          n: opts.length,
+          values: opts.map((o) => o.dataset.value),
+          selected: opts.filter((o) => o.getAttribute('aria-selected') === 'true').map((o) => o.dataset.value),
+          parentIsBody: box?.parentElement === document.body,
+          position: box ? getComputedStyle(box).position : null,
+          below: br && ir ? Math.round(br.top) >= Math.round(ir.bottom) : null,
+          inViewport: br ? br.left >= 0 && br.right <= window.innerWidth + 1 : null,
+          bannedHits: opts.map((o) => o.dataset.value).filter((v) => banned.includes(v)),
+        };
+      });
+      check('点输入框即展开下拉：7 项、当前值高亮、挂 body 且定位在框下方',
+        comboOpen.hidden === false && comboOpen.expanded === 'true' && comboOpen.n === 7 &&
+        comboOpen.values[0] === 'photography' && comboOpen.selected.join() === 'photography' &&
+        comboOpen.parentIsBody === true && comboOpen.position === 'fixed' &&
+        comboOpen.below === true && comboOpen.inViewport === true &&
+        comboOpen.bannedHits.length === 0,
+        JSON.stringify(comboOpen));
+
+      // 输入过滤 + 键盘选中：写入仍只有 session.photoPrefix 一个来源。
+      const comboPick = await page.evaluate(async () => {
+        const el = document.querySelector('#prefix-input');
+        const box = document.getElementById('prefix-listbox');
+        el.value = 'oil';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 60));
+        const filtered = [...box.querySelectorAll('.prefix-opt')].map((o) => o.dataset.value);
+        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await new Promise((r) => setTimeout(r, 60));
+        let saved = null;
+        try { saved = JSON.parse(localStorage.getItem('mj-session-v2') || 'null'); } catch { /* 忽略 */ }
+        return {
+          filtered,
+          input: el.value,
+          session: session.photoPrefix,
+          saved: saved?.photoPrefix ?? null,
+          prompt: finalPrompt(),
+          closed: box.hidden,
+          expanded: el.getAttribute('aria-expanded'),
+        };
+      });
+      check('输入过滤 + ↓/Enter 选中并落盘',
+        comboPick.filtered.length === 1 && comboPick.filtered[0] === 'oil painting' &&
+        comboPick.input === 'oil painting' && comboPick.session === 'oil painting' &&
+        comboPick.saved === 'oil painting' && comboPick.prompt.startsWith('oil painting') &&
+        comboPick.closed === true && comboPick.expanded === 'false',
+        JSON.stringify(comboPick));
+
+      // 中文对照：每项右侧带中文，中文可当检索词，但 data-value（写入值）必须是纯英文基词。
+      const comboZh = await page.evaluate(async () => {
+        const el = document.querySelector('#prefix-input');
+        const box = document.getElementById('prefix-listbox');
+        const read = () => [...box.querySelectorAll('.prefix-opt')].map((o) => ({
+          v: o.dataset.value,
+          en: o.querySelector('.prefix-opt-en')?.textContent ?? '',
+          zh: o.querySelector('.prefix-opt-zh')?.textContent ?? '',
+        }));
+        el.click();
+        await new Promise((r) => setTimeout(r, 50));
+        const all = read();
+        el.value = '油画';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 50));
+        const zhFiltered = read();
+        const open = box.hidden === false;
+        // 还原，避免影响后续断言
+        el.value = 'oil painting';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        await new Promise((r) => setTimeout(r, 40));
+        return { all, zhFiltered, open };
+      });
+      check('下拉每项带中文对照且中文可检索，写入值仍为纯英文',
+        comboZh.all.length === 7 &&
+        comboZh.all.every((o) => o.en === o.v) &&
+        comboZh.all.every((o) => /^[\x20-\x7e]+$/.test(o.v)) &&
+        comboZh.all.every((o) => /^[\u4e00-\u9fa5]+$/.test(o.zh)) &&
+        comboZh.all.some((o) => o.v === 'oil painting' && o.zh === '油画') &&
+        comboZh.open === true &&
+        comboZh.zhFiltered.length === 1 && comboZh.zhFiltered[0].v === 'oil painting',
+        JSON.stringify(comboZh));
+
+      // Esc 与点外部都只关闭浮层、不改值。
+      const comboDismiss = await page.evaluate(async () => {
+        const el = document.querySelector('#prefix-input');
+        const box = document.getElementById('prefix-listbox');
+        el.value = 'illustration';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.click();
+        await new Promise((r) => setTimeout(r, 50));
+        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        await new Promise((r) => setTimeout(r, 40));
+        const afterEsc = box.hidden;
+        el.click();
+        await new Promise((r) => setTimeout(r, 50));
+        const reopened = !box.hidden;
+        document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 40));
+        return {
+          afterEsc,
+          reopened,
+          afterOutside: box.hidden,
+          value: el.value,
+          session: session.photoPrefix,
+        };
+      });
+      check('Esc 与点击外部只关闭下拉、不改值',
+        comboDismiss.afterEsc === true && comboDismiss.reopened === true &&
+        comboDismiss.afterOutside === true &&
+        comboDismiss.value === 'illustration' && comboDismiss.session === 'illustration',
+        JSON.stringify(comboDismiss));
+
+      // 自定义输入：无匹配时如实提示，回车只关闭、不篡改用户输入。
+      const comboCustom = await page.evaluate(async () => {
+        const el = document.querySelector('#prefix-input');
+        const box = document.getElementById('prefix-listbox');
+        el.value = 'my own baseline';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.click();
+        await new Promise((r) => setTimeout(r, 50));
+        const empty = box.querySelector('.prefix-opt-empty');
+        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await new Promise((r) => setTimeout(r, 40));
+        let saved = null;
+        try { saved = JSON.parse(localStorage.getItem('mj-session-v2') || 'null'); } catch { /* 忽略 */ }
+        return {
+          emptyText: empty ? empty.textContent : null,
+          closed: box.hidden,
+          input: el.value,
+          session: session.photoPrefix,
+          saved: saved?.photoPrefix ?? null,
+          prompt: finalPrompt(),
+        };
+      });
+      check('自定义输入无匹配时如实提示、回车不改写',
+        !!comboCustom.emptyText && comboCustom.emptyText.includes('无匹配') &&
+        comboCustom.closed === true && comboCustom.input === 'my own baseline' &&
+        comboCustom.session === 'my own baseline' && comboCustom.saved === 'my own baseline' &&
+        comboCustom.prompt.startsWith('my own baseline'),
+        JSON.stringify(comboCustom));
+
+      // 改基词：input 事件只重绘最终提示词区，不重绘 Dock（节点与焦点都不丢）。
+      const custom = await page.evaluate(async () => {
+        const el = document.querySelector('#prefix-input');
+        if (!el) return null;
+        el.focus();
+        el.value = 'cinematic still';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 40));
+        let saved = null;
+        try { saved = JSON.parse(localStorage.getItem('mj-session-v2') || 'null'); } catch { /* 忽略 */ }
+        return {
+          sameNode: document.querySelector('#prefix-input') === el,
+          focused: document.activeElement === el,
+          value: el.value,
+          session: session.photoPrefix,
+          saved: saved?.photoPrefix ?? null,
+          prompt: finalPrompt(),
+          finalText: document.querySelector('#final-text')?.textContent || '',
+        };
+      });
+      check('自定义基词即时生效、不重绘 Dock 且落盘',
+        custom && custom.sameNode && custom.focused &&
+        custom.value === 'cinematic still' && custom.session === 'cinematic still' &&
+        custom.saved === 'cinematic still' &&
+        custom.prompt.startsWith('cinematic still') &&
+        custom.finalText.includes('cinematic still'),
+        JSON.stringify(custom));
+
+      await page.reload({ waitUntil: 'load' });
+      await new Promise((r) => setTimeout(r, 500));
+      const reloaded = await page.evaluate(() => ({
+        input: document.querySelector('#prefix-input')?.value ?? null,
+        session: session.photoPrefix,
+        prompt: finalPrompt(),
+      }));
+      check('前缀配置随会话持久化（刷新复现）',
+        reloaded.input === 'cinematic still' && reloaded.session === 'cinematic still' &&
+        reloaded.prompt.startsWith('cinematic still'),
+        JSON.stringify(reloaded));
+
+      // 留空：开头段消失，提示词从主体开始。
+      const empty = await page.evaluate(async () => {
+        const el = document.querySelector('#prefix-input');
+        const subject = document.querySelector('#subject-input');
+        if (!el || !subject) return null;
+        subject.value = 'a quiet library';
+        subject.dispatchEvent(new Event('input', { bubbles: true }));
+        el.value = '';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 40));
+        return { session: session.photoPrefix, prompt: finalPrompt() };
+      });
+      check('基词留空时开头段消失',
+        empty && empty.session === '' &&
+        !empty.prompt.includes('photography') && !empty.prompt.includes('cinematic') &&
+        empty.prompt.startsWith('a quiet library'),
+        JSON.stringify(empty));
+
+      // 有艺术家时按「基词 by 名字」拼；基词留空只留名字。直接验拼装函数（不绕 UI 选词）。
+      const withArtist = await page.evaluate(() => {
+        const backup = { selected: session.selected, prefix: session.photoPrefix };
+        try {
+          session.selected = [{ id: 't1', zh: '尼克·奈特', en: 'Nick Knight', position: 'artist', category: '艺术家', ts: Date.now() }];
+          session.photoPrefix = 'illustration';
+          const a = buildAutoPrompt();
+          session.photoPrefix = '';
+          const b = buildAutoPrompt();
+          return { a, b };
+        } finally {
+          session.selected = backup.selected;
+          session.photoPrefix = backup.prefix;
+          saveSession();
+          emitChange();
+        }
+      });
+      check('有艺术家时按基词拼接 / 留空只留艺术家名',
+        withArtist.a.startsWith('illustration by Nick Knight') &&
+        withArtist.b.startsWith('Nick Knight, a quiet library') &&
+        !withArtist.b.includes('by '),
+        JSON.stringify(withArtist));
+
+      // 只改了前缀时「清空会话」按钮必须可用，点击后复位默认基词。
+      const cleared = await page.evaluate(async () => {
+        const btn = document.querySelector('[data-role="clear"]');
+        const enabled = btn ? !btn.disabled : false;
+        if (btn) btn.click();
+        await new Promise((r) => setTimeout(r, 60));
+        return {
+          enabled,
+          prefix: session.photoPrefix,
+          input: document.querySelector('#prefix-input')?.value ?? null,
+          prompt: finalPrompt(),
+        };
+      });
+      check('清空会话把前缀复位为 photography',
+        cleared.enabled && cleared.prefix === 'photography' &&
+        cleared.input === 'photography' && cleared.prompt.startsWith('photography'),
+        JSON.stringify(cleared));
+
+      const jsErrs = errs.filter((e) => !e.startsWith('reqfail:'));
+      check('摄影前缀视图零运行时错误', jsErrs.length === 0, jsErrs.slice(0, 3).join(' | '));
       await page.close();
     }
 
@@ -829,6 +1346,7 @@ async function main() {
           // 全部图片都应指向 ../public/ —— 不允许再有第二条图片命名空间
           offNamespace: all.filter((i) => {
             const s = i.getAttribute('src') || '';
+            // ADR-0030：撤销 blob: 破例，恢复「配图命名空间唯一 ../public/」。
             return s && !s.startsWith('../public/');
           }).length,
         };
@@ -1143,9 +1661,11 @@ async function main() {
         const { page: p5 } = await openPage(browser, 'index.html', '#samples');
         const roundTrip = await p5.evaluate(() => {
           const src = EXPLORE_FILTER_SOURCE;
+          // ADR-0028：往返用的维度换成两轴分类（多选 + 枚举），
+          // 旧的 aspect / sref 已下线，写在这里会让往返天然对不上。
           const st = {
             q: 'portrait',
-            dims: { batch: '2026-11-10', aspect: '1:1', sref: true },
+            dims: { batch: '2026-11-10', medium: ['realistic', 'illustration'], subject: ['person'] },
           };
           const hash = FILTER_ENGINE.buildHash(src, 'samples', st);
           const parsed = FILTER_ENGINE.parseHash(src, hash);
@@ -1376,37 +1896,314 @@ async function main() {
       await page.close();
     }
 
-    /* 9. 窄屏回归基线（Q11）：只断言渲染与零错误，遮挡作为已知缺陷登记、不计失败 */
-    for (const name of ['index.html', 'style-library.html']) {
-      const { page, errs } = await openPage(browser, name, '', NARROW);
-      const info = await page.evaluate(() => {
-        // 一级视图（报告 4.2）：窄屏遮挡的探测对象从旧页签改为一級视图按钮
-        const tab = document.querySelector('#view-samples');
-        let blocked = false;
-        let hitTag = 'none';
-        if (tab) {
-          const r = tab.getBoundingClientRect();
-          const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-          if (hit) {
-            hitTag = hit.tagName + '.' + (typeof hit.className === 'string' ? hit.className : '');
-            blocked = hit !== tab && !tab.contains(hit);
+    /* 8b. 旧风格榜深链直达工作台风格榜视图（ADR-0026）
+       旧实现用 location.replace 丢掉 hash，而 styleUi.tab 又不进 URL —— 深链本来就断。 */
+    {
+      const { page } = await openPage(browser, 'index.html', '#/styles-top');
+      const ok = await page.evaluate(() => ({
+        path: location.pathname.split('/').pop(),
+        hash: location.hash,
+        view: typeof ui !== 'undefined' ? ui.view : '',
+        cards: document.querySelectorAll('.sref-card').length,
+      }));
+      check('旧风格榜深链直达工作台风格榜视图',
+        ok.path === 'index.html' && ok.hash === '#styles-top' && ok.view === 'styles-top' && ok.cards > 0,
+        JSON.stringify(ok));
+      await page.close();
+    }
+
+    /* 9. 窄屏回归基线（Q11）
+       「一级视图按钮被固定底条盖住」以前只登记 NOTE，判定写成 `hit && hit!==tab`。
+       elementFromPoint 在元素滚出视口时返回 null，于是「在视口外」被当成「已消失」；
+       实测 800×600 下按钮中心点正在视口外（y=619 > 600），NOTE 一直报「已消失」，
+       而 390×844 下它被 166px 的固定条整片盖住 —— 首屏根本点不到。
+       现在升级为断言，口径是「**首屏可见**的按钮必须点得到」：
+       只检查中心点落在视口内的按钮；视口外的（文档比屏幕长，属正常）不计。 */
+    for (const vp of [MOBILE, NARROW]) {
+      for (const name of ['index.html', 'style-library.html']) {
+        const { page, errs } = await openPage(browser, name, '', vp);
+        const info = await page.evaluate(() => {
+          // 一级视图（报告 4.2）：探测对象是这 7 个按钮，不是旧页签
+          const ids = ['view-library', 'view-samples', 'view-candidates', 'view-compare', 'view-research', 'view-styles-top', 'view-materials'];
+          const covered = [];
+          let visible = 0;
+          for (const id of ids) {
+            const el = document.getElementById(id);
+            if (!el) continue;
+            const b = el.getBoundingClientRect();
+            const cx = b.left + b.width / 2;
+            const cy = b.top + b.height / 2;
+            if (cx < 0 || cx > window.innerWidth || cy < 0 || cy > window.innerHeight) continue;
+            visible += 1;
+            const hit = document.elementFromPoint(cx, cy);
+            if (!hit || (hit !== el && !el.contains(hit))) {
+              covered.push({
+                id,
+                by: hit ? hit.tagName + '.' + String(hit.className).slice(0, 20) : 'null',
+                cy: Math.round(cy),
+              });
+            }
+          }
+          const bar = document.getElementById('final-bar');
+          return {
+            visible,
+            covered,
+            barH: bar ? Math.round(bar.getBoundingClientRect().height) : 0,
+            appbar: document.querySelector('#appbar')?.children.length || 0,
+            dock: document.querySelector('#dock')?.children.length || 0,
+            pageEl: document.querySelector('#page')?.children.length || 0,
+          };
+        });
+        const tag = `${name} ${vp.width}×${vp.height}`;
+        check(`${tag} 渲染`, info.appbar > 0 && info.dock > 0 && info.pageEl > 0,
+          JSON.stringify({ appbar: info.appbar, dock: info.dock, pageEl: info.pageEl }));
+        check(`${tag} 零运行时错误`, errs.length === 0, errs.slice(0, 3).join(' | '));
+        if (name === 'index.html') {
+          if (vp === MOBILE) {
+            /* 手机宽度是硬要求：7 个按钮首屏全在、全可点（此时它们确实都在首屏内）。 */
+            check(`${tag} 一级视图按钮全部可点`, info.visible === 7 && info.covered.length === 0,
+              `可见 ${info.visible} 个 · 底条 ${info.barH}px · ` +
+                (info.covered.length ? JSON.stringify(info.covered.slice(0, 3)) : '全部可点'));
+          } else {
+            /* 800×600 只有 600px 高，会话区就占 455px，导航天然落在折叠线下方 ——
+               这里要求的是「底条必须保持折叠」，防止它退回 166px 再把导航整片压住。
+               按钮是否在首屏交给手机那一条守。 */
+            check(`${tag} 底条保持折叠`, info.barH <= 80, `底条 ${info.barH}px`);
           }
         }
+        await page.close();
+      }
+    }
+    /* 10. 顶栏设置面板（file:// 降级只读）
+       契约字面串：data-role=open-settings / [role=dialog][aria-label="LLM 代理设置"] /
+       data-role=settings-save / data-role=settings-offline 含 npm run dev。
+       file:// 下无 dev server，面板只能降级只读：保存按钮不可用或不存在，
+       且点击过程不得新增 requestfailed（:61 已捕获，这里显式复核）。 */
+    {
+      const { page, errs } = await openPage(browser, 'index.html');
+      const errsBefore = errs.length;
+      const reqfailBefore = errs.filter((e) => e.startsWith('reqfail:')).length;
+      const hasTrigger = (await page.$('[data-role="open-settings"]')) !== null;
+      check('顶栏存在设置入口 [data-role="open-settings"]', hasTrigger);
+
+      if (hasTrigger) {
+        await page.click('[data-role="open-settings"]');
+        await new Promise((r) => setTimeout(r, 200));
+      }
+      const panel = await page.evaluate(() => {
+        const dialog = document.querySelector('[role="dialog"][aria-label="LLM 代理设置"]');
+        const offline = document.querySelector('[data-role="settings-offline"]');
+        const save = document.querySelector('[data-role="settings-save"]');
+        const visible = (el) => {
+          if (!el || el.hidden || el.getAttribute('aria-hidden') === 'true') return false;
+          const cs = getComputedStyle(el);
+          return cs.display !== 'none' && cs.visibility !== 'hidden';
+        };
         return {
-          appbar: document.querySelector('#appbar')?.children.length || 0,
-          dock: document.querySelector('#dock')?.children.length || 0,
-          pageEl: document.querySelector('#page')?.children.length || 0,
-          blocked, hitTag,
+          dialogOpen: visible(dialog),
+          offlineText: offline ? (offline.textContent || '') : '',
+          saveUnavailable: !save || save.disabled || save.getAttribute('aria-disabled') === 'true',
         };
       });
-      check(`${name} 800×600 渲染`, info.appbar > 0 && info.dock > 0 && info.pageEl > 0,
-        JSON.stringify({ appbar: info.appbar, dock: info.dock, pageEl: info.pageEl }));
-      check(`${name} 800×600 零运行时错误`, errs.length === 0, errs.slice(0, 3).join(' | '));
-      if (name === 'index.html') {
-        note('窄屏页签遮挡（既有缺陷，不计失败）',
-          `${info.blocked ? '仍存在' : '已消失'} · 命中 ${info.hitTag} · 修复留待单独视觉轮次`);
-      }
+      check('点击设置入口后面板打开 [role=dialog][aria-label=LLM 代理设置]', panel.dialogOpen);
+      check('file:// 下降级容器文案含 npm run dev',
+        panel.offlineText.includes('npm run dev'), panel.offlineText.slice(0, 80));
+      check('file:// 下保存按钮不可用或不存在', panel.saveUnavailable);
+      const reqfailAfter = errs.filter((e) => e.startsWith('reqfail:')).length;
+      check('设置面板交互零新增 requestfailed', reqfailAfter === reqfailBefore,
+        `点击前 ${reqfailBefore} / 点击后 ${reqfailAfter}`);
+      check('设置面板交互零新增运行时错误', errs.length === errsBefore,
+        errs.slice(errsBefore).join(' | '));
       await page.close();
+    }
+
+    /* 11. 资料库视图（ADR-0030 落盘版）
+       file:// 下资料库是**只读浏览**：验证视图完整、烘焙产物已加载、写入口禁用、
+       配图全在 ../public/、筛选与 URL 状态。真正的写入链在第 12 组用 http 跑。 */
+    {
+      const { page, errs } = await openPage(browser, 'index.html', '#materials');
+      const base = await page.evaluate(() => ({
+        selected: document.querySelector('#view-materials')?.getAttribute('aria-selected'),
+        head: !!document.querySelector('[data-od-id="materials-head"]'),
+        toolbar: !!document.querySelector('[data-od-id="materials-toolbar"]'),
+        chips: !!document.querySelector('[data-od-id="materials-chips"]'),
+        body: !!(document.querySelector('[data-od-id="materials-grid"]')
+          || document.querySelector('[data-od-id="materials-empty"]')),
+        importBtn: !!document.querySelector('[data-mat-import]'),
+        importDisabled: document.querySelector('[data-mat-import]')?.disabled === true,
+        readonlyBanner: !!document.querySelector('[data-od-id="materials-readonly"]'),
+        dims: window.MATERIALS_VIEW ? MATERIALS_VIEW.source().dims.map((d) => d.key) : [],
+        api: window.MATERIALS_API ? MATERIALS_API.status() : null,
+        // 产物是顶层 const（全局词法绑定），不会挂到 window 上，必须用 typeof 判定。
+        itemsIsArray: typeof MATERIALS_ITEMS !== 'undefined' && Array.isArray(MATERIALS_ITEMS),
+        imageBase: typeof MATERIALS_SOURCE !== 'undefined' ? MATERIALS_SOURCE.imageBase : '',
+        offNs: [...document.querySelectorAll('.mat-thumbs img')]
+          .filter((i) => { const s = i.getAttribute('src') || ''; return s && !s.startsWith('../public/'); }).length,
+      }));
+      check('资料库视图已激活', base.selected === 'true', `aria-selected=${base.selected}`);
+      check('资料库三段式与已选条件条渲染完整',
+        base.head && base.toolbar && base.chips && base.body,
+        JSON.stringify({ head: base.head, toolbar: base.toolbar, chips: base.chips, body: base.body }));
+      check('资料库有导入入口且 file:// 下只读禁用', base.importBtn && base.importDisabled,
+        JSON.stringify({ exists: base.importBtn, disabled: base.importDisabled }));
+      check('只读提示条可见', base.readonlyBanner);
+      check('资料库声明 5 个筛选维度',
+        JSON.stringify(base.dims) === JSON.stringify(['q', 'hasImage', 'source', 'tags', 'date']),
+        base.dims.join(','));
+      check('资料库烘焙产物已加载（MATERIALS_ITEMS 是数组）',
+        base.itemsIsArray && !!base.api, JSON.stringify(base.api));
+      check('file:// 下判定为只读', !!base.api && base.api.editable === false, JSON.stringify(base.api));
+      check('配图命名空间唯一（撤销 blob: 破例）',
+        base.offNs === 0 && base.imageBase === '../public/materials/',
+        `offNs=${base.offNs} base=${base.imageBase}`);
+      check('资料库激活零运行时错误', errs.length === 0, errs.slice(0, 3).join(' | '));
+
+      // disabled 按钮点不动：抽屉不该打开
+      await page.evaluate(() => { const b = document.querySelector('[data-mat-import]'); if (b) b.click(); });
+      await new Promise((r) => setTimeout(r, 150));
+      check('只读态点导入不打开抽屉', (await page.$('[data-od-id="materials-import"]')) === null);
+
+      await page.evaluate(() => { location.hash = '#materials?hasImage=1'; });
+      await new Promise((r) => setTimeout(r, 400));
+      const urlState = await page.evaluate(() => ({
+        hash: location.hash,
+        hasImage: window.MATERIALS_VIEW ? MATERIALS_VIEW.dims().hasImage : null,
+      }));
+      check('资料库筛选参数进 URL 并回填状态',
+        urlState.hash.includes('hasImage=1') && urlState.hasImage === true,
+        JSON.stringify(urlState));
+      await page.close();
+    }
+
+    /* 12. 资料库落盘写入链（ADR-0030）
+       file:// 只读，真正的写入只能在 http 模式下验：随机端口起本机服务 →
+       /api/materials 写一条 + 一张图 → 回查文件与烘焙产物 → 浏览器里看得到图
+       → DELETE 精确清理。只碰本组自己造的 id，不动用户存量。
+       末尾外加一条 preview(--dist) 只读守门：起 --dist 服务，写必须 403。 */
+    {
+      const port = await freePort();
+      const srv = spawn(process.execPath, ['scripts/serve-webui.mjs', `--port=${port}`], {
+        cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      let srvLog = '';
+      srv.stdout.on('data', (d) => { srvLog += d.toString(); });
+      srv.stderr.on('data', (d) => { srvLog += d.toString(); });
+      const base = `http://127.0.0.1:${port}`;
+      const dataFile = path.join(ROOT, 'webui', 'js', 'data-materials.js');
+      const itemsDir = path.join(ROOT, 'data', 'materials', 'items');
+      const imagesDir = path.join(ROOT, 'public', 'materials');
+      const prompt = `verify 落盘断言 ${Date.now()}`;
+      const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+      let id = '';
+      let file = '';
+      try {
+        let ready = false;
+        for (let i = 0; i < 40; i++) {
+          try { const r = await fetch(base + '/api/materials'); if (r.ok) { ready = true; break; } } catch { /* 未起 */ }
+          await new Promise((r) => setTimeout(r, 150));
+        }
+        check('本机服务 /api/materials 可达', ready, srvLog.trim().slice(0, 120));
+        if (!ready) throw new Error('服务未就绪');
+
+        const status = await (await fetch(base + '/api/materials')).json();
+        check('http 模式下资料库可编辑', status.ok === true && status.editable === true, JSON.stringify(status));
+
+        const post = await fetch(base + '/api/materials/items', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ item: { prompt, source: 'manual', tags: ['verify'] } }),
+        });
+        const created = await post.json();
+        check('POST 写入一条资料', post.status === 200 && created.ok === true, JSON.stringify(created).slice(0, 160));
+        id = (created.item && created.item.id) || '';
+        check('条目 JSON 真实落盘', !!id && fs.existsSync(path.join(itemsDir, id + '.json')), String(id));
+        check('烘焙产物同步刷新', fs.readFileSync(dataFile, 'utf8').includes(prompt));
+
+        const img = await fetch(base + '/api/materials/images', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ itemId: id, name: 'verify-1x1.png', dataUrl: `data:image/png;base64,${png}` }),
+        });
+        const shot = await img.json();
+        file = shot.file || '';
+        check('图片压缩落盘并被条目引用',
+          img.status === 200 && shot.ok === true && !!file && fs.existsSync(path.join(imagesDir, file)),
+          JSON.stringify({ status: img.status, file }));
+        check('条目 JSON 里引用了该图片',
+          !!id && JSON.parse(fs.readFileSync(path.join(itemsDir, id + '.json'), 'utf8')).images.includes(file));
+
+        const page = await browser.newPage();
+        await page.setViewport(DESKTOP);
+        await page.goto(base + '/index.html#materials', { waitUntil: 'load' });
+        await new Promise((r) => setTimeout(r, 600));
+        const seen = await page.evaluate((p) => {
+          const cards = [...document.querySelectorAll('.mat-card')];
+          const imgs = [...document.querySelectorAll('.mat-thumbs img')];
+          return {
+            hit: cards.some((c) => (c.textContent || '').includes(p)),
+            editable: window.MATERIALS_API ? MATERIALS_API.status().editable : null,
+            src: imgs.map((i) => i.getAttribute('src') || ''),
+            loaded: imgs.filter((i) => i.complete && i.naturalWidth > 0).length,
+          };
+        }, prompt);
+        check('http 页面可见新条目且判定可编辑', seen.hit && seen.editable === true,
+          JSON.stringify({ hit: seen.hit, editable: seen.editable }));
+        check('配图走 ../public/materials/ 且真实加载',
+          seen.src.length > 0 && seen.src.every((s) => s.startsWith('../public/materials/')) && seen.loaded >= 1,
+          JSON.stringify(seen.src));
+        await page.close();
+
+        const forbidden = await fetch(base + '/api/materials/items', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'http://evil.example' },
+          body: JSON.stringify({ prompt: 'should be blocked' }),
+        });
+        check('跨 Origin 写入被拒 403', forbidden.status === 403, String(forbidden.status));
+
+        // preview(--dist) 必须只读：它服务的是 dist/ 复制产物，烘焙只写 webui/js/，
+        // 开放写会造成「盘上已更新、页面还是旧数据」的假象（ADR-0030）。
+        // dist/ 不存在时先建一次，避免让 verify 依赖「先手动 build」这个隐含前提。
+        if (!fs.existsSync(path.join(ROOT, 'dist', 'index.html'))) {
+          execFileSync(process.execPath, ['scripts/build-webui.mjs'], { cwd: ROOT, stdio: 'ignore' });
+        }
+        const distPort = await freePort();
+        const distSrv = spawn(process.execPath, ['scripts/serve-webui.mjs', `--port=${distPort}`, '--dist'], {
+          cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        try {
+          const distBase = `http://127.0.0.1:${distPort}`;
+          let distReady = false;
+          for (let i = 0; i < 40; i++) {
+            try { const r = await fetch(distBase + '/api/materials'); if (r.ok) { distReady = true; break; } } catch { /* 未起 */ }
+            await new Promise((r) => setTimeout(r, 150));
+          }
+          const distStatus = distReady ? await (await fetch(distBase + '/api/materials')).json() : {};
+          check('preview(--dist) 模式判定为只读', distReady && distStatus.editable === false,
+            JSON.stringify(distStatus));
+          const distPost = await fetch(distBase + '/api/materials/items', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ item: { prompt: 'preview 模式不应写入' } }),
+          });
+          check('preview 模式拒绝写入 403', distPost.status === 403, String(distPost.status));
+        } finally {
+          distSrv.kill();
+        }
+
+        const del = await fetch(base + `/api/materials/items/${id}`, { method: 'DELETE' });
+        check('DELETE 清理成功', del.ok, String(del.status));
+      } catch (err) {
+        check('第 12 组无致命异常', false, err.message);
+      } finally {
+        srv.kill();
+        // 精确清理：只删本组造的条目 / 墓碑 / 图片，绝不清空用户资料目录
+        if (id) {
+          fs.rmSync(path.join(itemsDir, id + '.json'), { force: true });
+          fs.rmSync(path.join(itemsDir, id + '.deleted.json'), { force: true });
+        }
+        if (file) fs.rmSync(path.join(imagesDir, file), { force: true });
+        try {
+          const mod = await import('./build-materials-data.mjs');
+          mod.rebuild({ log: () => {} });
+        } catch { /* 清理失败会在下一条断言里暴露 */ }
+        check('断言写入的数据已精确清理', !fs.readFileSync(dataFile, 'utf8').includes(prompt));
+      }
     }
   } finally {
     await browser.close();

@@ -21,8 +21,8 @@ function prompt(
   }
 }
 
-function build(values: Record<string, any>, selected: SelectedPrompt[] = [], subject = '') {
-  return PromptBuilder.buildPhotography(selected, subject, values, config)
+function build(values: Record<string, any>, selected: SelectedPrompt[] = [], subject = '', photoPrefix?: string) {
+  return PromptBuilder.buildPhotography(selected, subject, values, config, photoPrefix)
 }
 
 describe('提示词组装顺序', () => {
@@ -211,5 +211,33 @@ describe('版本切换时的参数清洗', () => {
 
     const sanitized = sanitizeValues(config.parameters, values, '6.1')
     expect(sanitized.styleVersion).toBe('4')
+  })
+})
+
+describe('摄影前缀可配置（ADR-0027）', () => {
+  it('不传基词时默认 photography', () => {
+    expect(build({}, []).startsWith('photography')).toBe(true)
+  })
+
+  it('自定义基词替换无艺术家时的开头段', () => {
+    const result = build({}, [], 'a quiet library', 'cinematic still')
+    expect(result.startsWith('cinematic still, a quiet library')).toBe(true)
+  })
+
+  it('自定义基词与艺术家拼成 基词 by <名字>', () => {
+    const result = build({}, [prompt('a', 'Nick Knight', 'artist', 1)], 'a woman', 'cinematic still')
+    expect(result.startsWith('cinematic still by Nick Knight, a woman')).toBe(true)
+  })
+
+  it('基词留空且无艺术家时整段消失', () => {
+    const result = build({}, [], 'a quiet library', '')
+    expect(result.startsWith('a quiet library')).toBe(true)
+    expect(result.includes('photography')).toBe(false)
+  })
+
+  it('基词留空且有艺术家时只留艺术家名', () => {
+    const result = build({}, [prompt('a', 'Nick Knight', 'artist', 1)], 'a woman', '')
+    expect(result.startsWith('Nick Knight, a woman')).toBe(true)
+    expect(result.includes('by ')).toBe(false)
   })
 })

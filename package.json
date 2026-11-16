@@ -8,6 +8,8 @@
     "build": "node scripts/build-webui.mjs",
     "preview": "node scripts/serve-webui.mjs --dist",
     "build:webui-data": "node scripts/build-webui-data.mjs",
+    "build:materials": "node scripts/build-materials-data.mjs",
+    "import:materials": "node scripts/import-materials.mjs",
     "test": "node scripts/test-guard.mjs",
     "test:watch": "vitest",
     "export:vocab": "node tools/export-vocab.ts",

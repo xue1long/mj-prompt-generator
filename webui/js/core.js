@@ -28,6 +28,8 @@ const ICON_PATHS = {
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6h.01"/>',
   // 并排两列（对照视图用）
   columns: '<rect x="3" y="4" width="7.5" height="16" rx="1.5"/><rect x="13.5" y="4" width="7.5" height="16" rx="1.5"/>',
+  // 齿轮（顶栏「设置」按钮）
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
 };
 function icon(name, cls = 'ic') {
   return `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICON_PATHS[name] || ''}</svg>`;
@@ -136,6 +138,28 @@ async function copyText(text, label = '已复制') {
 }
 
 /* ── 会话状态 ───────────────────────────────────────────────────────── */
+/* 摄影前缀的基词（ADR-0027）：会话级可配置，留空则不带开头段。
+   默认值与 shared/utils/promptBuilder.ts 的镜像实现保持一致。 */
+const DEFAULT_PHOTO_PREFIX = 'photography';
+
+/* 前缀候选（仅输入建议，不写会话、不改默认值）。
+   入选判据来自拼装契约：必须能独立成段，且能接 "by <艺术家>"。
+   故排除程度词（photorealistic / ultra-detailed）、裸 cinematic（会与词库
+   cinematic lighting 叠成双写）、复合摄影词（与机位槽的高speed photography 等同族）。
+   zh 只用于下拉里的中文对照与中文检索，绝不写进提示词 —— 写值一律用 value。 */
+const PHOTO_PREFIX_OPTIONS = [
+  { value: 'photography', zh: '摄影' },
+  { value: 'cinematic still', zh: '电影静帧' },
+  { value: 'illustration', zh: '插画' },
+  { value: 'oil painting', zh: '油画' },
+  { value: 'watercolor painting', zh: '水彩画' },
+  { value: 'film still', zh: '电影剧照' },
+  { value: 'concept art', zh: '概念艺术' },
+];
+
+/* 只要基词本身（候选值集合），用于「输入框的值是否已是候选之一」这类判定。 */
+const PHOTO_PREFIX_VALUES = PHOTO_PREFIX_OPTIONS.map(o => o.value);
+
 const SLOTS = [
   { key: 'artist', label: '艺术家', dot: 'artist' },
   { key: 'camera', label: '机位', dot: '' },
@@ -146,11 +170,16 @@ const SLOTS = [
 const session = {
   selected: [],   // { id, zh, en, position, category, ts }
   subject: '',
+  photoPrefix: DEFAULT_PHOTO_PREFIX, // 摄影前缀基词；空串表示不带开头段
   params: {},
   manual: null,   // 手动改写后的最终提示词；null 表示使用自动提示词
   editing: false,
   dockOpen: false, // 窄屏下「会话明细」折叠块是否展开
   paramOpen: false, // 「展开全部参数」折叠块是否展开（renderDock 全量重建后需回填）
+  /* 手机宽度（≤560px）下最终提示词条默认折叠成一行摘要。
+     为什么不落盘：这是「当下这一屏怎么放」的临时取舍，不是用户的偏好；
+     换台设备/换个宽度都要重新判断，存进会话只会让恢复后的状态更难解释。 */
+  finalOpen: false,
 };
 
 /* 窄屏（≤980px）会话明细收进折叠块，宽屏直接铺开 */
@@ -206,6 +235,7 @@ function readLegacySession() {
 }
 
 function loadSession() {
+  session.photoPrefix = DEFAULT_PHOTO_PREFIX; // 迁移 / 损坏数据一律回落默认值
   let raw = null;
   try { raw = localStorage.getItem(SESSION_KEY); } catch { raw = null; }
   if (!raw) {
@@ -227,6 +257,7 @@ function loadSession() {
     const s = JSON.parse(raw);
     session.selected = Array.isArray(s.selected) ? s.selected : [];
     session.subject = typeof s.subject === 'string' ? s.subject : '';
+    session.photoPrefix = typeof s.photoPrefix === 'string' ? s.photoPrefix : DEFAULT_PHOTO_PREFIX;
     session.manual = typeof s.manual === 'string' ? s.manual : null;
     session.params = { ...defaultParams(), ...(s.params || {}) };
     session.params.version = String(session.params.version || '8.2');
@@ -241,6 +272,7 @@ function saveSession() {
     localStorage.setItem(SESSION_KEY, JSON.stringify({
       selected: session.selected,
       subject: session.subject,
+      photoPrefix: session.photoPrefix,
       manual: session.manual,
       params: session.params,
     }));
@@ -340,13 +372,21 @@ function paramTail() {
   return out.join(' ');
 }
 
+/** 摄影前缀（ADR-0027）：基词取自会话配置，留空时整段消失。
+    有艺术家时拼 `<基词> by <名字>`；基词留空则只留艺术家名。 */
+function photographyPrefix(artists) {
+  const base = String(session.photoPrefix ?? DEFAULT_PHOTO_PREFIX).trim();
+  if (!base) return artists.length ? artists.join(', ') : '';
+  return artists.length ? `${base} by ${artists.join(', ')}` : base;
+}
+
 function buildAutoPrompt() {
   const bySlot = { artist: [], camera: [], lighting: [], other: [] };
   [...session.selected].sort((a, b) => a.ts - b.ts).forEach(s => {
     (bySlot[s.position] || bySlot.other).push(s);
   });
   const artists = bySlot.artist.map(a => a.en);
-  const parts = [artists.length ? `photography by ${artists.join(', ')}` : 'photography'];
+  const parts = [photographyPrefix(artists)];
   if (bySlot.camera.length) parts.push(bySlot.camera.map(a => a.en).join(', '));
   const subject = session.subject.trim();
   if (subject) parts.push(subject);
@@ -413,6 +453,7 @@ function movePrompt(id, dir) {
 function clearAll() {
   session.selected = [];
   session.subject = '';
+  session.photoPrefix = DEFAULT_PHOTO_PREFIX;
   session.manual = null;
   session.params = defaultParams();
   saveSession();
@@ -448,12 +489,14 @@ function renderTopbar(active) {
       <button class="icon-btn" type="button" data-role="toggle-theme" aria-label="切换明暗主题" aria-pressed="${document.documentElement.dataset.theme === 'light'}">
         ${icon(document.documentElement.dataset.theme === 'light' ? 'moon' : 'sun')}
       </button>
+      <button class="icon-btn" type="button" data-role="open-settings" aria-label="设置 LLM 代理凭据">${icon('gear')}</button>
     </div>`;
   host.querySelector('[data-role="toggle-theme"]').addEventListener('click', () => {
     toggleTheme();
     renderTopbar(active);
   });
   host.querySelector('[data-role="open-palette"]').addEventListener('click', openPalette);
+  host.querySelector('[data-role="open-settings"]').addEventListener('click', openSettingsDialog);
 }
 
 /* ── 会话 Dock ──────────────────────────────────────────────────────── */
@@ -529,8 +572,13 @@ function finalBarHtml() {
   }
   const chips = activeParamChips();
   const editing = session.editing;
+  /* 手机宽度下默认折叠成一行摘要。理由（实测）：166px 的固定底条在 390×844 上
+     占 19.7% 视口，且一级视图那 6 个按钮整片落在条带里，首屏点不到。
+     折叠后高度约 50px，把底部还给内容。编辑态强制展开 —— 否则点了「改写」
+     却看不见输入框。 */
+  const open = session.finalOpen || editing;
   return `
-    <div class="final-bar" id="final-bar" data-od-id="final-prompt">
+    <div class="final-bar${open ? ' is-open' : ''}" id="final-bar" data-od-id="final-prompt">
       <div class="final-label">
         <span>最终提示词</span>
         <span class="meta" aria-live="polite">${text.length} 字符${session.manual !== null ? ' · 已手动改写' : ''}</span>
@@ -549,7 +597,9 @@ function finalBarHtml() {
           ${session.manual !== null
             ? `<button class="btn btn-secondary" type="button" data-role="manual-reset">${icon('reset')}回到自动</button>`
             : `<button class="btn btn-secondary" type="button" data-role="manual-edit"${text ? '' : ' disabled'}>${icon('pencil')}改写</button>`}
-          <button class="btn btn-ghost" type="button" data-role="clear" aria-label="清空会话"${session.selected.length || session.subject ? '' : ' disabled'}>${icon('trash')}</button>
+          <button class="btn btn-ghost" type="button" data-role="clear" aria-label="清空会话"${session.selected.length || session.subject || session.photoPrefix !== DEFAULT_PHOTO_PREFIX ? '' : ' disabled'}>${icon('trash')}</button>
+          <button class="btn btn-secondary final-toggle" type="button" data-role="final-toggle"
+            aria-expanded="${open ? 'true' : 'false'}" aria-controls="final-text">${open ? '收起' : '展开'}</button>
         </div>`}
     </div>`;
 }
@@ -593,11 +643,212 @@ function renderDock() {
         <div class="example-row" role="group" aria-label="主体与环境示例">
           ${SUBJECT_EXAMPLES.map(ex => `<button class="chip${session.subject === ex.fullText ? ' on' : ''}" type="button" data-example="${esc(ex.id)}" aria-pressed="${session.subject === ex.fullText}">${esc(ex.title)}</button>`).join('')}
         </div>
+        <div class="prefix-field" data-od-id="dock-prefix">
+          <label class="prefix-label" for="prefix-input">摄影前缀</label>
+          <input class="text-input" id="prefix-input" type="text"
+            value="${esc(session.photoPrefix)}" placeholder="留空则不带开头段"
+            autocomplete="off" spellcheck="false"
+            role="combobox" aria-expanded="false" aria-controls="prefix-listbox"
+            aria-autocomplete="list" aria-haspopup="listbox"
+            aria-label="摄影前缀基词，留空则不带开头段">
+          <p class="dock-hint">默认 photography；有艺术家时拼成「前缀 by 艺术家」。点输入框可选常用媒介（按中文对照，输入英文或中文都能筛），留空则整段消失，适合把审美交给 --sref。</p>
+        </div>
       </section>
       ${detailBlock}
     </div>
     ${finalBarHtml()}`;
   wireDock();
+}
+
+/* ── 摄影前缀下拉（自定义 combobox）──────────────────────────────────
+   原生 <datalist> 无法「点一下就展开」（浏览器不给打开弹层的 API），所以自绘一层。
+   listbox 挂在 body 下 + position: fixed：.dock-scroll 有 overflow-y: auto，
+   放在 .prefix-field 内部用 absolute 会被裁切。
+   开合状态与高亮索引都是纯 UI 瞬时量，不进会话、不落盘。 */
+
+const PREFIX_LISTBOX_ID = 'prefix-listbox';
+const prefixCombo = { open: false, active: -1, items: [], input: null };
+let prefixComboGlobalWired = false;
+
+/* listbox 单例：不放在 #dock 内，Dock 重绘不会销毁它。 */
+function prefixListboxEl() {
+  let box = document.getElementById(PREFIX_LISTBOX_ID);
+  if (box) return box;
+  box = document.createElement('ul');
+  box.id = PREFIX_LISTBOX_ID;
+  box.className = 'prefix-listbox';
+  box.setAttribute('role', 'listbox');
+  box.setAttribute('aria-label', '常用摄影前缀');
+  box.hidden = true;
+  document.body.appendChild(box);
+  return box;
+}
+
+/* 过滤同时认英文基词与中文对照：输 "oil" 或 "油画" 都能命中 oil painting。
+   中文只参与检索，不会成为写入值。 */
+function matchPrefixOptions(q) {
+  const s = String(q || '').trim().toLowerCase();
+  if (!s) return PHOTO_PREFIX_OPTIONS.slice();
+  return PHOTO_PREFIX_OPTIONS.filter(o =>
+    o.value.toLowerCase().includes(s) || o.zh.includes(s));
+}
+
+/* q 为过滤词；highlight 为要高亮的项（默认与 q 相同）。
+   两者分开：点开时当前值只是「选中项」而不是搜索词，不能拿它过滤掉其它候选。 */
+function renderPrefixOptions(q, highlight) {
+  const box = prefixListboxEl();
+  const opts = matchPrefixOptions(q);
+  const cur = String(highlight ?? q ?? '').trim();
+  // items 保持「基词数组」：键盘上下键与 Enter 都直接拿它取写入值
+  prefixCombo.items = opts.map(o => o.value);
+  prefixCombo.active = prefixCombo.items.indexOf(cur);   // 与某项全等时默认高亮它
+  if (!opts.length) {
+    box.innerHTML = `<li class="prefix-opt-empty">无匹配，回车即用当前输入「${esc(cur)}」</li>`;
+    return;
+  }
+  // 英文基词是写入值，中文只做对照；data-value 仍只放基词
+  box.innerHTML = opts.map((o, i) =>
+    `<li class="prefix-opt" role="option" id="prefix-opt-${i}" data-value="${esc(o.value)}" aria-selected="${i === prefixCombo.active}">` +
+    `<span class="prefix-opt-en">${esc(o.value)}</span>` +
+    `<span class="prefix-opt-zh">${esc(o.zh)}</span></li>`
+  ).join('');
+  syncPrefixActive();
+}
+
+function syncPrefixActive() {
+  const box = prefixListboxEl();
+  const opts = [...box.querySelectorAll('.prefix-opt')];
+  opts.forEach((el, i) => el.setAttribute('aria-selected', String(i === prefixCombo.active)));
+  const input = prefixCombo.input;
+  if (input) {
+    if (prefixCombo.active >= 0) input.setAttribute('aria-activedescendant', `prefix-opt-${prefixCombo.active}`);
+    else input.removeAttribute('aria-activedescendant');
+  }
+  // 只在浮层内部滚动。用 scrollIntoView 会连带滚动 .dock-scroll，把输入框带跑。
+  const on = opts[prefixCombo.active];
+  if (!on) return;
+  const br = box.getBoundingClientRect();
+  const er = on.getBoundingClientRect();
+  if (er.top < br.top) box.scrollTop -= (br.top - er.top);
+  else if (er.bottom > br.bottom) box.scrollTop += (er.bottom - br.bottom);
+}
+
+function positionPrefixCombo() {
+  const box = prefixListboxEl();
+  const input = prefixCombo.input;
+  if (!input) return;
+  const r = input.getBoundingClientRect();
+  const w = Math.max(Math.round(r.width), 180);
+  box.style.width = `${w}px`;
+  box.style.left = `${Math.round(Math.max(12, Math.min(r.left, window.innerWidth - w - 12)))}px`;
+  const h = box.offsetHeight;
+  let top = Math.round(r.bottom + 6);
+  if (top + h > window.innerHeight - 12) top = Math.round(Math.max(12, r.top - h - 6));
+  box.style.top = `${top}px`;
+}
+
+function openPrefixCombo() {
+  const input = prefixCombo.input;
+  if (!input) return;
+  const box = prefixListboxEl();
+  box.hidden = false;
+  prefixCombo.open = true;
+  input.setAttribute('aria-expanded', 'true');
+  const v = String(input.value || '').trim();
+  // 值恰好是候选之一 ⇒ 当作「已选中」而不是「正在搜索」，列全部 7 项并高亮它
+  renderPrefixOptions(PHOTO_PREFIX_VALUES.includes(v) ? '' : v, v);
+  positionPrefixCombo();
+}
+
+function closePrefixCombo() {
+  const box = prefixListboxEl();
+  box.hidden = true;
+  prefixCombo.open = false;
+  prefixCombo.active = -1;
+  const input = prefixCombo.input;
+  if (input) {
+    input.setAttribute('aria-expanded', 'false');
+    input.removeAttribute('aria-activedescendant');
+  }
+}
+
+/* 选中一项：写值后派发 input 事件，复用「手输」那条存盘链路
+   （saveSession + refreshFinalOnly），不新增第二个写入路径。 */
+function pickPrefix(value) {
+  const input = prefixCombo.input;
+  if (!input) return;
+  if (input.value !== value) {
+    input.value = value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  closePrefixCombo();
+}
+
+function wirePrefixCombo() {
+  const input = document.getElementById('prefix-input');
+  if (!input) return;
+  // Dock 重绘会换节点：旧锚点失效，先把浮层关掉
+  if (prefixCombo.open && prefixCombo.input && prefixCombo.input !== input) closePrefixCombo();
+  prefixCombo.input = input;
+  const box = prefixListboxEl();
+
+  const show = () => { if (!prefixCombo.open) openPrefixCombo(); };
+  input.addEventListener('focus', show);
+  input.addEventListener('click', show);
+
+  input.addEventListener('input', () => {
+    // 存盘由 wireDock 里的监听负责，这里只管过滤
+    if (!prefixCombo.open) return;
+    renderPrefixOptions(input.value);
+    positionPrefixCombo();
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') { closePrefixCombo(); return; }
+    if (e.key === 'Escape') {
+      if (!prefixCombo.open) return;
+      e.preventDefault();
+      closePrefixCombo();
+      return;
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      if (!prefixCombo.open) openPrefixCombo();
+      const n = prefixCombo.items.length;
+      if (!n) return;
+      e.preventDefault();
+      const step = e.key === 'ArrowDown' ? 1 : -1;
+      prefixCombo.active = (prefixCombo.active + step + n) % n;
+      syncPrefixActive();
+      return;
+    }
+    if (e.key === 'Enter' && prefixCombo.open) {
+      const v = prefixCombo.active >= 0 ? prefixCombo.items[prefixCombo.active] : null;
+      if (v != null) { e.preventDefault(); pickPrefix(v); }
+      else closePrefixCombo();
+    }
+  });
+
+  box.addEventListener('pointerdown', (e) => e.preventDefault());   // 别让输入框先失焦
+  box.addEventListener('click', (e) => {
+    const li = e.target.closest('.prefix-opt');
+    if (!li) return;
+    pickPrefix(li.dataset.value);
+    input.focus({ preventScroll: true });
+  });
+
+  if (!prefixComboGlobalWired) {
+    prefixComboGlobalWired = true;
+    // 滚动（含 .dock-scroll 内部）/ 尺寸变化时跟着走；capture 才能收到内部滚动
+    const follow = () => { if (prefixCombo.open) positionPrefixCombo(); };
+    window.addEventListener('scroll', follow, true);
+    window.addEventListener('resize', follow);
+    document.addEventListener('pointerdown', (e) => {
+      if (!prefixCombo.open) return;
+      const boxEl = prefixListboxEl();
+      if (boxEl.contains(e.target) || e.target === prefixCombo.input) return;
+      closePrefixCombo();
+    }, true);
+  }
 }
 
 function wireDock() {
@@ -621,6 +872,17 @@ function wireDock() {
       saveSession();
       refreshFinalOnly();
     });
+  }
+
+  const prefixInput = dock.querySelector('#prefix-input');
+  if (prefixInput) {
+    // 与 #subject-input 同一策略：边输边存、只重绘最终提示词区，不重绘 Dock（避免失焦）。
+    prefixInput.addEventListener('input', () => {
+      session.photoPrefix = prefixInput.value;
+      saveSession();
+      refreshFinalOnly();
+    });
+    wirePrefixCombo();
   }
 
   dock.querySelectorAll('[data-example]').forEach(btn => {
@@ -723,9 +985,18 @@ function wireFinalBar() {
   });
   const clearBtn = bar.querySelector('[data-role="clear"]');
   if (clearBtn) clearBtn.addEventListener('click', () => {
-    if (!session.selected.length && !session.subject) { toast('会话本来就是空的'); return; }
+    if (!session.selected.length && !session.subject && session.photoPrefix === DEFAULT_PHOTO_PREFIX) { toast('会话本来就是空的'); return; }
     clearAll();
     toast('会话已清空');
+  });
+
+  /* 折叠开关：只切 class 与文案，不重绘整块 —— 重绘会把正在看的滚动位置打回顶部。 */
+  const toggleBtn = bar.querySelector('[data-role="final-toggle"]');
+  if (toggleBtn) toggleBtn.addEventListener('click', () => {
+    session.finalOpen = !session.finalOpen;
+    bar.classList.toggle('is-open', session.finalOpen);
+    toggleBtn.setAttribute('aria-expanded', String(session.finalOpen));
+    toggleBtn.textContent = session.finalOpen ? '收起' : '展开';
   });
 }
 
@@ -859,6 +1130,137 @@ function mountDialog(html, { label, onMount, onClose } = {}) {
   return { backdrop, sheet, close };
 }
 
+/* ── LLM 代理设置：凭据只 POST 给本机服务写 .env（ADR-0015）───────────
+   浏览器运行时不调 LLM、不把 key 存 localStorage；file:// 下 fetch 被
+   CORS 硬拦（ADR-0017），降级为只读提示且绝不发起任何请求。 */
+function openSettingsDialog() {
+  const offline = location.protocol === 'file:';
+  const endpoint = '/api/settings';
+
+  const fields = [
+    {
+      key: 'baseUrl', label: 'Base URL', id: 'settings-base-url', type: 'text',
+      value: 'https://api.minimax.cn/v1', placeholder: 'https://api.minimax.cn/v1',
+      hint: 'LLM 代理服务地址，保存后写入本机 .env。',
+    },
+    {
+      key: 'model', label: '模型', id: 'settings-model', type: 'text',
+      value: 'MiniMax-M3.1-Flash', placeholder: 'MiniMax-M3.1-Flash',
+      hint: '调用时使用的模型名。',
+    },
+    {
+      key: 'apiKey', label: 'API Key', id: 'settings-api-key', type: 'password',
+      value: '', placeholder: '留空表示不修改已有 API Key',
+      hint: '密钥仅写入本机 .env，不会回填这里，也不会存进浏览器。',
+    },
+  ];
+
+  const fieldHtml = (f) => `
+    <div class="settings-field">
+      <div class="settings-field-head">
+        <label class="settings-label" for="${esc(f.id)}">${esc(f.label)}</label>
+        <span class="settings-status" data-role="status-${esc(f.key)}">${esc('未配置')}</span>
+      </div>
+      <input class="text-input" id="${esc(f.id)}" data-role="settings-${esc(f.key)}"
+        type="${esc(f.type)}" value="${esc(f.value)}" placeholder="${esc(f.placeholder)}"
+        autocomplete="off" spellcheck="false">
+      <p class="settings-hint">${esc(f.hint)}</p>
+    </div>`;
+
+  const offlineHtml = `
+    <div class="settings-offline" data-role="settings-offline">
+      <p>当前以 <code>file://</code> 方式打开，浏览器会拦截本机请求（CORS），因此无法读取或保存配置。</p>
+      <p>请在项目根目录运行 <code>npm run dev</code> 启动本地服务，再通过 <code>http://127.0.0.1:5173/</code> 访问本页面。</p>
+      <p>凭据只写入本机 <code>.env</code>：算力在构建期使用，浏览器运行时不会发起 LLM 请求，也不会把密钥存进浏览器。</p>
+    </div>`;
+
+  const onlineHtml = `
+    <p class="settings-error" data-role="settings-error"></p>
+    ${fields.map(fieldHtml).join('')}
+    <p class="settings-hint">状态仅表示「是否已配置」，不会显示任何明文值。</p>`;
+
+  const html = `
+    <div class="sheet" data-od-id="settings-sheet" aria-label="LLM 代理设置">
+      <div class="sheet-head">
+        <div style="flex:1">
+          <p class="eyebrow">LLM 代理</p>
+          <h2>${esc(offline ? '设置（离线只读）' : 'LLM 代理设置')}</h2>
+        </div>
+        <button class="icon-btn" type="button" data-role="close" aria-label="关闭">${icon('close')}</button>
+      </div>
+      <div class="sheet-body">
+        ${offline ? offlineHtml : onlineHtml}
+        <div class="btn-row" style="margin-top:16px">
+          <button class="btn btn-primary" type="button" data-role="settings-save"${offline ? ' disabled' : ''}>${icon('check')}保存</button>
+          <button class="btn btn-secondary" type="button" data-role="settings-cancel">取消</button>
+        </div>
+      </div>
+    </div>`;
+
+  mountDialog(html, {
+    label: 'LLM 代理设置',
+    onMount: ({ backdrop, close }) => {
+      backdrop.querySelector('[data-role="settings-cancel"]').addEventListener('click', close);
+      setTimeout(() => {
+        (backdrop.querySelector('[data-role="settings-baseUrl"]') ||
+          backdrop.querySelector('[data-role="close"]'))?.focus();
+      }, 30);
+
+      // file:// 下绝不发起任何 fetch / GET，面板仅作只读说明
+      if (offline) return;
+
+      const errorEl = backdrop.querySelector('[data-role="settings-error"]');
+      const showError = (msg) => { errorEl.textContent = msg; };
+      const setStatus = (key, on) => {
+        const el = backdrop.querySelector(`[data-role="status-${key}"]`);
+        if (!el) return;
+        el.textContent = on ? '已配置' : '未配置';
+        el.classList.toggle('is-on', !!on);
+      };
+
+      // 打开面板时 GET 三个布尔（响应只有布尔，无任何明文）
+      (async () => {
+        try {
+          const res = await fetch(endpoint, { method: 'GET' });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const c = data.configured || {};
+          setStatus('baseUrl', c.baseUrl);
+          setStatus('model', c.model);
+          setStatus('apiKey', c.apiKey);
+        } catch (e) {
+          showError('读取当前配置失败：' + ((e && e.message) || e));
+        }
+      })();
+
+      const saveBtn = backdrop.querySelector('[data-role="settings-save"]');
+      saveBtn.addEventListener('click', async () => {
+        const body = {
+          baseUrl: backdrop.querySelector('[data-role="settings-baseUrl"]').value.trim(),
+          model: backdrop.querySelector('[data-role="settings-model"]').value.trim(),
+          apiKey: backdrop.querySelector('[data-role="settings-apiKey"]').value,
+        };
+        saveBtn.disabled = true;
+        errorEl.textContent = '';
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) throw new Error(data.error || `保存失败（HTTP ${res.status}）`);
+          toast('LLM 代理凭据已保存');
+          close();
+        } catch (e) {
+          showError('保存失败：' + ((e && e.message) || e));
+          saveBtn.disabled = false;
+        }
+      });
+    },
+  });
+}
+
 /* ── 共享片段：空状态 / 错误状态 ───────────────────────────────────── */
 function stateHtml({ title, desc, iconName = 'search', action, danger, compact }) {
   return `
@@ -905,9 +1307,10 @@ function fallbackToPlate(holder) {
   }
 }
 
-/* ── 旧版 URL 契约兼容（ADR-0017） ───────────────────────────────────
+/* ── 旧版 URL 契约兼容（ADR-0017 / ADR-0026） ────────────────────────
    旧 Vue SPA 用 #/artists?... / #/explore?d/ar/sref/q，新版用 #artists / #explore；
-   旧版另有三处页签 style-codes / styles-top / gallery，新版是独立 HTML 页。
+   旧版另有三处页签：style-codes / gallery 是独立 HTML 页，
+   styles-top 现在是工作台一级视图 #styles-top（ADR-0026）。
    在 core.js 顶层执行：workbench.js 的 readHash() 晚于本文件加载，读到的已是新 hash。 */
 function migrateLegacyHash() {
   const h = location.hash;
@@ -916,7 +1319,18 @@ function migrateLegacyHash() {
   const page = location.pathname.split('/').pop() || 'index.html';
   const isIndex = page === '' || page === 'index.html';
 
-  const pages = { 'style-codes': 'style-library.html', 'styles-top': 'style-library.html', gallery: 'gallery.html' };
+  // 官方风格榜已收编为工作台一级视图（ADR-0026）。必须带 hash 跳，
+  // 否则会像旧实现那样丢掉视图 id —— 而 styleUi.tab 又不进 URL，深链本来就到不了官方榜。
+  if (key === 'styles-top') {
+    if (isIndex) {
+      try { history.replaceState(null, '', '#styles-top'); } catch { location.hash = 'styles-top'; }
+    } else {
+      location.replace('index.html#styles-top');
+    }
+    return;
+  }
+
+  const pages = { 'style-codes': 'style-library.html', gallery: 'gallery.html' };
   if (pages[key]) {
     if (page === pages[key]) {
       try { history.replaceState(null, '', '#'); } catch { location.hash = ''; }

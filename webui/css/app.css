@@ -233,6 +233,35 @@ h3 { font-size: 16px; line-height: 1.3; }
 .textarea:focus { outline: none; border-color: var(--accent-line); }
 .field-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
 .example-row { display: flex; flex-wrap: wrap; gap: 6px; }
+/* 摄影前缀配置（ADR-0027）：属于会话 Dock，不进 PARAMETERS 参数列表 */
+.prefix-field { display: flex; flex-direction: column; gap: 5px; padding-top: 2px; }
+.prefix-label { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+.prefix-field .text-input { font-family: var(--font-mono); font-size: 12px; }
+.prefix-field .dock-hint { font-size: 11px; line-height: 1.5; }
+/* 摄影前缀下拉：浮层挂在 body 下、fixed 定位，避开 .dock-scroll 的 overflow 裁切 */
+.prefix-listbox {
+  position: fixed; z-index: 80; margin: 0; padding: 4px;
+  list-style: none; max-height: 216px; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border-2);
+  border-radius: var(--r-md); box-shadow: var(--shadow-lg);
+}
+.prefix-listbox[hidden] { display: none; }
+.prefix-opt {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  min-height: 28px; padding: 0 9px;
+  border-radius: var(--r-sm); font-family: var(--font-mono); font-size: 12px;
+  color: var(--fg-2); cursor: pointer; white-space: nowrap;
+}
+/* 右侧中文对照：基词用等宽（要看清拼写），中文回到正文字体、字号小一档。
+   色阶用 --fg-2 而非 --muted：11px 下 muted 在明暗两套主题里都只有 ~4.6:1，
+   而中文是给人读的对照，不是装饰。层次靠字号与字体区分，不靠压暗。 */
+.prefix-opt .prefix-opt-zh {
+  font-family: var(--font-body); font-size: 11px; color: var(--fg-2);
+  letter-spacing: 0;
+}
+.prefix-opt:hover { background: var(--surface-2); color: var(--fg); }
+.prefix-opt[aria-selected="true"] { background: var(--accent-soft); color: var(--fg); }
+.prefix-opt-empty { padding: 6px 9px; font-size: 11.5px; line-height: 1.45; color: var(--muted); }
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 10px; border-radius: 999px;
@@ -352,6 +381,12 @@ h3 { font-size: 16px; line-height: 1.3; }
 }
 @keyframes blink { 50% { opacity: 0; } }
 .final-bar.flash .final-text { border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-soft); }
+/* 折叠开关只在手机宽度出现（≤560px）；宽屏永远铺开，多一个按钮只是噪音。
+   状态不落盘：这是「这一屏怎么放」的临时取舍，不是用户偏好。 */
+/* 选择器带上 .final-bar：`.btn` 在本文件后面出现，单个类的优先级相同，
+   后写的会赢 —— 只用 .final-toggle 会被 .btn 的 display 顶回可见。 */
+.final-bar .final-toggle { display: none; }
+.final-bar .final-label { min-width: 0; }
 .final-empty { color: var(--muted); font-style: italic; }
 .manual-note {
   display: flex; align-items: center; gap: 8px;
@@ -530,6 +565,16 @@ h3 { font-size: 16px; line-height: 1.3; }
 .sheet-body h3 { font-size: 14px; margin: var(--sp-4) 0 6px; }
 .sheet-body p { margin: 0 0 var(--sp-2); }
 
+/* LLM 代理设置面板：字段行 / 状态标记 / 错误提示（控件复用上面的类） */
+.settings-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--sp-4); }
+.settings-field-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); }
+.settings-label { font-size: 12.5px; font-weight: 600; color: var(--fg-2); }
+.settings-status { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+.settings-status.is-on { color: var(--accent); }
+.settings-hint { font-size: 11.5px; color: var(--muted); margin: 0; }
+.settings-error { font-size: 12.5px; color: var(--warn); margin: 0 0 var(--sp-3); }
+.settings-error:empty { display: none; }
+
 /* 预览浮窗（悬停词条） */
 .preview-pop {
   position: fixed; z-index: 70; width: 264px; pointer-events: none;
@@ -671,8 +716,28 @@ h3 { font-size: 16px; line-height: 1.3; }
 .sref-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--surface-2); }
 .sref-body { padding: 11px 12px 13px; }
 .sref-body .code-num { display: block; margin-bottom: 4px; }
-.sref-kind-row { display: flex; gap: 6px; padding: 0 12px 12px; }
-.sref-kind-row img { width: 100%; aspect-ratio: 1 / 1; border-radius: var(--r-sm); border: 1px solid var(--border); }
+/* 风格榜卡片：两个功能按钮并排。卡宽约 233px，用默认 .btn（13px/14px padding）
+   会把「套用到工作台」挤出卡片，这里单独压缩，且不允许文字折行。 */
+.sref-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; margin-top: 10px; }
+.sref-actions .btn { min-width: 0; padding: 7px 4px; gap: 4px; font-size: 11.5px; white-space: nowrap; }
+.sref-actions .btn .ic { width: 13px; height: 13px; flex: 0 0 auto; }
+/* 风格榜：一行 8 张题材缩略图，点击后在上方主图区放大展示 */
+.sref-kind-row { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; padding: 0 12px 12px; }
+.sref-kind-row .kind-thumb {
+  display: block; min-width: 0; padding: 0; cursor: pointer; line-height: 0;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--r-sm); overflow: hidden;
+}
+.sref-kind-row .kind-thumb img { display: block; min-width: 0; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border: 0; border-radius: 0; }
+.sref-kind-row .kind-thumb:hover { border-color: var(--accent); }
+.sref-kind-row .kind-thumb.is-active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.sref-kind-row .kind-thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.sref-main-label {
+  position: absolute; left: 8px; bottom: 8px; pointer-events: none;
+  padding: 2px 7px; border-radius: var(--r-sm);
+  background: rgba(0, 0, 0, .62); color: #fff;
+  font-family: var(--font-mono); font-size: 11px; line-height: 1.5;
+}
 
 /* ── toast ──────────────────────────────────────────────────────────── */
 .toast-host {
@@ -708,6 +773,25 @@ h3 { font-size: 16px; line-height: 1.3; }
     box-shadow: 0 -10px 28px oklch(0% 0 0 / .30);
     padding-bottom: max(var(--sp-4), env(safe-area-inset-bottom));
   }
+  /* 固定条一旦出现，就必须是**折叠态**：166px 的条在 390×844 上占 19.7% 视口，
+     在 800×600 上占 27.7%，两者都把一级视图那 6 个按钮压进条带里（实测 800×600
+     下按钮中心点 y=599、条顶 434，整排点不到）。折成一行约 67px 才敢固定。
+     展开走 .is-open；编辑态由 JS 强制带上（否则点了「改写」看不见输入框）。 */
+  .final-bar { flex-direction: row; align-items: center; gap: 8px; padding: 6px var(--sp-4); }
+  .final-bar { padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+  /* 展开态回到竖排 —— 否则一行里挤「标题 / 正文 / 按钮」，文字会被压成竖排单字 */
+  .final-bar.is-open { flex-direction: column; align-items: stretch; gap: var(--sp-3); }
+  .final-bar:not(.is-open) .final-text,
+  .final-bar:not(.is-open) .manual-note { display: none; }
+  .final-bar:not(.is-open) .final-label { flex: 1 1 0; overflow: hidden; white-space: nowrap; }
+  /* 按钮行不参与收缩、内部不换行：否则「复制」与「展开」各占一位，条高从 67
+     翻到 111（实测），正好又把导航压回条带里。 */
+  .final-bar:not(.is-open) .btn-row { flex: 0 0 auto; flex-wrap: nowrap; gap: 6px; }
+  .final-bar:not(.is-open) .btn-row .btn { min-height: 40px; padding-block: 6px; flex: none; white-space: nowrap; }
+  .final-bar .final-toggle { display: inline-flex; }
+  /* 折起来后页尾不必再按 176px 垫高；展开时补回去，免得最后一排卡片压在条下 */
+  .library-body { padding-bottom: 88px; }
+  body:has(.final-bar.is-open) .library-body { padding-bottom: 216px; }
   .job-sheet-grid, .sheet-grid { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 720px) {
@@ -847,7 +931,7 @@ details[open] > summary::after { transform: rotate(-135deg) translate(-1px, -1px
 .job-thumbs .img-plate,
 .job-sheet-imgs .img-plate { grid-column: 1 / -1; aspect-ratio: 2 / 1; border: 0; border-radius: 0; }
 .gal-img .img-plate { width: 100%; aspect-ratio: 4 / 3; border: 0; border-radius: 0; }
-.sref-kind-row .img-plate { flex: 1; aspect-ratio: 1 / 1; }
+.sref-kind-row .img-plate { grid-column: 1 / -1; min-height: 32px; }
 
 /* ── 10. 跳过链接 ─────────────────────────────────────────────────── */
 .skip-link {
@@ -897,6 +981,8 @@ details[open] > summary::after { transform: rotate(-135deg) translate(-1px, -1px
   .chip, .toggle { padding-block: 10px; }
   .mini-btn { width: 34px; height: 34px; }
   .mini-btn::after { inset: -6px; }
+  /* 下拉选项也要够得着 */
+  .prefix-opt { min-height: 44px; }
 }
 
 /* ── 14. 没有预览图的条目落回排版版位 ────────────────────────────── */
@@ -1020,10 +1106,10 @@ details[open] > summary::after { transform: rotate(-135deg) translate(-1px, -1px
   .ex-card__actions-btn--outline .ex-card__actions-label { display: none; }
 }
 
-/* ── 多选下拉（报告 2.2）──────────────────────────────────────────
+/* ── 多选下拉（报告 2.2 / ADR-0028）────────────────────────────────
    纯 details + checkbox 实现，不引框架。
    下拉浮在工具条上方（absolute），面板有 max-height + 滚动，
-   96 个 sref 码 / 571 条短语也不会把页面撑爆。 */
+   571 条短语也不会把页面撑爆。 */
 .msel { position: relative; flex: none; }
 .msel-sum {
   display: inline-flex; align-items: center; gap: 7px;
@@ -1049,6 +1135,26 @@ details[open] > summary::after { transform: rotate(-135deg) translate(-1px, -1px
   background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--r-md);
   box-shadow: 0 12px 32px rgba(0, 0, 0, .38);
   padding: 8px;
+}
+/* 窄屏：面板改为相对整行铺开。
+   工具栏在窄屏会换行（390px 下实测高 222px），靠右的下拉若仍 left:0 + 260px 宽，
+   展开会顶出视口右侧（实测溢出 16px，页面出现横向滚动）。改成相对 .toolbar
+   左右各留 16px —— 任何位置的下拉都不会越界，也不用 JS 夹视口。 */
+@media (max-width: 560px) {
+  .toolbar { position: relative; }
+  .toolbar .msel { position: static; }
+  .toolbar .msel-panel { left: 16px; right: 16px; min-width: 0; max-width: none; }
+
+  /* 最终提示词条的折叠规则在 ≤980 段（底条一出现就折叠）。
+     这里只补手机特有的两处：隐藏次要按钮 + 页头瘦身。 */
+  .final-bar:not(.is-open) .btn-row .btn:not([data-role="copy"]):not(.final-toggle) { display: none; }
+
+  /* 页头瘦身：390 下 lead 占 60px、head-meta 折成两行占 67px，合计把 catnav
+     推到 717px —— 正好落进固定条带。去掉 lead、收紧上内距后 catnav 上移约 130px。 */
+  .library-head { padding-top: var(--sp-4); }
+  .library-head .lead { display: none; }
+  /* 再收紧一点上下留白，给导航与底条之间留出可见余量（实测约 40px） */
+  .catnav { padding-block: 10px; }
 }
 .msel-tools { display: flex; align-items: center; gap: 8px; padding: 0 2px 8px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
 .msel-list { max-height: 320px; overflow-y: auto; }
@@ -1208,3 +1314,41 @@ details[open] > summary::after { transform: rotate(-135deg) translate(-1px, -1px
   transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 .cand-src-btn:hover { color: var(--accent); border-color: var(--accent-line); }
+
+/* ── 资料库视图（ADR-0029 / ADR-0030 落盘改造）────────────────────────────
+   只加本视图需要的类，不动既有 .job-grid / .job-card / .img-plate 等规则。 */
+.mat-toolbar { gap: var(--sp-2, 8px); }
+.mat-check { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--fg-2, inherit); white-space: nowrap; }
+.mat-select { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--muted, inherit); white-space: nowrap; }
+.mat-select select { max-width: 150px; }
+.mat-tagbox { position: relative; }
+.mat-tagbox > summary { cursor: pointer; list-style: none; font-size: 12.5px; padding: 5px 9px; border: 1px solid var(--border, #444); border-radius: 6px; }
+.mat-taglist { position: absolute; z-index: 20; top: 100%; left: 0; min-width: 180px; max-height: 260px; overflow: auto; padding: 8px; background: var(--surface-2, #222); border: 1px solid var(--border, #444); border-radius: 8px; display: grid; gap: 4px; }
+.mat-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0 12px; }
+.mat-chips-n { font-size: 12px; color: var(--muted, inherit); }
+.mat-chip { cursor: pointer; }
+.mat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.mat-card { border: 1px solid var(--border, #444); border-radius: 10px; overflow: hidden; background: var(--surface-2, #1e1e1e); cursor: pointer; }
+.mat-card:hover { border-color: var(--border-2, #666); }
+.mat-thumbs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px; min-height: 110px; aspect-ratio: 4 / 3; }
+.mat-thumbs img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mat-thumbs .img-plate { grid-column: 1 / -1; }
+.mat-body { padding: 9px 10px 11px; }
+.mat-prompt { font-size: 13px; line-height: 1.45; word-break: break-word; }
+.mat-meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.mat-meta .param-chip { font-size: 11px; }
+.mat-empty { padding: 36px 16px; text-align: center; }
+.mat-empty .dock-hint { max-width: 620px; margin: 0 auto 14px; }
+.mat-form { display: grid; gap: 10px; margin: 10px 0 18px; }
+.mat-form label { display: grid; gap: 5px; font-size: 12.5px; color: var(--fg-2, inherit); }
+.mat-form input[type="text"], .mat-form textarea, .mat-form select { width: 100%; box-sizing: border-box; font: inherit; color: inherit; background: var(--surface-2, #222); border: 1px solid var(--border, #444); border-radius: 6px; padding: 7px 9px; }
+.mat-form input[type="file"] { font-size: 12px; }
+.mat-sheet { max-width: 720px; }
+.mat-sheet-imgs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.mat-sheet-img { display: grid; gap: 4px; }
+.mat-sheet-img img { width: 100%; border-radius: 6px; display: block; }
+
+/* ADR-0030：file:// 只读浏览的提示条；编辑需 npm run dev。 */
+.mat-readonly { margin: 10px 0 0; padding: 8px 11px; border: 1px solid var(--border, #444); border-left: 3px solid var(--accent, #888); border-radius: 6px; font-size: 12.5px; color: var(--fg-2, inherit); background: var(--surface-2, #222); }
+.mat-readonly code { font-family: ui-monospace, Consolas, monospace; padding: 1px 4px; border-radius: 3px; background: var(--surface, #333); }
+.mat-toolbar button[disabled], .mat-sheet button[disabled], .mat-sheet input[disabled], .mat-sheet textarea[disabled] { opacity: .55; cursor: not-allowed; }

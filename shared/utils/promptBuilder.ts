@@ -21,22 +21,25 @@ export class PromptBuilder {
    * @param subjectEnvironment 主体与环境描述
    * @param parameters 参数值
    * @param config 参数配置（决定参数名、取值与版本兼容关系）
+   * @param photoPrefix 摄影前缀基词（ADR-0027）；留空则不带开头段
    * @returns 完整的提示词字符串
    */
   static buildPhotography(
     selectedPrompts: SelectedPrompt[],
     subjectEnvironment: string,
     parameters: ParameterValues,
-    config?: ParametersConfig
+    config?: ParametersConfig,
+    photoPrefix: string = 'photography'
   ): string {
     // 1. 按位置标签分组（按选中顺序）
     const groups = this.groupPromptsByPosition(selectedPrompts)
 
-    // 2. 构建摄影前缀
+    // 2. 构建摄影前缀（ADR-0027）：基词由会话配置，留空时整段消失
     const artists = groups.artist.map(p => p.text)
-    const photographyPrefix = artists.length > 0
-      ? `photography by ${artists.join(', ')}`
-      : 'photography'
+    const base = String(photoPrefix ?? '').trim()
+    const photographyPrefix = base
+      ? (artists.length > 0 ? `${base} by ${artists.join(', ')}` : base)
+      : artists.join(', ')
 
     // 3. 组合各部分（按固定顺序）
     const parts: string[] = [photographyPrefix]

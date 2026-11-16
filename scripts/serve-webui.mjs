@@ -12,6 +12,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { handleMaterials } from './materials-api.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -43,7 +44,197 @@ if (!fs.existsSync(WEB_ROOT)) {
   process.exit(1);
 }
 
+// ── /api/settings：受限配置读写 ────────────────────────────────────────
+// 沿用 127.0.0.1 绑定（见下方 listen）；仅放行本机 / localhost 的浏览器来源，
+// 非浏览器客户端（curl / node fetch 等无 Origin）也允许。绝不回显 key 明文。
+const ENV_PATH = path.join(ROOT, '.env');
+const LOGS_DIR = path.join(ROOT, 'logs');
+const SETTINGS_FIELDS = {
+  baseUrl: 'MJ_DECOMPOSE_BASE_URL',
+  model: 'MJ_DECOMPOSE_MODEL',
+  apiKey: 'MJ_DECOMPOSE_API_KEY',
+};
+const MAX_SETTINGS_BODY = 8 * 1024;
+
+function sendJson(res, status, payload) {
+  const body = JSON.stringify(payload);
+  res.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Content-Length': Buffer.byteLength(body),
+    'Cache-Control': 'no-store',
+  });
+  res.end(body);
+}
+
+function parseEnvValues(text) {
+  const values = { baseUrl: '', model: '', apiKey: '' };
+  for (const line of text.split('\n')) {
+    for (const field of Object.keys(SETTINGS_FIELDS)) {
+      const prefix = SETTINGS_FIELDS[field] + '=';
+      if (line.startsWith(prefix)) values[field] = line.slice(prefix.length);
+    }
+  }
+  return values;
+}
+
+function configuredFrom(values) {
+  return {
+    baseUrl: values.baseUrl.trim().length > 0,
+    model: values.model.trim().length > 0,
+    apiKey: values.apiKey.trim().length > 0,
+  };
+}
+
+// 只替换白名单三键对应的行，其余（注释、CONCURRENCY、TIMEOUT_MS 等）一字不动。
+function applyEnvUpdates(text, updates) {
+  return text.split('\n').map((line) => {
+    for (const field of Object.keys(SETTINGS_FIELDS)) {
+      const prefix = SETTINGS_FIELDS[field] + '=';
+      if (Object.prototype.hasOwnProperty.call(updates, field) && line.startsWith(prefix)) {
+        return prefix + updates[field];
+      }
+    }
+    return line;
+  }).join('\n');
+}
+
+function backupEnv(text) {
+  if (!fs.existsSync(LOGS_DIR)) fs.mkdirSync(LOGS_DIR, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const bak = path.join(LOGS_DIR, `env-${stamp}.bak`);
+  fs.writeFileSync(bak, text, 'utf8'); // 保持 UTF-8 无 BOM / LF
+  return bak;
+}
+
+async function readSettingsBody(req) {
+  const chunks = [];
+  let size = 0;
+  let tooLarge = false;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > MAX_SETTINGS_BODY) { tooLarge = true; continue; } // 继续消费，避免挂起
+    chunks.push(chunk);
+  }
+  if (tooLarge) return { tooLarge: true };
+  return { text: Buffer.concat(chunks).toString('utf8') };
+}
+
+function originAllowed(req) {
+  const origin = req.headers.origin;
+  if (!origin) return true; // curl / node fetch 等非浏览器客户端
+  return typeof origin === 'string' && (
+    origin === `http://127.0.0.1:${port}` || origin === `http://localhost:${port}`
+  );
+}
+
+async function handleSettings(req, res) {
+  if (!originAllowed(req)) {
+    sendJson(res, 403, { ok: false, error: 'Origin 不被允许' });
+    return;
+  }
+
+  if (req.method === 'GET') {
+    try {
+      const values = parseEnvValues(fs.readFileSync(ENV_PATH, 'utf8'));
+      sendJson(res, 200, { configured: configuredFrom(values) }); // 只回布尔，绝不回显明文
+    } catch {
+      sendJson(res, 500, { ok: false, error: '读取 .env 失败' });
+    }
+    return;
+  }
+  if (req.method !== 'POST') {
+    sendJson(res, 405, { ok: false, error: '仅支持 GET / POST' });
+    return;
+  }
+
+  const body = await readSettingsBody(req);
+  if (body.tooLarge) {
+    sendJson(res, 413, { ok: false, error: '请求体超过 8KB 上限' });
+    return;
+  }
+  let payload;
+  try {
+    payload = JSON.parse(body.text);
+  } catch {
+    sendJson(res, 400, { ok: false, error: 'JSON 解析失败' });
+    return;
+  }
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    sendJson(res, 400, { ok: false, error: '请求体必须是 JSON 对象' });
+    return;
+  }
+
+  // 字段白名单：只收 baseUrl / model / apiKey 的字符串值；其他键一律忽略，
+  // 绝不写 CONCURRENCY / TIMEOUT_MS。apiKey 为空串 / 缺失 = 不修改已有 key。
+  const updates = {};
+  for (const field of Object.keys(SETTINGS_FIELDS)) {
+    if (!Object.prototype.hasOwnProperty.call(payload, field)) continue;
+    const value = payload[field];
+    if (typeof value !== 'string') continue;
+    if (/[\r\n]/.test(value)) { // 防止注入新行改写其他键
+      sendJson(res, 400, { ok: false, error: '字段值含非法换行' });
+      return;
+    }
+    if (field === 'apiKey' && value.trim() === '') continue;
+    updates[field] = value;
+  }
+
+  let original;
+  try {
+    original = fs.readFileSync(ENV_PATH, 'utf8');
+  } catch {
+    sendJson(res, 500, { ok: false, error: '读取 .env 失败' });
+    return;
+  }
+
+  let backupPath;
+  try {
+    backupPath = backupEnv(original);
+    fs.writeFileSync(ENV_PATH, applyEnvUpdates(original, updates), 'utf8');
+  } catch {
+    let restored = false;
+    try {
+      const restore = backupPath && fs.existsSync(backupPath)
+        ? fs.readFileSync(backupPath, 'utf8')
+        : original;
+      fs.writeFileSync(ENV_PATH, restore, 'utf8');
+      restored = true;
+    } catch { /* 回退失败，下面明确报错 */ }
+    sendJson(res, 500, {
+      ok: false,
+      error: restored ? '写入 .env 失败，已用备份回退' : '写入 .env 失败且回退失败',
+    });
+    return;
+  }
+
+  try {
+    const values = parseEnvValues(fs.readFileSync(ENV_PATH, 'utf8'));
+    sendJson(res, 200, { ok: true, configured: configuredFrom(values) });
+  } catch {
+    sendJson(res, 500, { ok: false, error: '写入后读取 .env 失败' });
+  }
+}
+
 const server = http.createServer((req, res) => {
+  // 精确匹配 /api/settings；其余路径原样落到下方静态逻辑（一字未改）。
+  let apiPathname = '';
+  try {
+    apiPathname = new URL(req.url, 'http://127.0.0.1').pathname;
+  } catch { /* 交给下方静态逻辑处理 */ }
+  if (apiPathname === '/api/settings') {
+    handleSettings(req, res).catch(() => {
+      if (!res.headersSent) sendJson(res, 500, { ok: false, error: '服务器内部错误' });
+    });
+    return;
+  }
+  // ADR-0030：资料库写侧。preview(--dist) 由 handler 内部拒绝一切非 GET 写操作。
+  if (apiPathname === '/api/materials' || apiPathname.startsWith('/api/materials/')) {
+    handleMaterials(req, res, { port, useDist }).catch(() => {
+      if (!res.headersSent) sendJson(res, 500, { ok: false, error: '服务器内部错误' });
+    });
+    return;
+  }
+
   let pathname;
   try {
     pathname = decodeURIComponent(new URL(req.url, 'http://127.0.0.1').pathname);

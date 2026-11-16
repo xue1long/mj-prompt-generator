@@ -1,0 +1,167 @@
+[
+  {
+    "jobId": "fc3a680e-cfa9-4c24-a7a5-66fd28a02cbe",
+    "framework": "人物画像",
+    "segments": [
+      {"text": "Little chibi and angry gengar", "note": "主体是 Q 版小家伙加一只生气的耿鬼，用 and 并列成两个角色；耿鬼是宝可梦 Gengar 的小写写法，chibi 则直接限定了矮圆的身材比例。"},
+      {"text": "being a software engineer is using the computer and cursing the code", "note": "当工程师、敲电脑、骂代码三个状态挤在同一句里，angry 又补了情绪；但 is using 前面主语断裂，是这批里语法最拧巴的动作句。"},
+      {"text": "the computer", "note": "场景信息几乎为零，勉强能算周边元素的只有 the computer 这一件道具，连工作台或屏幕内容都没交代，背景留白全凭 Poster 体裁默认。"},
+      {"text": "", "note": "没有 shot、angle、lens 任何一个词，连三分法或居中都没写；3:4 竖幅和构图全由上游字段与 sref 2116795492 参考图替它决定。"},
+      {"text": "", "note": "光源、软硬、色调一个词都没给，angry 只是情绪不是色彩，灰调压根没在正文出现，配色其实锁在 sref 2116795492 里面。"},
+      {"text": "Poster. Illustration.", "note": "风格只有开头 Poster. Illustration. 两个体裁词，外加 chibi 这一 Q 版画法信号，媒介、画风、流派全没展开，两句还各自带句号把结构切断。"},
+      {"text": "", "note": "正文一个 -- 参数都没有，3:4 比例与 sref 2116795492 都由上游作业字段承载，这是读社区作业时最容易看漏的隐性信息。"}
+    ],
+    "composition": [],
+    "tags": {"style": ["Poster", "Illustration", "chibi"], "lighting": [], "angle": [], "emotion": ["angry"]},
+    "paramTail": {"text": "", "params": []},
+    "health": [
+      {"id": "R1", "ok": false, "note": "being a software engineer is using the computer 直接带出 is using 谓语，是语法断裂的完整句，不是干净的名词短语。"},
+      {"id": "R2", "ok": false, "note": "开头 Poster. Illustration. 两句体裁词先占位，Little chibi 和 angry gengar 落到第三句才出现，主体权重被稀释。"},
+      {"id": "R3", "ok": true, "note": "正文一个 -- 参数都没写，3:4 比例与 sref 2116795492 全由上游作业字段提供，参数位置无从错位。"},
+      {"id": "R4", "ok": true, "note": "没有写 --no，也没有任何排除项，全靠 chibi 与 angry 这类正向词去限定画风与神情。"},
+      {"id": "R5", "ok": true, "note": "整条才 121 字符，只有一个长句加两个体裁词，少是够少了，但 cursing the code 之外几乎没给可控视觉信息。"},
+      {"id": "M1", "ok": false, "note": "being a software engineer is using 两个谓语叠在一起语法断裂，gengar 作为宝可梦专名也没大写，句法噪声不小。"},
+      {"id": "M2", "ok": false, "note": "Little chibi 与 angry gengar 用 and 并列成两个角色，后面又叠了 software engineer 这层身份，注意力被摊薄。"},
+      {"id": "M3", "ok": true, "note": "没要求画面里出现可读文字，Poster 只是体裁词而非字样要求，cursing the code 是情节不是字幕。"},
+      {"id": "M4", "ok": true, "note": "全文只有 Poster、Illustration 两个体裁词，没有 8k、masterpiece 这类 V6 之后基本失效的画质堆料。"},
+      {"id": "M5", "ok": true, "note": "整条是英文，最长的 is using the computer and cursing the code 也只是英文病句，不涉及中文长句的理解损耗。"},
+      {"id": "V1", "ok": true, "note": "全文连一个冒号都没有，更没有 词::2 权重语法，V8.2 下不触发 V7+ 已移除该语法的兼容问题。"},
+      {"id": "V2", "ok": true, "note": "正文一个 -- 参数都没有，自然不会踩到 --style raw 在 V7+ 要换成 --raw 的版本陷阱。"},
+      {"id": "V3", "ok": true, "note": "没有 --no，也就没有逐词独立审核导致的误伤风险；连 chibi 这种画法限定都是正向写在正文里。"},
+      {"id": "V4", "ok": true, "note": "只挂了 sref 2116795492，没碰 --q / --cref / --oref 这些 V8.1 起被移除或替代的旧参数。"}
+    ],
+    "summary": "一张海报插画里，Q 版小家伙和气呼呼的耿鬼被写成边敲电脑边骂代码的软件工程师，全条只靠 Poster、Illustration 两个体裁词和一句语法拧巴的长句撑着，配色与场景其实都压在 sref 2116795492 参考图上。"
+  },
+  {
+    "jobId": "3feee5b6-86a1-436c-8d98-9271411583ef",
+    "framework": "人物画像",
+    "segments": [
+      {"text": "East Asian woman: preserved facial features, hairstyle, expression, body proportions", "note": "主体是东亚女子，却用冒号列了一串 preserved facial features、hairstyle、body proportions 这类保特征清单，读起来像给参考图写的锁定指令而非人物外貌描写。"},
+      {"text": "raised arm pose, finger placement … imminent touch not yet made", "note": "抬臂、指尖位置和将触未触的刹那感是②段核心，lowest petal stopping just above raised fingertips 把动作精确到花瓣与指尖的间距，是这条最见功力的地方。"},
+      {"text": "Layered lotus leaves in gray green, ink green, deep gray green with natural veins, curled edges, varied heights; a few dried yellow ochre leaves … a shadowy lotus pond", "note": "荷叶分了三种绿还写叶脉、卷边、高低错落，背后又压一层手绘油彩的暗荷塘，环境信息密到近乎美术置景单。"},
+      {"text": "vertical composition … Open space around her face, raised hand, and sleeve … Defocused foreground leaves partially entering edges", "note": "竖构图加面部留白，前景虚化荷叶只从边缘探入、仅压住下摆，语义上同时吃到留白与框架式框景，layered spatial depth 又把纵深点明。"},
+      {"text": "Soft side light on face, hand, and flower", "note": "光线只有一句柔和侧光，且明确打在脸、手、花三处；真正撑起色彩的是 Pale pink lavender 与 gray green、ink green、yellow ochre 那一长串色名。"},
+      {"text": "Realistic fine art portrait photography … hand painted oil on canvas backdrop … visible brushstrokes, impasto, matte texture … Photorealistic figure", "note": "写实艺术肖像摄影套手绘油画布景，再叠可见笔触、厚涂 impasto 与哑光质感，摄影与绘画两套媒介并置，还用 Chinese inspired 点出东方来源。"},
+      {"text": "", "note": "正文零 -- 参数，2:3 竖幅与 sref 都由上游字段承载；耐人寻味的是 sref 字段为无，正文却留着 preserved facial features，像参考图信息丢失后的残句。"}
+    ],
+    "composition": ["留白 / 负空间（推断：Open space around her face, raised hand, and sleeve）", "框架式（推断：Defocused foreground leaves partially entering edges 从边缘探入框景）"],
+    "tags": {"style": ["fine art portrait photography", "Chinese inspired", "hand painted oil on canvas", "visible brushstrokes", "impasto", "matte texture", "Photorealistic"], "lighting": ["Soft side light"], "angle": ["vertical composition"], "emotion": ["quiet anticipation"]},
+    "paramTail": {"text": "", "params": []},
+    "health": [
+      {"id": "R1", "ok": false, "note": "通篇是冒号清单加分号长句，Behind her: 后面还接一整段布景描述，远超名词短语优先的写法。"},
+      {"id": "R2", "ok": false, "note": "开头 Realistic fine art portrait photography, vertical composition 先铺体裁与构图，East Asian woman 落到第二句才出现。"},
+      {"id": "R3", "ok": true, "note": "正文一个 -- 参数都没写，2:3 比例由上游作业字段给出，参数位置自然也无从错位。"},
+      {"id": "R4", "ok": true, "note": "没有 --no，也没有任何排除项，画面减法全靠 overlapping only lower clothing 这类正向限定来完成。"},
+      {"id": "R5", "ok": false, "note": "1041 字符里荷叶写了三种绿加叶脉卷边，布景又叠 impasto 与 matte texture，密度远超少而精，好在每项都落得到具体画面。"},
+      {"id": "M1", "ok": false, "note": "冒号分号都是英文半角，但 fingertips  small gap 和 lotus pond  ink green 两处连着双空格，像漏了破折号或冒号，语义衔接有点断。"},
+      {"id": "M2", "ok": true, "note": "画面人物只有 East Asian woman 一位，莲花、层叠荷叶与油画布景都归环境，不存在多主体平分注意力的问题。"},
+      {"id": "M3", "ok": true, "note": "没有要求画面里出现可读文字或题款，botanically credible scale 是比例约束不是字样，全条不碰准确文字这个坑。"},
+      {"id": "M4", "ok": true, "note": "Photorealistic、impasto、visible brushstrokes 都是实打实的媒介质感词，没有 8k、masterpiece 这类 V6 之后失效的画质堆料。"},
+      {"id": "M5", "ok": true, "note": "1041 字符全是英文，长则长矣，却不是误区清单点名的中文长句，不额外叠加语义解析损耗。"},
+      {"id": "V1", "ok": true, "note": "全文用的是冒号与分号分层，没有 词::2 那种多提示词权重语法，V8.2 下不触发 V7+ 移除该语法的兼容问题。"},
+      {"id": "V2", "ok": true, "note": "连一个 -- 参数都没有，自然既没 --style raw 也没 --raw，避开 V7+ 必须改口的版本陷阱。"},
+      {"id": "V3", "ok": true, "note": "没有 --no，也就不存在排除项被逐词拆开误审的风险；保特征用的是 preserved facial features 这种正向措辞。"},
+      {"id": "V4", "ok": true, "note": "sref 字段为无、正文也没出现 --cref / --oref / --q，虽然 preserved facial features 读起来像参考图残留，但没踩 V8.1 起被移除的旧参数。"}
+    ],
+    "summary": "一张竖幅写实艺术肖像：东亚女子抬手，指尖与低垂粉荷留着一触即发的小空隙，层叠墨绿荷叶与手绘油彩荷塘铺出纵深、以柔和侧光定调；有意思的是 sref 明明写着无，正文却还留着 preserved facial features 这种保参考图特征的措辞。"
+  },
+  {
+    "jobId": "c0e7070c-2663-46fb-a2fd-447aa7c1b6bf",
+    "framework": "人物画像",
+    "segments": [
+      {"text": "A blonde-haired girl taking a fisheye selfie, with an oversized rounded head, enormous sparkling eyes, rosy scribbled cheeks, playful yellow hair tufts, and a tiny mischievous smile", "note": "主体是金发女孩，后面一口气挂了圆大脑袋、闪烁大眼、涂鸦腮红、翘发簇和坏笑五个外貌定语，把 Q 版比例和表情一次写死。"},
+      {"text": "taking a fisheye selfie … one foreshortened arm reaching toward the camera", "note": "自拍靠 taking a fisheye selfie 点题，又用一只透视缩短的手伸向镜头把举机自拍的动势坐实，mischievous smile 与 playful 顺带补了神情。"},
+      {"text": "colorful star stickers, tiny hearts, and loose scribbles … minimal background", "note": "周边只有星星贴纸、小爱心和随意涂鸦这些手账式装饰，minimal background 直接把背景压到最少，等于明说不留场景信息。"},
+      {"text": "Extreme close-up from slightly above, exaggerated fisheye perspective … her face filling almost the entire square frame, hair cropped at the borders", "note": "特写、微俯机位、鱼眼透视、曲边、脸占满画框、发丝被边框裁切，④段写得极满却没命中五法原词；square frame 还和上游 3:4 竖幅对不上。"},
+      {"text": "soft flat lighting … butter-yellow hair, pastel pink and sky-blue accents", "note": "控光只有 soft flat lighting 一句平光，没有方向；色彩靠 butter-yellow、pastel pink、sky-blue 三个色名撑，butter-yellow 又和开头 blonde-haired 重复了发色。"},
+      {"text": "cute hand-drawn doodle illustration style with a cheerful mood … colored-pencil strokes, crayon shading, and grainy paper texture", "note": "手绘涂鸦插画打底，彩铅笔触、蜡笔涂色、颗粒纸纹三层质感叠上来，cheerful、cute、mischievous 三个情绪词和画风混在同一串里。"},
+      {"text": "", "note": "正文零 -- 参数，结尾 No photorealism … watermarks 是自然语言排除而非参数尾；3:4 比例由上游字段承载，正文却写 square frame，两处画幅口径打架。"}
+    ],
+    "composition": [],
+    "tags": {"style": ["hand-drawn doodle illustration", "colored-pencil strokes", "crayon shading", "grainy paper texture"], "lighting": ["soft flat lighting"], "angle": ["Extreme close-up", "from slightly above", "exaggerated fisheye perspective"], "emotion": ["cute", "cheerful", "playful", "mischievous"]},
+    "paramTail": {"text": "", "params": []},
+    "health": [
+      {"id": "R1", "ok": false, "note": "一个 A blonde-haired girl 后面挂了 with、featuring、including 三段介词短语，逗号串出十几个并列项，早已不是干净的短名词短语。"},
+      {"id": "R2", "ok": true, "note": "A blonde-haired girl 开门见山占住第一短语，后面 oversized rounded head 等定语再长也没把主体挤走，权重保得完整。"},
+      {"id": "R3", "ok": true, "note": "正文没有任何 -- 参数，3:4 画幅来自上游字段；结尾 No photorealism 是自然语言不是参数尾，位置虽在末尾但性质不同。"},
+      {"id": "R4", "ok": false, "note": "No photorealism、3D rendering、text 等五项是自然语言排除而非 --no；考虑到 V8.2 下 --no 会逐词独立审核，这写法反而躲开误伤，只是口径不统一。"},
+      {"id": "R5", "ok": false, "note": "827 字符里光风格材质就叠了 colored-pencil strokes、crayon shading、grainy paper texture 三层，加上五官与构图清单，明显超出少而精。"},
+      {"id": "M1", "ok": true, "note": "逗号、连字符与撇号都是英文半角，fisheye、butter-yellow、colored-pencil 这些复合词也拼对了，没有错词或中文标点混入。"},
+      {"id": "M2", "ok": true, "note": "画面只有金发女孩一个人物，star stickers、tiny hearts、loose scribbles 是贴纸涂鸦装饰，不构成并列主体。"},
+      {"id": "M3", "ok": true, "note": "结尾明确把 text 和 watermarks 列进排除项，是主动不要文字，并没有期待 MJ 生成可读字样，恰好绕开这个误区。"},
+      {"id": "M4", "ok": true, "note": "没有 8k、masterpiece、best quality 这类失效画质词，grainy paper texture 与 crayon shading 都是能落地的质感描述。"},
+      {"id": "M5", "ok": true, "note": "整条 827 字符全是英文，最长的 Extreme close-up from slightly above 那句也只是英文长句，不叠加中文长句的解析损耗。"},
+      {"id": "V1", "ok": true, "note": "没有 词::2 权重语法，分层全靠 with、featuring、including 三个介词，V8.2 下不触发 V7+ 移除该语法的问题。"},
+      {"id": "V2", "ok": true, "note": "一个 -- 参数都没出现，既没 --style raw 也没 --raw，不涉及 V7+ 必须改口 --raw 的版本陷阱。"},
+      {"id": "V3", "ok": true, "note": "没有 --no，因此不存在 No photorealism 被逐词拆成不要写实、不要 3D 之类的误审；那条排除是写在正文的自然语言。"},
+      {"id": "V4", "ok": true, "note": "sref 字段为无，正文也没出现 --cref / --oref / --q，fisheye 透视是写在正文的镜头词而非旧参数，不碰 V8.1 起被移除的那批参数。"}
+    ],
+    "summary": "一张鱼眼自拍式的可爱涂鸦：金发女孩把脸几乎怼满整个方画框，鼻头额头被透视放大、一只透视缩短的手伸向镜头，作者用彩铅笔触、蜡笔涂色和颗粒纸纹定调；值得一提的是正文写 square frame，上游却给 3:4，结尾还把不要写实、不要文字写成一串自然语言而非 --no。"
+  },
+  {
+    "jobId": "0c6dff2e-7f40-4aac-91a9-a623dcedccb4",
+    "framework": "人物画像",
+    "segments": [
+      {"text": "Woman in a trench coat", "note": "主体就一个穿风衣的女人，trench coat 是唯一给到的外貌信息，年龄、容貌、发色全没写，开头还先摆了 Illustration 这个体裁词。"},
+      {"text": "walking away from a scene, glancing over her shoulder", "note": "走远和回眸两个分词动作叠得干净，是这条最实的部分；但 from a scene 里的 a scene 始终没说是什么场景，留下一个含糊的叙事缺口。"},
+      {"text": "off-white background", "note": "环境只有 off-white background 一句背景色，没有地点、时间或周边物件，画面几乎全靠米白底和大片留白撑着。"},
+      {"text": "lots of negative space around", "note": "negative space 是构图五法里留白法的原词，直接命中；但没有景别、机位或焦段，9:16 竖幅由上游字段给，人物在画框里多大也没交代。"},
+      {"text": "", "note": "光源方向、软硬、色调一个词都没给，off-white 只是背景底色不算打光，明暗关系完全交给模型默认处理。"},
+      {"text": "Illustration", "note": "风格只有 Illustration 一个媒介词，还是用 Illustration - 这种带空格连字符的标题式前缀起头，画风、笔触、质感一概没展开。"},
+      {"text": "", "note": "正文零 -- 参数，结尾 No texts 与 No text signatures 是自然语言排除而非参数尾；9:16 比例由上游字段承载，这两句排除还重复说了同一件事。"}
+    ],
+    "composition": ["留白 / 负空间（推断：off-white background 上 lots of negative space around）"],
+    "tags": {"style": ["Illustration"], "lighting": [], "angle": [], "emotion": []},
+    "paramTail": {"text": "", "params": []},
+    "health": [
+      {"id": "R1", "ok": true, "note": "Illustration 起头，后面 Woman … walking away … glancing over her shoulder 全是分词短语，没展开成带谓语的完整叙述句。"},
+      {"id": "R2", "ok": true, "note": "Illustration 只是破折号前一个体裁词，Woman in a trench coat 立刻跟上，主体没被长定语推迟，权重位置基本合理。"},
+      {"id": "R3", "ok": true, "note": "正文没有 -- 参数，9:16 竖幅由上游字段给出；结尾 No texts 虽在末尾，却是自然语言排除，不是参数尾。"},
+      {"id": "R4", "ok": false, "note": "No texts 与 No text signatures 两句是自然语言排除而非 --no，而且两条都在说别出文字、语义重复；V8.2 下不用 --no 反倒躲开逐词审核。"},
+      {"id": "R5", "ok": true, "note": "全条才 178 字符，一个主体加两个动作加一句负空间就收住，是少而精的干净样本，代价是 a scene 始终没说清是什么。"},
+      {"id": "M1", "ok": true, "note": "逗号、句号与 off-white 的连字符都是英文半角，Illustration 后面用 - 当分隔也不算中文标点；只是 off-white 小写起句、No 大写起句，大小写不统一。"},
+      {"id": "M2", "ok": true, "note": "画面只有 Woman in a trench coat 一位人物，a scene 是她走离的那个模糊场景不是第二个主体，off-white background 也不构成并列对象。"},
+      {"id": "M3", "ok": true, "note": "结尾连写 No texts 和 No text signatures 两道排除，明确不要画面出字，主动避开了让 MJ 写准确文字的坑。"},
+      {"id": "M4", "ok": true, "note": "全条连一个画质形容词都没有，更没有 8k、masterpiece、best quality，Illustration 一个媒介词就收尾，谈不上堆料。"},
+      {"id": "M5", "ok": true, "note": "178 字符全是英文短句，最长的是 walking away from a scene, glancing over her shoulder 那串分词，不涉及中文长句的理解损耗。"},
+      {"id": "V1", "ok": true, "note": "没有 词::2 权重语法，连冒号都没出现，分层只靠逗号和句号，V8.2 下不触发 V7+ 移除该语法的兼容问题。"},
+      {"id": "V2", "ok": true, "note": "一个 -- 参数都没有，自然不涉及 --style raw 在 V7+ 要改 --raw 的版本陷阱；画风只用 Illustration 一个词交代。"},
+      {"id": "V3", "ok": true, "note": "没有 --no，也就不存在 No text signatures 被逐词拆成不要文字加不要签名的误审风险；两句排除都写在正文里。"},
+      {"id": "V4", "ok": true, "note": "sref 字段为无，正文也没出现 --cref / --oref / --q，9:16 由上游给、负空间写在正文，都不碰 V8.1 起被移除的旧参数。"}
+    ],
+    "summary": "一张极简插画：穿风衣的女人正从某个没交代清的场景走远、又回头望了一眼，米白底上留出一大片负空间，作者收尾连写两句 No texts、No text signatures 来堵文字，全条干净得几乎没有风格词。"
+  },
+  {
+    "jobId": "baaeba3d-e572-4814-a6be-760e9c675fbb",
+    "framework": "人物画像",
+    "segments": [
+      {"text": "a white duck tucked into a striped bed", "note": "主体是窝进条纹床的白鸭，开头先用 a cozy digital drawing depicting 把体裁和 cozy 气质垫在前面，鸭子的物种和姿态其实一句话就给全了。"},
+      {"text": "reading a small book … is holding the open book with its wingtips", "note": "读书和用翅尖捧开着的书两个动作都写实了，tucked into 又补了窝着的静态，是这批里②段落得最具体的拟人写法之一。"},
+      {"text": "the bedding has a pattern of light blue and cream stripes … the background is softly blurred with muted blue tones", "note": "床品条纹、亮橙喙、虚化的蓝调背景分三句铺开，环境道具写得很细，bright orange beak 还顺手给了一处高饱和点缀。"},
+      {"text": "", "note": "没有景别、机位或焦段，softly blurred 只暗示了浅景深虚化，2:3 竖幅由上游字段承载，鸭子占画面多大完全没交代。"},
+      {"text": "a warm glow illuminating the scene … gentle, warm lighting", "note": "暖光被 warm glow 和 gentle, warm lighting 说了两遍，配 muted blue tones、light blue and cream 的冷底，冷暖对比其实靠这些色彩词而非打光描述成立。"},
+      {"text": "a cozy digital drawing … a soft, textucolor effect", "note": "风格只有 cozy digital drawing 打底，收尾的 textucolor 是 texture 与 color 拼坏的生造词，词库匹配不上，等于把质感交给一个不存在的效果名。"},
+      {"text": "", "note": "正文零 -- 参数，2:3 比例由上游作业字段承载；全条五句都是小写 the 起头的完整句，连一个参数或排除项都没往末尾放。"}
+    ],
+    "composition": [],
+    "tags": {"style": ["cozy digital drawing", "textucolor effect"], "lighting": ["warm glow", "gentle, warm lighting"], "angle": [], "emotion": ["cozy"]},
+    "paramTail": {"text": "", "params": []},
+    "health": [
+      {"id": "R1", "ok": false, "note": "the bedding has、the duck has … is holding、the background is、the entire image has 四句带谓语的完整陈述句，明显偏离名词短语优先。"},
+      {"id": "R2", "ok": true, "note": "a cozy digital drawing depicting 之后立刻落到 a white duck，主体在首句前半就出现，没被 cozy、digital 这些定语挤到后面。"},
+      {"id": "R3", "ok": true, "note": "正文一个 -- 参数都没写，2:3 竖幅由上游字段给出，参数位置自然谈不上错位。"},
+      {"id": "R4", "ok": true, "note": "没有 --no，也没有任何排除项，画面全靠 a white duck、light blue and cream stripes 这类正向描述堆出来。"},
+      {"id": "R5", "ok": false, "note": "warm glow illuminating the scene 和 gentle, warm lighting 把暖光说了两遍，bed 的条纹又单独成句，405 字符里有可压缩的重复描写。"},
+      {"id": "M1", "ok": false, "note": "textucolor 是 texture 与 color 拧在一起的生造词，词库里查不到；四句还一律用小写 the 起句，逗号句号虽是英文半角但文字噪声不小。"},
+      {"id": "M2", "ok": true, "note": "画面只有 a white duck 一个主角，small book、striped bed、bright orange beak 都是它的道具与身体部件，不构成并列主体。"},
+      {"id": "M3", "ok": true, "note": "reading a small book 只是让鸭子做读书的动作，没有要求书页上出现可读文字，避开了让 MJ 写准确字样的坑。"},
+      {"id": "M4", "ok": true, "note": "没有 8k、masterpiece、best quality 这类失效词，textucolor effect 虽然生造，但只是个效果描述而非画质堆料。"},
+      {"id": "M5", "ok": true, "note": "405 字符全是英文陈述句，不是误区清单点名的中文长句，不叠加中文提示词的理解损耗。"},
+      {"id": "V1", "ok": true, "note": "五个句子全用句号分隔，没有 词::2 权重语法，连冒号都没出现，V8.2 下不触发 V7+ 移除该语法的兼容问题。"},
+      {"id": "V2", "ok": true, "note": "一个 -- 参数都没出现，既没 --style raw 也没 --raw，不涉及 V7+ 必须改口 --raw 的版本陷阱；cozy 是写在正文的气质词。"},
+      {"id": "V3", "ok": true, "note": "没有 --no，因此不存在排除项被逐词拆开误审的风险；连 textucolor 这种生造词都是正向写在正文里的。"},
+      {"id": "V4", "ok": true, "note": "sref 字段为无，正文也没出现 --cref / --oref / --q，softly blurred 是写进句子的景深描述而非旧参数，不碰 V8.1 起被移除的那批参数。"}
+    ],
+    "summary": "一张温馨的数字绘画：白鸭窝在浅蓝奶油条纹的被窝里，用翅尖捧着一本小书在读，背景虚成柔和的蓝调、罩着一层暖光；作者连写五句完整陈述句来铺细节，末尾还造了个词库里查不到的 textucolor effect。"
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "id": "mat_mwgk9ev5_8liib2",
+  "prompt": "Ancient fairy-style study room, horizontal angle, close shot. Silver and gold metalwork furniture, beautifully carved metal tables and chairs, and boldly colored paintings on the walls. There is a bronze guqin in the center of the room, and metal tea sets are placed next to it. Dreamy light shines through the circular window, and there is a tree outside the window. The screens and partitions have exquisite patterns, the floor is covered with brightly colored carpets, and the fairy mist is lingering. The overall atmosphere is delicate and mysterious, with bright images and low saturation. --v 6 --s 200 --ar 3:1",
+  "images": [
+    "mat_mwgk9ev5_8liib2_1.webp",
+    "mat_mwgk9ev5_8liib2_2.webp",
+    "mat_mwgk9ev5_8liib2_3.webp"
+  ],
+  "originalNames": [
+    "697ea96a_01.webp",
+    "697ea96a_02.webp",
+    "697ea96a_03.webp"
+  ],
+  "tags": [
+    "小红书",
+    "抄录清洗"
+  ],
+  "author": "鱼鱼大王（水彩）",
+  "note": "来源：小红书笔记 697ea96a000000002800b2b9（uploader 鱼鱼大王（水彩））\n分类：MJ_PARAM · 处理：抄录清洗\n中文速读：银金雕花家具、青铜古琴与圆窗柔光的仙气书房，明亮低饱和、精致神秘——但与本笔记的山水配图不是同一画面。",
+  "source": "batch",
+  "createdAt": 1794670135169,
+  "updatedAt": 1794670135475,
+  "schemaVersion": 1
+}

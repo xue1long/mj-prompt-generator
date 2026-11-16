@@ -31,10 +31,17 @@ CLAUDE.md
 .workbuddy/
 
 # 本地采集产物（styles_top 的 sref 清单 / 失败记录；由 collect 工具落地，不入 git）
-data/
+# 资料库是项目一等数据集，必须入库（ADR-0030）。保留 `data/` 整行再加
+# `!data/materials/` 无效 —— 父目录被忽略时 negation 不生效，故改成忽略直接子项再放行。
+data/*
+!data/materials/
 
 # 临时工作文件
 preview_prompt.json
+# 采集字段探针的输出（--probe 一次性诊断，不入 git）
+.probe-keys.txt
+# Node 编译缓存（tools/*.ts 直跑时由 node 生成，非源码）
+TEMP/
 
 # 风格库预览图（生成物：由 npm run sync:style-images 从隔壁仓复制，约 185 MB）
 public/preview-images/midlibrary/
@@ -49,6 +56,9 @@ public/preview-images/midjourney-styles-top/
 public/explore/thumbs/
 # 探索榜灯箱大图（生成物：640px 档，灯箱与下载用，约 429 MB）
 public/explore/mid/
+
+# 资料库配图**入库**（ADR-0030）：它是用户持有的真相源，不是采集链生成物。
+# public/materials/ 不在忽略清单内；此注释防止将来被通配规则误伤。
 
 # 构建期 LLM 代理密钥（tools/decompose-explore.ts 用，绝不提交）
 .env

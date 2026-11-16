@@ -13,9 +13,11 @@
 
 const EXPLORE_BOARD = (() => {
   const ui = {
-    q: '', batch: '', aspect: '', srefOnly: false,
-    /** 已选的 sref 码（多选，报告 2.2） */
-    srefCodes: new Set(),
+    q: '', batch: '',
+    /* 两轴分类（ADR-0028）：表现媒介与画面主体各自单值互斥，
+       但筛选维度是多选 —— 一次可以看「写实 或 插画」下的人像。 */
+    mediums: new Set(),
+    subjects: new Set(),
     /** 已选的 prompt 短语（多选，报告 2.2） */
     phrases: new Set(),
     /** 已选的拆解来源（多选，报告 2.5）—— 值的域在 DECOMP_SOURCES */
@@ -37,8 +39,6 @@ const EXPLORE_BOARD = (() => {
     { value: '规则解析', label: '规则解析 · 未精拆' },
     { value: '无拆解', label: '无拆解' },
   ];
-  /** 「可信拆解」= 手工 + 逐条。报告 2.5：研究结论默认只采信这一层。 */
-  const TRUSTED_DECOMP = ['手工精拆', '逐条精拆'];
   /** 一条作业的拆解来源。缺拆解归到「无拆解」，不归到最低可信的规则解析 ——
       「没有结论」和「有结论但不可信」是两件事。 */
   const decompSourceOf = (j) => (j && j.decomposition && j.decomposition.source) || '无拆解';
@@ -48,13 +48,27 @@ const EXPLORE_BOARD = (() => {
       漏一处就会让新下拉的勾选态被当成另一个下拉的状态（错得很难看出来）。 */
   function setOfMsel(id) {
     switch (id) {
-      case 'ex-srefcode': return ui.srefCodes;
+      case 'ex-medium': return ui.mediums;
+      case 'ex-subject': return ui.subjects;
       case 'ex-phrase': return ui.phrases;
       case 'ex-decomp': return ui.decomp;
       case 'ex-gendate': return ui.genDates;
       default: return null;
     }
   }
+
+  /* ── 两轴分类的档位表（ADR-0028）──────────────────────────────────
+     分类本体在 webui/js/sample-taxonomy.js，这里只取显示用的档位表。
+     模块缺失时返回空数组，工具栏不出现该控件 —— 宁可不显示，也不显示一个
+     永远 0 命中的空壳。 */
+  function axisOptions(axis) {
+    if (typeof SAMPLE_TAXONOMY === 'undefined') return [];
+    const list = axis === 'subject' ? SAMPLE_TAXONOMY.SUBJECTS : SAMPLE_TAXONOMY.MEDIUMS;
+    return list.map((x) => ({ value: x.value, label: x.label }));
+  }
+  /** 两轴都必须在界面标明是**规则推算** —— tooltip 不会被截图带走，
+      而「写实占 30%」这种结论恰恰最容易被截图引用。 */
+  const TAXONOMY_HINT = '规则推算的分类，不是人工标注：未声明 / 未判定单列一档，比例会随词表调整浮动，不可直接当研究结论引用。';
 
   /* ── 卡片操作区 ─────────────────────────────────────────────────────
      收藏键只由提示词正文的哈希决定：同一条提示词在任何筛选条件下状态一致。
@@ -197,9 +211,6 @@ const EXPLORE_BOARD = (() => {
     return PHRASE_INDEX.shared(EXPLORE_JOBS);
   }
 
-  /** 一条作业的 sref 码（上游是空格分隔的字符串，可能一作业多码）。 */
-  const srefCodeList = (j) => String(j?.sref || '').split(/\s+/).filter(Boolean);
-
   /** 一条作业命中的收录短语。 */
   function phrasesOfJob(j) {
     const idx = index();
@@ -212,13 +223,13 @@ const EXPLORE_BOARD = (() => {
       q: ui.q || '',
       dims: {
         batch: ui.batch || '',
-        aspect: ui.aspect || '',
-        sref: !!ui.srefOnly,
-        srefCode: [...ui.srefCodes],
-        phrase: [...ui.phrases],
         // 报告 2.5 / 2.7 新增的两个维度
         decomp: [...ui.decomp],
         genDate: [...ui.genDates],
+        phrase: [...ui.phrases],
+        // ADR-0028：两轴分类
+        medium: [...ui.mediums],
+        subject: [...ui.subjects],
       },
     };
   }
@@ -229,7 +240,7 @@ const EXPLORE_BOARD = (() => {
     return FILTER_ENGINE.filter(src, EXPLORE_JOBS, filterState());
   }
 
-  /** 某个维度的分面计数（批次 / 比例）。 */
+  /** 某个维度的分面计数（批次）。 */
   function facetCount(dimKey, value) {
     const src = typeof EXPLORE_FILTER_SOURCE !== 'undefined' ? EXPLORE_FILTER_SOURCE : null;
     if (!src) return 0;
@@ -237,9 +248,8 @@ const EXPLORE_BOARD = (() => {
   }
 
   const totalJobs = () => EXPLORE_BATCHES.reduce((s, b) => s + b.jobs, 0);
-  const srefCount = () => EXPLORE_JOBS.filter(j => j.sref).length;
 
-  /* 下拉只列本地样本实际覆盖的批次 / 比例，避免「选了必空态」（ADR-0017）。
+  /* 下拉只列本地样本实际覆盖的批次，避免「选了必空态」（ADR-0017）。
      选项后的数字取样本内真实条数，不沿用上游全量统计；接回全量数据后自动扩展。 */
   function availableFrom(list, field) {
     const counts = new Map();
@@ -257,7 +267,6 @@ const EXPLORE_BOARD = (() => {
     return out;
   }
   const availableBatches = () => availableFrom(EXPLORE_BATCHES, 'batch');
-  const availableAspects = () => availableFrom(EXPLORE_ASPECTS, 'aspect');
 
   /** 某个维度的**完整**分面计数表（一次算完，供多选下拉逐项取用）。
       与 facetCount 同口径，但只算一次 —— 短语维度有 571 个选项，
@@ -266,17 +275,6 @@ const EXPLORE_BOARD = (() => {
     const src = typeof EXPLORE_FILTER_SOURCE !== 'undefined' ? EXPLORE_FILTER_SOURCE : null;
     if (!src) return new Map();
     return FILTER_ENGINE.counts(src, EXPLORE_JOBS, filterState(), dimKey);
-  }
-
-  /* sref 码下拉的选项（报告 2.2）：按出现次数降序。 */
-  function availableSrefCodes() {
-    const counts = new Map();
-    for (const j of EXPLORE_JOBS) {
-      for (const c of srefCodeList(j)) counts.set(c, (counts.get(c) || 0) + 1);
-    }
-    return [...counts.entries()]
-      .map(([code, n]) => ({ code, n }))
-      .sort((a, b) => b.n - a.n || a.code.localeCompare(b.code));
   }
 
   /* 生成日期的选项（报告 2.7）：真实生成日，**新 → 旧**排列。
@@ -323,7 +321,7 @@ const EXPLORE_BOARD = (() => {
      2. 选项**懒加载**：lazy=true 时不把选项内联进 HTML，
         等 details 展开（toggle 事件）再注入。
         571 个短语全内联会让 toolbar 涨到 177 KB。 */
-  function multiSelectHtml({ id, label, options, selected, dimKey, formatName, lazy }) {
+  function multiSelectHtml({ id, label, options, selected, dimKey, formatName, lazy, title }) {
     const sel = selected || [];
     const count = sel.length;
     const nameOf = formatName || ((o) => o.label ?? o.value ?? o.phrase ?? o.code);
@@ -344,7 +342,7 @@ const EXPLORE_BOARD = (() => {
       ? (sel.length ? options.filter(o => sel.includes(valueOf(o))).map(rowHtml).join('') : '')
       : options.map(rowHtml).join('');
     return `
-      <details class="msel" id="${id}" data-msel="${id}"${lazy ? ' data-msel-lazy="1"' : ''}>
+      <details class="msel" id="${id}" data-msel="${id}"${lazy ? ' data-msel-lazy="1"' : ''}${title ? ` title="${esc(title)}"` : ''}>
         <summary class="msel-sum">
           <span class="msel-label">${esc(label)}</span>
           ${count ? `<span class="msel-badge">${count}</span>` : ''}
@@ -380,17 +378,11 @@ const EXPLORE_BOARD = (() => {
   }
 
   function toolbarHtml() {
-    const srefCodes = availableSrefCodes();
     const phrases = availablePhrases();
     const decompSources = availableDecompSources();
     const genDates = availableGenDates();
-    /* 「只看可信拆解」开关的 on 状态 = 当前恰好只勾了手工 + 逐条。
-       为什么不做成独立状态位：那会让「开关开着、多选里又勾了规则解析」
-       这种自相矛盾的状态可能发生。开关只是多选的**快捷写法**，
-       URL 里体现的就是 decomp 多选本身，刷新与分享都自然复现。 */
-    const trustedOn = ui.decomp.size === TRUSTED_DECOMP.length
-      && TRUSTED_DECOMP.every((v) => ui.decomp.has(v));
-    const trustedCount = EXPLORE_JOBS.filter((j) => TRUSTED_DECOMP.includes(decompSourceOf(j))).length;
+    const mediums = axisOptions('medium');
+    const subjects = axisOptions('subject');
     return `
       <div class="toolbar" data-od-id="explore-toolbar">
         <div class="search">
@@ -402,19 +394,21 @@ const EXPLORE_BOARD = (() => {
           <option value="">全部采集批次</option>
           ${availableBatches().map(b => `<option value="${esc(b.key)}"${ui.batch === b.key ? ' selected' : ''}>${esc(b.name)} · ${facetCount('batch', b.key)}</option>`).join('')}
         </select>
-        <select class="select" id="ex-aspect" aria-label="按宽高比筛选" style="width:auto">
-          <option value="">全部比例</option>
-          ${availableAspects().map(a => `<option value="${esc(a.key)}"${ui.aspect === a.key ? ' selected' : ''}>${esc(a.name)} · ${facetCount('aspect', a.key)}</option>`).join('')}
-        </select>
-        ${srefCount()
-          ? `<button class="toggle${ui.srefOnly ? ' on' : ''}" type="button" id="ex-sref" aria-pressed="${ui.srefOnly}">只看有 sref <span class="n">${srefCount()}</span></button>`
-          : `<span class="param-chip" title="源数据未采集 --sref 字段">源数据未采集 sref</span>`}
-        ${srefCodes.length ? multiSelectHtml({
-          id: 'ex-srefcode',
-          label: 'sref 码',
-          options: srefCodes.map(c => ({ value: c.code, label: c.code })),
-          selected: [...ui.srefCodes],
-          dimKey: 'srefCode',
+        ${mediums.length ? multiSelectHtml({
+          id: 'ex-medium',
+          label: '表现媒介 · 规则推算',
+          options: mediums,
+          selected: [...ui.mediums],
+          dimKey: 'medium',
+          title: TAXONOMY_HINT,
+        }) : ''}
+        ${subjects.length ? multiSelectHtml({
+          id: 'ex-subject',
+          label: '画面主体 · 规则推算',
+          options: subjects,
+          selected: [...ui.subjects],
+          dimKey: 'subject',
+          title: TAXONOMY_HINT,
         }) : ''}
         ${phrases.length ? multiSelectHtml({
           id: 'ex-phrase',
@@ -431,10 +425,6 @@ const EXPLORE_BOARD = (() => {
           selected: [...ui.decomp],
           dimKey: 'decomp',
         }) : ''}
-        ${decompSources.length
-          ? `<button class="toggle${trustedOn ? ' on' : ''}" type="button" id="ex-decomp-trusted"
-               aria-pressed="${trustedOn}" title="只保留手工精拆与逐条精拆 —— 研究结论默认只采信这一层">只看可信拆解 <span class="n">${trustedCount}</span></button>`
-          : ''}
         ${genDates.length ? multiSelectHtml({
           id: 'ex-gendate',
           label: '生成日期',
@@ -553,7 +543,7 @@ const EXPLORE_BOARD = (() => {
     if (!list.length) {
       return stateHtml({
         title: '没有匹配的作业',
-        desc: srefCount() ? '换个关键词，或者把批次、比例、sref 码与短语筛选放宽。' : '换个关键词，或者放宽批次与比例筛选。',
+        desc: '换个关键词，或者放宽批次、媒介、主体与短语筛选。',
         iconName: 'search',
       });
     }
@@ -608,11 +598,6 @@ const EXPLORE_BOARD = (() => {
     const scope = body.parentElement || host;
     const count = scope.querySelector('.toolbar .dock-count');
     if (count) count.textContent = `${matches().length} 条作业（显示 ${Math.min(ui.limit, matches().length)}）`;
-    const sref = scope.querySelector('#ex-sref');
-    if (sref) {
-      sref.classList.toggle('on', ui.srefOnly);
-      sref.setAttribute('aria-pressed', String(ui.srefOnly));
-    }
     // 多选下拉的勾选态与计数：toolbar 不随 body 重建，这里显式同步。
     scope.querySelectorAll('[data-msel-item]').forEach(el => {
       const set = setOfMsel(el.dataset.mselItem);
@@ -635,14 +620,6 @@ const EXPLORE_BOARD = (() => {
         badge.remove();
       }
     });
-    // 「只看可信拆解」开关：on 态由多选推导，不是独立状态位（见 toolbarHtml 注释）
-    const trustedBtn = scope.querySelector('#ex-decomp-trusted');
-    if (trustedBtn) {
-      const on = ui.decomp.size === TRUSTED_DECOMP.length
-        && TRUSTED_DECOMP.every((v) => ui.decomp.has(v));
-      trustedBtn.classList.toggle('on', on);
-      trustedBtn.setAttribute('aria-pressed', String(on));
-    }
   }
 
   /** 把 toolbar + grid 换到 host 里并接线 */
@@ -668,37 +645,21 @@ const EXPLORE_BOARD = (() => {
       refresh(host);
     });
 
-    const aspect = host.querySelector('#ex-aspect');
-    if (aspect) aspect.addEventListener('change', () => {
-      ui.aspect = aspect.value;
-      ui.limit = 60;
-      pushUrl();
-      refresh(host);
-    });
-
-    const sref = host.querySelector('#ex-sref');
-    if (sref) sref.addEventListener('click', () => {
-      ui.srefOnly = !ui.srefOnly;
-      pushUrl();
-      refresh(host);
-    });
-
     /* 多选下拉的懒加载（报告 2.2）：展开 details 时才把 571 条短语注进 DOM。
-       折叠状态下 toolbar 里只有一行摘要 —— 首屏 HTML 从 177 KB 降到 ~1 KB。 */
+       折叠状态下 toolbar 里只有一行摘要 —— 首屏 HTML 从 177 KB 降到 ~1 KB。
+       只有短语走这条路（573 项），其余维度选项都在几十项量级，直接内联。 */
     host.querySelectorAll('[data-msel-lazy]').forEach(det => {
       det.addEventListener('toggle', () => {
         if (!det.open) return;
         const list = det.querySelector('[data-msel-list]');
         if (!list || list.dataset.loaded === '1') return;
         const id = det.dataset.msel;
-        const opts = id === 'ex-phrase'
-          ? availablePhrases().map(p => ({ value: p.phrase, label: p.phrase }))
-          : availableSrefCodes().map(c => ({ value: c.code, label: c.code }));
-        const counts = facetCounts(id === 'ex-phrase' ? 'phrase' : 'srefCode');
-        const sel = id === 'ex-phrase' ? ui.phrases : ui.srefCodes;
+        if (id !== 'ex-phrase') return;
+        const opts = availablePhrases().map(p => ({ value: p.phrase, label: p.phrase }));
+        const counts = facetCounts('phrase');
         list.innerHTML = opts.map(o => {
           const n = counts.get(o.value) || 0;
-          const on = sel.has(o.value);
+          const on = ui.phrases.has(o.value);
           return `
                 <label class="msel-row${n === 0 && !on ? ' is-empty' : ''}">
                   <input type="checkbox" data-msel-item="${id}" value="${esc(o.value)}"${on ? ' checked' : ''}>
@@ -710,7 +671,7 @@ const EXPLORE_BOARD = (() => {
       });
     });
 
-    /* 多选下拉（报告 2.2）：sref 码 / 提示词短语。
+    /* 多选下拉（报告 2.2）：媒介 / 主体 / 短语 / 拆解来源 / 生成日期。
        用**事件委托**（挂在 toolbar 上）—— 懒加载注入的 checkbox 是新元素，
        逐元素绑定绑不到它们；且 refresh() 后 body 重建也会丢绑定。 */
     const toolbar0 = host.querySelector('.toolbar');
@@ -735,19 +696,6 @@ const EXPLORE_BOARD = (() => {
           const id = btn.dataset.mselClear;
           const set = setOfMsel(id);
           if (set) set.clear();
-          ui.limit = 60;
-          pushUrl();
-          refresh(host);
-          return;
-        }
-        // 「只看可信拆解」快捷开关（报告 2.5）：它只是 decomp 多选的一种写法 ——
-        // 打开 = 只勾手工 + 逐条；再点一次 = 清空。单一状态源，URL 里就是 decomp。
-        const trustedBtn = ev.target.closest ? ev.target.closest('#ex-decomp-trusted') : null;
-        if (trustedBtn && toolbar0.contains(trustedBtn)) {
-          ev.preventDefault();
-          const on = ui.decomp.size === TRUSTED_DECOMP.length
-            && TRUSTED_DECOMP.every((v) => ui.decomp.has(v));
-          ui.decomp = on ? new Set() : new Set(TRUSTED_DECOMP);
           ui.limit = 60;
           pushUrl();
           refresh(host);
@@ -837,6 +785,18 @@ const EXPLORE_BOARD = (() => {
   }
 
   /* ── 灯箱：作业详情 + 七段拆解 ───────────────────────────────────── */
+
+  /** 灯箱里的两轴标注。分类是规则推算，标签必须自带这句话 ——
+      灯箱截图会被贴进笔记，tooltip 带不走（ADR-0028）。 */
+  function taxonomyBadgeHtml(job) {
+    if (typeof SAMPLE_TAXONOMY === 'undefined') return '';
+    const c = SAMPLE_TAXONOMY.classify(job);
+    return `<p class="dock-hint" style="margin:8px 0 0">
+      <span class="param-chip" data-role="taxonomy-medium">${esc(SAMPLE_TAXONOMY.labelOf('medium', c.medium))}</span>
+      <span class="param-chip" data-role="taxonomy-subject">${esc(SAMPLE_TAXONOMY.labelOf('subject', c.subject))}</span>
+      规则推算 · 非人工标注</p>`;
+  }
+
   function openJobSheet(id) {
     // 逐段送入的单一空值判据：与数据体检口径一致，只去首尾空白、不改内容
     const segText = (s) => String(s.text ?? '').trim();
@@ -867,6 +827,7 @@ const EXPLORE_BOARD = (() => {
           <div style="flex:1">
             <p class="eyebrow">${esc(job.batch)} · V${esc(job.version)} · ${esc(job.aspect)}</p>
             <h2>${esc(job.title)}</h2>
+            ${taxonomyBadgeHtml(job)}
           </div>
           <button class="icon-btn" type="button" data-role="close" aria-label="关闭">${icon('close')}</button>
         </div>
@@ -1080,13 +1041,15 @@ const EXPLORE_BOARD = (() => {
       toast(shown ? `找不到引用键 ${shown} 对应的作业` : '深链里没有指定作业', 'close');
       return false;
     }
-    // 直达时清掉筛选：用户是冲着这一条来的，不该被残留的批次/比例筛选挡住。
+    // 直达时清掉筛选：用户是冲着这一条来的，不该被残留的批次/分类筛选挡住。
+    // （旧版只清了批次与比例，漏了拆解来源与生成日期 —— 一并补齐。）
     ui.q = '';
     ui.batch = '';
-    ui.aspect = '';
-    ui.srefOnly = false;
-    ui.srefCodes.clear();
+    ui.mediums.clear();
+    ui.subjects.clear();
     ui.phrases.clear();
+    ui.decomp.clear();
+    ui.genDates.clear();
     ui.limit = 60;
     openJobSheet(job.id);
     writeJobToHash(jobKeyOf(job));
@@ -1106,9 +1069,7 @@ const EXPLORE_BOARD = (() => {
     jobKeyOf,
     jobDeepLink,
     jobFromHash,
-    srefCodeList,
     phrasesOfJob,
-    availableSrefCodes,
     availablePhrases,
     /** 当前筛选命中的全部作业（全量，非分页后的显示部分）。
         导出功能（webui/js/sample-export.js）用它取数 —— 保证导出的是

@@ -16,6 +16,8 @@ import {
   replaceBatch,
   styleRefsOf,
   toExploreJob,
+  describeJobShape,
+  renderProbeReport,
   type ExploreApiJob,
   type NeighborManifestRecord,
 } from '../tools/collect-explore'
@@ -229,5 +231,76 @@ describe('合并与保留窗口', () => {
     expect(config.batches[0].jobs).toBe(2)
     expect(config.aspects[0]).toEqual({ key: '9:16', name: '竖版 9:16', count: 2 })
     expect(config.source.dropped).toBe(13)
+  })
+})
+
+describe('上游字段探针（--probe）', () => {
+  /* 探针存在的理由：971 条 prompt 正文里一个 `--参数` 都没有，说明参数被上游
+     拆成了结构字段；但字段名未知，猜错会静默拿到 undefined。所以只读探针
+     必须先如实报出「上游给了哪些键」。这几个用例守的就是「如实」。 */
+  const raw = [
+    { id: 'a', width: 1, prompt: { decodedPrompt: [], ar: { w: 9, h: 16 }, version: '8.2', stylize: 250 } },
+    { id: 'b', prompt: { decodedPrompt: [], ar: null, version: 7, stylize: 100, chaos: 12 } },
+    { id: 'c' },
+  ]
+
+  it('如实列出 job 与 prompt 两层的键，包括本项目没声明的', () => {
+    const report = describeJobShape(raw)
+    expect(report.jobs).toBe(3)
+    const jobKeys = report.jobFields.map(f => f.key)
+    expect(jobKeys).toContain('id')
+    expect(jobKeys).toContain('prompt')
+    const promptKeys = report.promptFields.map(f => f.key)
+    expect(promptKeys).toEqual(expect.arrayContaining(['decodedPrompt', 'ar', 'version', 'stylize']))
+    // chaos 只在 1 条里出现 —— 计数必须如实，不能按「有就全算」
+    expect(report.promptFields.find(f => f.key === 'chaos')?.count).toBe(1)
+  })
+
+  it('按「非空」降序排，「非空」相同的再按出现次数降序', () => {
+    const report = describeJobShape(raw)
+    const rows = report.promptFields
+    for (let i = 1; i < rows.length; i++) {
+      const prev = rows[i - 1]
+      const cur = rows[i]
+      expect(prev.filled).toBeGreaterThanOrEqual(cur.filled)
+      if (prev.filled === cur.filled) expect(prev.count).toBeGreaterThanOrEqual(cur.count)
+    }
+  })
+
+  it('version 取值按字符串归并（8.2 与 7 不混），缺 version 的不计入', () => {
+    const report = describeJobShape(raw)
+    expect(report.versionValues).toEqual([
+      { value: '7', count: 1 },
+      { value: '8.2', count: 1 },
+    ].sort((a, b) => b.count - a.count || a.value.localeCompare(b.value)))
+  })
+
+  it('没有 prompt 的作业不抛错', () => {
+    const report = describeJobShape([{ id: 'x' }, {} as Record<string, unknown>])
+    expect(report.jobs).toBe(2)
+    expect(report.promptFields).toEqual([])
+  })
+
+  it('「非空」计数区分「字段存在但恒为空」与「有真值」', () => {
+    /* 这一列是整个探针的重点：上游把 stylize / chaos 都列出来了，但值可能恒为 null。
+       只看「出现次数」会误判成「上游给了参数」，进而给采样白加一维。 */
+    const report = describeJobShape(raw)
+    const stylize = report.promptFields.find(f => f.key === 'stylize')
+    expect(stylize?.count).toBe(2)   // 两条 job 都带这个键
+    expect(stylize?.filled).toBe(2)  // 且都有值
+    const ar = report.promptFields.find(f => f.key === 'ar')
+    expect(ar?.count).toBe(2)
+    expect(ar?.filled).toBe(1)       // 其中一条 ar 是 null
+    const empty = describeJobShape([{ id: 'z', prompt: { stylize: null } }])
+    expect(empty.promptFields[0]).toMatchObject({ key: 'stylize', count: 1, filled: 0 })
+  })
+
+  it('报告文本含表头与键名；空报告不产出空表', () => {
+    const md = renderProbeReport(describeJobShape(raw))
+    expect(md).toContain('上游字段探针')
+    expect(md).toContain('| 键 | 出现次数 | 非空 | 样例 |')
+    expect(md).toContain('stylize')
+    const empty = renderProbeReport(describeJobShape([]))
+    expect(empty).toContain('（无）')
   })
 })

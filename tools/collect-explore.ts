@@ -843,6 +843,158 @@ export async function collectExplore(options: CollectOptions): Promise<CollectSu
 const invokedDirectly =
   process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href
 
+/* ── 上游字段探针（--probe）────────────────────────────────────────────
+   为什么需要它：抓回来的作业只取 `ar` / `version` / `styleRef` 几个字段
+   （见 ExploreApiJob 的注释「只声明用得到的字段」），但 971 条 prompt 正文里
+   **一个 `--参数` 都没有** —— 说明上游把参数拆成了结构字段，只是我们没声明。
+   剩下的字段名**不能靠猜**：名字写错会静默拿到 undefined，而「上游没有这个字段」
+   与「字段名拼错」在水合后的数据里长得一模一样，事后无法区分。
+   所以给一个只读探针：跑一次，把真实键名与出现次数打出来，再决定加哪些。
+   它不写快照、不下载配图、不进 update 链（见 ADR-0028 之后的采集侧待办）。 */
+
+export interface ProbeField {
+  key: string
+  count: number
+  /** 非空条数：null / undefined / 空数组都不算。区分「字段存在但恒为空」与「有真值」 */
+  filled: number
+  example: string
+}
+
+export interface ProbeReport {
+  jobs: number
+  jobFields: ProbeField[]
+  promptFields: ProbeField[]
+  versionValues: Array<{ value: string; count: number }>
+}
+
+const PROBE_EXAMPLE_LIMIT = 72
+
+/** 取一个能看懂但不刷屏的样例值。 */
+function exampleOf(value: unknown): string {
+  if (value === null) return 'null'
+  if (value === undefined) return 'undefined'
+  if (Array.isArray(value)) {
+    return `array(${value.length}) ${JSON.stringify(value).slice(0, PROBE_EXAMPLE_LIMIT)}`
+  }
+  const text = typeof value === 'object' ? JSON.stringify(value) : String(value)
+  return (text ?? '').slice(0, PROBE_EXAMPLE_LIMIT)
+}
+
+/** 「有值」的判据：null / undefined / 空数组都算空。false 算有值（`styleRaw: false` 是真信息）。 */
+function isFilled(value: unknown): boolean {
+  if (value === null || value === undefined) return false
+  if (Array.isArray(value)) return value.length > 0
+  return true
+}
+
+/** 统计一组对象上出现过的键；按出现次数降序（最常出现的先看）。 */
+function tallyFields(rows: Array<Record<string, unknown> | null>): ProbeField[] {
+  const acc = new Map<string, ProbeField>()
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue
+    for (const key of Object.keys(row)) {
+      const value = (row as Record<string, unknown>)[key]
+      const hit = acc.get(key)
+      if (hit) {
+        hit.count += 1
+        if (isFilled(value)) hit.filled += 1
+      } else {
+        acc.set(key, { key, count: 1, filled: isFilled(value) ? 1 : 0, example: exampleOf(value) })
+      }
+    }
+  }
+  return [...acc.values()].sort(
+    (a, b) => b.filled - a.filled || b.count - a.count || a.key.localeCompare(b.key)
+  )
+}
+
+export function describeJobShape(jobs: Array<Record<string, unknown>>): ProbeReport {
+  const promptRows = jobs.map((job) => {
+    const prompt = job && (job as { prompt?: unknown }).prompt
+    return prompt && typeof prompt === 'object' ? (prompt as Record<string, unknown>) : null
+  })
+  const versions = new Map<string, number>()
+  for (const row of promptRows) {
+    const v = row?.version
+    if (v === undefined || v === null) continue
+    const key = String(v)
+    versions.set(key, (versions.get(key) ?? 0) + 1)
+  }
+  return {
+    jobs: jobs.length,
+    jobFields: tallyFields(jobs),
+    promptFields: tallyFields(promptRows),
+    versionValues: [...versions.entries()]
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value)),
+  }
+}
+
+export function renderProbeReport(report: ProbeReport): string {
+  const table = (rows: ProbeField[]): string[] =>
+    rows.length
+      ? rows.map((r) => `| \`${r.key}\` | ${r.count} | ${r.filled} | ${r.example.replace(/\|/g, '\\|')} |`)
+      : ['| （无） | 0 | 0 | — |']
+  const header = ['| 键 | 出现次数 | 非空 | 样例 |', '|---|---|---|---|']
+  return [
+    '# 上游字段探针（只读）',
+    '',
+    `作业 ${report.jobs} 条。下表是**上游真实返回**的键，不代表本项目已经用到它们。`,
+    '用途：确认「要不要给采样加参数维度」之前，先看上游到底给不给这些字段 ——',
+    '「非空」为 0 说明字段存在但恒为空，加了也是白加。',
+    '',
+    '## job 顶层键',
+    '',
+    ...header,
+    ...table(report.jobFields),
+    '',
+    '## prompt 对象内的键',
+    '',
+    ...header,
+    ...table(report.promptFields),
+    '',
+    '## version 取值分布',
+    '',
+    '| version | 条数 |',
+    '|---|---|',
+    ...(report.versionValues.length
+      ? report.versionValues.map((v) => `| ${v.value} | ${v.count} |`)
+      : ['| （无） | 0 |']),
+    '',
+  ].join('\n')
+}
+
+/**
+ * 只读探针：取一页上游数据，报告字段形状。
+ * 不写 config/explore.yaml、不下载配图、不动 dist/。
+ */
+export async function probeExplore(options: {
+  root: string
+  pages?: number
+  log?: (message: string) => void
+}): Promise<ProbeReport> {
+  const log = options.log ?? (() => {})
+  const pages = options.pages ?? 1
+  const cookieFile = path.join(os.tmpdir(), `mj-probe-${process.pid}.cookie`)
+  fs.rmSync(cookieFile, { force: true })
+  try {
+    const cleared = await ensureClearance(cookieFile)
+    log(cleared ? 'Cloudflare 通行证就绪' : '没拿到 Cloudflare 通行证（接口可能仍然可用）')
+    const raw: Array<Record<string, unknown>> = []
+    for (let page = 0; page < pages; page++) {
+      const jobs = await fetchApiPage(page, cookieFile)
+      log(`  第 ${page + 1} 页：${jobs.length} 条`)
+      if (jobs.length === 0) break
+      // 声明类型只覆盖用到的字段，探针要看**全部**键，故按未知形状收
+      raw.push(...(jobs as unknown as Array<Record<string, unknown>>))
+    }
+    if (raw.length === 0) throw new Error('上游接口没有返回任何作业')
+    return describeJobShape(raw)
+  } finally {
+    fs.rmSync(cookieFile, { force: true })
+  }
+}
+
 if (invokedDirectly) {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
   const argv = process.argv.slice(2)
@@ -860,33 +1012,56 @@ if (invokedDirectly) {
     ? readArg('import') ?? defaultNeighborSiteDir(root)
     : undefined
 
-  const run = importDir
-    ? importNeighborSite({
-        root,
-        siteDir: importDir,
-        windowDays,
-        log: message => console.log(`[collect-explore] ${message}`),
-      }).then(summary => {
-        console.log(
-          `[collect-explore] 导入完成：${summary.jobs} 条作业 · 重编码 ${summary.images} 张图 · 跳过 ${summary.skipped} 张`
-        )
+  if (argv.includes('--probe')) {
+    // 只读探针：先看清上游给哪些字段，再决定要不要加维度。失败不猜字段名。
+    const outFile = path.join(root, '.probe-keys.txt')
+    probeExplore({
+      root,
+      pages: pages ?? 1,
+      log: message => console.log(`[collect-explore] ${message}`),
+    })
+      .then(report => {
+        const text = renderProbeReport(report)
+        fs.writeFileSync(outFile, text, 'utf-8')
+        console.log(text)
+        console.log(`[collect-explore] 已写 ${outFile}（只读：未写快照、未下载配图）`)
       })
-    : collectExplore({
-        root,
-        pages,
-        windowDays,
-        batch,
-        skipImages,
-        log: message => console.log(`[collect-explore] ${message}`),
-      }).then(summary => {
-        console.log(
-          `[collect-explore] 完成：上游 ${summary.fetched} 条 · 入库 ${summary.kept} 条 · 批次 ${summary.batches} 个 · 新图 ${summary.imagesDownloaded} 张`
+      .catch((error: Error) => {
+        console.error(`[collect-explore] 探针失败：${error.message}`)
+        console.error(
+          '[collect-explore] 没拿到真实字段名就不要往 ExploreApiJob 里加字段 —— 名字猜错只会静默拿到 undefined。'
         )
+        process.exit(1)
       })
+  } else {
+    const run = importDir
+      ? importNeighborSite({
+          root,
+          siteDir: importDir,
+          windowDays,
+          log: message => console.log(`[collect-explore] ${message}`),
+        }).then(summary => {
+          console.log(
+            `[collect-explore] 导入完成：${summary.jobs} 条作业 · 重编码 ${summary.images} 张图 · 跳过 ${summary.skipped} 张`
+          )
+        })
+      : collectExplore({
+          root,
+          pages,
+          windowDays,
+          batch,
+          skipImages,
+          log: message => console.log(`[collect-explore] ${message}`),
+        }).then(summary => {
+          console.log(
+            `[collect-explore] 完成：上游 ${summary.fetched} 条 · 入库 ${summary.kept} 条 · 批次 ${summary.batches} 个 · 新图 ${summary.imagesDownloaded} 张`
+          )
+        })
 
-  run.catch((error: Error) => {
-    console.error(`[collect-explore] 失败：${error.message}`)
-    console.error('[collect-explore] 保留上一份快照与旧图，未做任何写入。')
-    process.exit(1)
-  })
+    run.catch((error: Error) => {
+      console.error(`[collect-explore] 失败：${error.message}`)
+      console.error('[collect-explore] 保留上一份快照与旧图，未做任何写入。')
+      process.exit(1)
+    })
+  }
 }
