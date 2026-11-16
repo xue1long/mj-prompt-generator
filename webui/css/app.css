@@ -1352,3 +1352,9 @@ details[open] > summary::after { transform: rotate(-135deg) translate(-1px, -1px
 .mat-readonly { margin: 10px 0 0; padding: 8px 11px; border: 1px solid var(--border, #444); border-left: 3px solid var(--accent, #888); border-radius: 6px; font-size: 12.5px; color: var(--fg-2, inherit); background: var(--surface-2, #222); }
 .mat-readonly code { font-family: ui-monospace, Consolas, monospace; padding: 1px 4px; border-radius: 3px; background: var(--surface, #333); }
 .mat-toolbar button[disabled], .mat-sheet button[disabled], .mat-sheet input[disabled], .mat-sheet textarea[disabled] { opacity: .55; cursor: not-allowed; }
+
+/* ADR-0031：风格与类型库卡片。
+   .artist-more 是绝对定位在卡片右上角的单按钮；类型卡片有**两个**
+   （详情 + 复制），所以第二个要往左让位，否则两者完全重叠。
+   选择器挂在卡片的 data-od-id 前缀上，不影响艺术家侧的单按钮布局。 */
+[data-od-id^="type-card-"] .artist-more[data-copy] { right: 42px; }

@@ -22,7 +22,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'webui');
 const DIST = path.join(ROOT, 'dist');
 
-const REQUIRED_HTML = ['index.html', 'explore.html', 'gallery.html', 'style-library.html'];
+const REQUIRED_HTML = ['index.html', 'explore.html', 'gallery.html', 'style-library.html', 'style-types.html'];
 
 function treeStat(dir) {
   let files = 0;
@@ -50,6 +50,7 @@ for (const f of REQUIRED_HTML) {
   if (!fs.existsSync(path.join(SRC, f))) fail(`webui/ 缺少 ${f}`);
 }
 if (!fs.existsSync(path.join(SRC, 'js', 'data-explore.js'))) fail('webui/js/ 数据文件缺失，先跑 npm run build:webui-data');
+if (!fs.existsSync(path.join(SRC, 'js', 'data-types.js'))) fail('webui/js/data-types.js 缺失，先跑 npm run build:webui-data');
 
 const srcStat = treeStat(SRC);
 if (fs.existsSync(DIST)) {
@@ -92,7 +93,7 @@ const publicRefs = fs
 if (!publicRefs) fail('产物里找不到 ../public/ 配图引用 —— 配图路径可能被整体改坏');
 
 console.log(
-  `[build-webui] 完成 → dist/：${out.files} 文件 / ${(out.bytes / 1048576).toFixed(2)} MB / ${jsCount} 个 JS / 4 个 HTML`
+  `[build-webui] 完成 → dist/：${out.files} 文件 / ${(out.bytes / 1048576).toFixed(2)} MB / ${jsCount} 个 JS / ${REQUIRED_HTML.length} 个 HTML`
 );
 console.log('[build-webui] 单一图片命名空间检查通过（产物无 assets/ 引用，配图统一走 ../public/）');
 console.log('[build-webui] dist/ 必须在项目根内使用（配图指向 ../public/）；双击 dist/index.html 即用，或 npm run preview');

@@ -6,7 +6,7 @@ source:
   name: midlibrary
   url: https://midlibrary.io/library
   license: 有条件：站方书面许可（个人学习用途，署名 + 回链）
-  generatedAt: '2026-11-07'
+  generatedAt: '2026-11-16'
   facetCoverage: 100
 categories:
   - id: painters

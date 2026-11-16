@@ -13,6 +13,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
  * - 只搬 320px 缩略图（实测均 20.7KB/张）；
  * - 不搬 960px 整张样例表（八千多条会到 1GB 级别，浏览用不上）。
  *
+ * 覆盖范围：artist / style_code（风格库）+ 5 个条目类型 kind（风格与类型库）。
+ *
  * 幂等：已存在且大于 1KB 的文件直接跳过，重跑只补缺失的。
  */
 
@@ -23,6 +25,26 @@ interface ManifestRow {
   kind: string
   thumb_path?: string
 }
+
+/**
+ * 需要同步缩略图的条目类型。
+ *
+ * artist / style_code 是风格库的两类；
+ * genre / movement / style_quality / technique / title 是「风格与类型库」
+ * 的 4 个条目类型类（上游第 5 类 sref-styles 即 kind=style_code，已含）。
+ *
+ * 目标 4 类合计 1,180 条 / 23.7 MB，比风格库的 8,960 条轻得多 ——
+ * 它们是通用提示词片段，图少但每条都要看，所以同步。
+ */
+const SYNCED_KINDS = new Set([
+  'artist',
+  'style_code',
+  'genre',
+  'movement',
+  'style_quality',
+  'technique',
+  'title',
+])
 
 function defaultManifestPath(root: string): string {
   return path.resolve(root, '..', 'ai-video-imge-prompts', 'sites', 'midlibrary', 'manifest.json')
@@ -53,7 +75,7 @@ export function syncStyleImages(
   destDir: string
 ): SyncResult {
   const rows = JSON.parse(fs.readFileSync(manifestPath, 'utf-8')) as ManifestRow[]
-  const wanted = rows.filter(r => r.kind === 'artist' || r.kind === 'style_code')
+  const wanted = rows.filter(r => SYNCED_KINDS.has(r.kind))
 
   fs.mkdirSync(destDir, { recursive: true })
 

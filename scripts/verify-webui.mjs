@@ -2205,6 +2205,321 @@ async function main() {
         check('断言写入的数据已精确清理', !fs.readFileSync(dataFile, 'utf8').includes(prompt));
       }
     }
+
+    /* 13. 风格与类型库独立页（2026-11）
+       独立页，不是工作台一级视图 —— 所以它不进 VIEWS，只挂 NAV。
+       这一组把「独立页」当成一个契约来守：
+         · 页面能渲染、零运行时错误、顶栏有第 4 个入口
+         · 数据契约：条目数 / 分类数 / 分面组数 / 主色数 与源快照一致
+         · 筛选语义：**组内任一、组间全部**（多组维度 groupOf 的真正含义）
+         · 排序：A→Z 与「最新收录」（口径 = 创建时间倒序，不是实测时间）
+         · 会话动作：加进提示词走 other 槽（多选累加，不是 artist 的单选互斥）
+         · 深链往返：URL hash 是筛选状态的唯一来源（ADR-0010）
+         · 窄屏回归：新顶栏多一个入口，390×844 下不得溢出 */
+    {
+      const { page, errs } = await openPage(browser, 'style-types.html');
+
+      const info = await page.evaluate(() => ({
+        appbar: document.querySelector('#appbar')?.children.length || 0,
+        dock: document.querySelector('#dock')?.children.length || 0,
+        pageEl: document.querySelector('#page')?.children.length || 0,
+        navLinks: [...document.querySelectorAll('.mainnav a')].map(a => a.getAttribute('href')),
+        // 数据契约
+        entries: typeof TYPE_ENTRIES !== 'undefined' ? TYPE_ENTRIES.length : -1,
+        cats: typeof TYPE_CATEGORIES !== 'undefined' ? TYPE_CATEGORIES.length : -1,
+        groups: typeof TYPE_TERM_GROUPS !== 'undefined' ? TYPE_TERM_GROUPS.length : -1,
+        colours: typeof TYPE_COLOURS !== 'undefined' ? TYPE_COLOURS.length : -1,
+        imageMode: typeof TYPE_IMAGE_STATS !== 'undefined' ? TYPE_IMAGE_STATS.mode : '?',
+        withImages: typeof TYPE_IMAGE_STATS !== 'undefined' ? TYPE_IMAGE_STATS.withImages : -1,
+        totalImages: typeof TYPE_IMAGE_STATS !== 'undefined' ? TYPE_IMAGE_STATS.total : -1,
+        tested: typeof TYPE_ENTRIES !== 'undefined' ? TYPE_ENTRIES.filter(e => e.tested).length : -1,
+        pub: typeof TYPE_ENTRIES !== 'undefined' ? TYPE_ENTRIES.filter(e => e.publicDomain).length : -1,
+        withTime: typeof TYPE_ENTRIES !== 'undefined' ? TYPE_ENTRIES.filter(e => e.createdAt > 0).length : -1,
+        cards: document.querySelectorAll('.artist-card').length,
+        count: document.querySelector('.toolbar .dock-count')?.textContent.trim() || '',
+      }));
+      check('风格与类型库 渲染', info.appbar > 0 && info.dock > 0 && info.pageEl > 0,
+        JSON.stringify({ appbar: info.appbar, dock: info.dock, pageEl: info.pageEl }));
+      check('风格与类型库 零运行时错误', errs.length === 0, errs.slice(0, 3).join(' | '));
+      check('顶栏含「风格与类型库」入口',
+        info.navLinks.includes('style-types.html'), info.navLinks.join(','));
+
+      /* 数据契约：条数写死会随上游采集漂移，所以对着页内数据自洽性断言，
+         再单独钉住「配图全覆盖」与「每条都有创建时间」两条不变量。 */
+      check('类型库 数据装载完整', info.entries > 0 && info.cats === 4 && info.groups > 0 && info.colours > 0,
+        `条目 ${info.entries} / 分类 ${info.cats} / 分面组 ${info.groups} / 主色 ${info.colours}`);
+      check('类型库 配图为 public 全量', info.imageMode === 'public' && info.withImages === info.totalImages && info.withImages === info.entries,
+        `${info.imageMode} / ${info.withImages} / ${info.totalImages}`);
+      check('类型库 每条都有创建时间（最新收录口径有据）', info.withTime === info.entries,
+        `${info.withTime} / ${info.entries}`);
+      check('类型库 首屏卡片与总数一致', info.cards > 0 && info.cards <= info.entries && info.count === `${info.entries.toLocaleString('zh-CN')} 条`,
+        `卡片 ${info.cards} · 计数「${info.count}」`);
+
+      /* 筛选语义：组内任一、组间全部
+         口径从数据现算，不用写死数字：
+           · 单组多值 → 并集（OR）
+           · 跨组多值 → 交集（AND）
+         页面显示的条数必须与引擎现算一致。
+         三个分面词：a、b 同组，c 异组。
+           本项目语义：(a ∨ b) ∧ c
+           上游平铺 AND：a ∧ b ∧ c        ← 对照组，用来证明两者确实不同 */
+      const sem = await page.evaluate(() => {
+        const g1 = TYPE_TERM_GROUPS[0];
+        const g2 = TYPE_TERM_GROUPS.find(g => g.id !== g1.id);
+        const a = g1.terms[0].slug;
+        const b = g1.terms[1] ? g1.terms[1].slug : g1.terms[0].slug;
+        const c = g2.terms[0].slug;
+        const has = (e, s) => (e.terms || []).includes(s);
+        const sameGroupUnion = TYPE_ENTRIES.filter(e => has(e, a) || has(e, b)).length;
+        const crossGroupAnd = TYPE_ENTRIES.filter(e => has(e, a) && has(e, c)).length;
+        const projectSem = TYPE_ENTRIES.filter(e => (has(e, a) || has(e, b)) && has(e, c)).length;
+        const upstreamFlat = TYPE_ENTRIES.filter(e => has(e, a) && has(e, b) && has(e, c)).length;
+        return { a, b, c, sameGroupUnion, crossGroupAnd, projectSem, upstreamFlat };
+      });
+      const readCount = async (args) => {
+        const { page: p } = await openPage(browser, 'style-types.html', args);
+        const txt = await p.evaluate(() => document.querySelector('.toolbar .dock-count')?.textContent.trim() || '');
+        await p.close();
+        return Number((txt.match(/[\d,]+/) || ['0'])[0].replace(/,/g, ''));
+      };
+      const nOr = await readCount(`#style-types?terms=${sem.a}&terms=${sem.b}`);
+      const nAnd = await readCount(`#style-types?terms=${sem.a}&terms=${sem.c}`);
+      const nThree = await readCount(`#style-types?terms=${sem.a}&terms=${sem.b}&terms=${sem.c}`);
+      check('类型库 组内多值取并集', nOr === sem.sameGroupUnion,
+        `页面 ${nOr} / 期望 ${sem.sameGroupUnion}（${sem.a} ∪ ${sem.b}）`);
+      check('类型库 跨组多值取交集', nAnd === sem.crossGroupAnd,
+        `页面 ${nAnd} / 期望 ${sem.crossGroupAnd}（${sem.a} ∧ ${sem.c}）`);
+      check('类型库 三词 = (同组并集) ∧ 跨组', nThree === sem.projectSem,
+        `页面 ${nThree} / 期望 ${sem.projectSem}（(${sem.a} ∨ ${sem.b}) ∧ ${sem.c}）`);
+      check('类型库 语义 ≠ 上游平铺 AND（本项目更宽）', nThree !== sem.upstreamFlat,
+        `本项目 ${nThree} · 上游平铺 ${sem.upstreamFlat}`);
+
+      /* 分面面板：必须能打开、必须按组分组列出分面词 */
+      const panel = await page.evaluate(async () => {
+        location.hash = '#style-types';
+        await new Promise(r => setTimeout(r, 120));
+        const btn = document.querySelector('[data-toggle="facets"]');
+        if (!btn) return { ok: false };
+        btn.click();
+        await new Promise(r => setTimeout(r, 150));
+        const p = document.querySelector('#type-facet-panel');
+        return {
+          ok: !!p,
+          catBtns: p ? p.querySelectorAll('[data-cat]').length : 0,
+          termBtns: p ? p.querySelectorAll('[data-term]').length : 0,
+          colourBtns: p ? p.querySelectorAll('[data-colour]').length : 0,
+          groupHeads: p ? p.querySelectorAll('.slot-head').length : 0,
+        };
+      });
+      check('类型库 分面面板可打开且分维度齐全',
+        panel.ok && panel.catBtns === 5 && panel.termBtns > 0 && panel.colourBtns > 0,
+        JSON.stringify(panel));
+
+      /* 详情弹层：必须有真实入口 —— 写好但没人能打开的弹层是死代码。
+         入口是卡片右上角的「详情」按钮（data-detail）。 */
+      const sheet = await page.evaluate(async () => {
+        const btn = document.querySelector('[data-detail]');
+        if (!btn) return { hasBtn: false };
+        btn.click();
+        await new Promise(r => setTimeout(r, 250));
+        const s = document.querySelector('[data-od-id="type-sheet"]');
+        return {
+          hasBtn: true,
+          open: !!s,
+          name: s?.querySelector('.artist-sheet-name')?.textContent.trim() || '',
+          hasCopy: !!s?.querySelector('[data-role="copy"]'),
+          hasAdd: !!s?.querySelector('[data-role="add"]'),
+          hasBacklink: !!s?.querySelector('a[href*="midlibrary.io"]'),
+          blocks: s ? s.querySelectorAll('.artist-sheet-block').length : 0,
+        };
+      });
+      check('类型库 详情弹层有入口且能打开',
+        sheet.hasBtn && sheet.open && sheet.name.length > 0,
+        JSON.stringify(sheet));
+      check('类型库 详情弹层含复制/加进/回链三件套',
+        sheet.hasCopy && sheet.hasAdd && sheet.hasBacklink,
+        `复制 ${sheet.hasCopy} · 加进 ${sheet.hasAdd} · 回链 ${sheet.hasBacklink}`);
+      // 关掉弹层，别挡住后面的用例
+      await page.evaluate(async () => {
+        const close = document.querySelector('[data-od-id="type-sheet"] [data-role="close"]');
+        if (close) close.click();
+        await new Promise(r => setTimeout(r, 200));
+      });
+      const sheetClosed = await page.evaluate(() => !document.querySelector('[data-od-id="type-sheet"]'));
+      check('类型库 详情弹层可关闭', sheetClosed);
+
+      /* 两个右上角按钮不能重叠（.artist-more 是右上角绝对定位） */
+      const overlap = await page.evaluate(() => {
+        const d = document.querySelector('[data-detail]');
+        const c = document.querySelector('[data-copy]');
+        if (!d || !c) return { ok: false };
+        const a = d.getBoundingClientRect();
+        const b = c.getBoundingClientRect();
+        const hit = !(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top);
+        return { ok: true, hit, a: [Math.round(a.left), Math.round(a.right)], b: [Math.round(b.left), Math.round(b.right)] };
+      });
+      check('类型库 卡片「详情」与「复制」按钮不重叠', overlap.ok && overlap.hit === false,
+        JSON.stringify(overlap));
+
+      /* 「复制提示词」：用户钦定的动作之一，必须真的复制了英文写法。
+         捕获口径：navigator.clipboard.writeText（file:// 下不弹权限框）+ copy 事件。 */
+      const copyRes = await page.evaluate(async () => {
+        window.__copied = [];
+        const orig = navigator.clipboard && navigator.clipboard.writeText;
+        if (orig) {
+          navigator.clipboard.writeText = (t) => { window.__copied.push(String(t)); return orig.call(navigator.clipboard, t); };
+        }
+        document.addEventListener('copy', (e) => {
+          try { window.__copied.push(e.clipboardData.getData('text')); } catch { /* 忽略 */ }
+        }, true);
+        const btn = document.querySelector('[data-copy]');
+        const id = btn?.dataset.copy || '';
+        const expected = (TYPE_ENTRIES.find(x => x.id === id) || {}).en || '';
+        btn.click();
+        await new Promise(r => setTimeout(r, 250));
+        return { id, expected, copied: window.__copied };
+      });
+      check('类型库「复制提示词」复制的是英文写法',
+        copyRes.copied.length > 0 && copyRes.copied.includes(copyRes.expected),
+        `期望「${copyRes.expected}」· 实得 ${JSON.stringify(copyRes.copied)}`);
+
+      /* 排序：A→Z 与「最新收录」
+         「最新收录」口径 = 创建时间倒序（不是上游的实测时间，快照里没有那个字段）。 */
+      const sortRes = await page.evaluate(async () => {
+        const out = {};
+        location.hash = '#style-types';
+        await new Promise(r => setTimeout(r, 120));
+        const sel = document.querySelector('#type-sort');
+        sel.value = 'az';
+        sel.dispatchEvent(new Event('change'));
+        await new Promise(r => setTimeout(r, 120));
+        out.az = [...document.querySelectorAll('.artist-name')].slice(0, 5).map(n => n.textContent.trim());
+        out.azSorted = out.az.every((v, i) => i === 0 || out.az[i - 1].localeCompare(v, 'en') <= 0);
+        sel.value = 'new';
+        sel.dispatchEvent(new Event('change'));
+        await new Promise(r => setTimeout(r, 120));
+        out.newFirst = [...document.querySelectorAll('.artist-name')].slice(0, 5).map(n => n.textContent.trim());
+        out.hash = location.hash;
+        out.sortOpts = [...document.querySelectorAll('#type-sort option')].map(o => o.value);
+        return out;
+      });
+      check('类型库 A→Z 排序生效', sortRes.azSorted, sortRes.az.join(' | '));
+      check('类型库 排序项只有 A→Z 与最新收录',
+        JSON.stringify(sortRes.sortOpts) === JSON.stringify(['az', 'new']),
+        JSON.stringify(sortRes.sortOpts));
+      check('类型库 最新收录写进 URL 且可复现', sortRes.hash.includes('sort=new'), sortRes.hash);
+
+      // 最新收录的首条 = 全库创建时间最大者（页内现算，不用写死名字）
+      const newest = await page.evaluate(() => {
+        const top = [...TYPE_ENTRIES].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+        return { name: top.name, at: top.createdAt };
+      });
+      check('类型库 最新收录首条 = 创建时间最新者', sortRes.newFirst[0] === newest.name,
+        `页面「${sortRes.newFirst[0]}」 / 现算「${newest.name}」`);
+
+      /* 会话动作：加进提示词走 other 槽（多选累加）
+         注意 session 是 core.js 的顶层 const —— 它是全局词法绑定，不挂 window，
+         所以只能直接引用 `session`，不能写 `window.session`。
+         清场必须走 puppeteer 的 page.reload()，不能在 evaluate 里调 location.reload()
+         —— 那会销毁执行上下文，evaluate 直接抛 "Execution context was destroyed"。
+
+         清场要删**三个**键，不只是 v2：第 4 组在 localStorage 里留了旧键
+         `mj-session-v1`，而 core.js 的 loadSession() 在没有 v2 键时会读 v1
+         并迁移 —— 只删 v2 的话，v1 里那条 lighting 会被迁回来，断言里
+         就凭空多出一个非 other 槽的选中项。 */
+      const clearSession = async (pg) => {
+        await pg.evaluate(() => {
+          for (const k of ['mj-session-v2', 'mj-session-v1', 'mj-parameter-values']) {
+            try { localStorage.removeItem(k); } catch { /* 忽略 */ }
+          }
+        });
+      };
+      await clearSession(page);
+      await page.reload({ waitUntil: 'load' });
+      await new Promise((r) => setTimeout(r, 700));
+      const sessionRes = await page.evaluate(async () => {
+        const cards = [...document.querySelectorAll('[data-item-id]')].slice(0, 2);
+        cards[0].click();
+        await new Promise(r => setTimeout(r, 100));
+        cards[1].click();
+        await new Promise(r => setTimeout(r, 200));
+        const sel = typeof session !== 'undefined' && session.selected ? session.selected : [];
+        return {
+          count: sel.length,
+          positions: sel.map(s => s.position),
+          ids: sel.map(s => s.id),
+          final: (document.querySelector('#final-bar')?.textContent || '').replace(/\s+/g, ' ').trim(),
+        };
+      });
+      check('类型库 加进提示词可多选累加（other 槽）',
+        sessionRes.count === 2 && sessionRes.positions.every(p => p === 'other'),
+        JSON.stringify({ count: sessionRes.count, positions: sessionRes.positions }));
+      check('类型库 选中项出现在最终提示词里',
+        sessionRes.ids.length > 0 && sessionRes.final.length > 0, sessionRes.final);
+      // 清场：别把选中状态留给用户
+      await clearSession(page);
+
+      /* 深链往返：hash 是唯一状态源（ADR-0010） */
+      const deep = await page.evaluate(async () => {
+        const cat = TYPE_CATEGORIES[0].id;
+        location.hash = `#style-types?cat=${cat}&tested=1`;
+        await new Promise(r => setTimeout(r, 150));
+        const expected = TYPE_ENTRIES.filter(e => e.cat === cat && e.tested).length;
+        const shown = Number((document.querySelector('.toolbar .dock-count')?.textContent || '0').replace(/[^\d]/g, ''));
+        const pressed = document.querySelector('[data-toggle="tested"]')?.getAttribute('aria-pressed');
+        return { expected, shown, pressed, hash: location.hash };
+      });
+      check('类型库 深链往返复现筛选状态',
+        deep.shown === deep.expected && deep.pressed === 'true' && deep.hash.includes('cat='),
+        JSON.stringify(deep));
+
+      await page.close();
+    }
+
+    /* 13b. 风格与类型库 窄屏回归
+       顶栏多了一个入口（「风格与类型库」是 4 个入口里最长的），要确认：
+         · 390×844 下主导航仍可点、不被固定底条盖住
+         · 顶栏没有横向溢出（scrollWidth 不超过视口）
+       与第 9 组的口径一致：只看「首屏可见」的按钮是否点得到。 */
+    for (const vp of [MOBILE, NARROW]) {
+      const { page, errs } = await openPage(browser, 'style-types.html', '', vp);
+      const info = await page.evaluate(() => {
+        const nav = document.querySelector('.mainnav');
+        const links = [...document.querySelectorAll('.mainnav a')];
+        const covered = [];
+        let visible = 0;
+        for (const el of links) {
+          const b = el.getBoundingClientRect();
+          const cx = b.left + b.width / 2;
+          const cy = b.top + b.height / 2;
+          if (cx < 0 || cx > window.innerWidth || cy < 0 || cy > window.innerHeight) continue;
+          visible += 1;
+          const hit = document.elementFromPoint(cx, cy);
+          if (!hit || (hit !== el && !el.contains(hit))) {
+            covered.push({ t: (el.textContent || '').trim(), by: hit ? hit.tagName : 'null' });
+          }
+        }
+        return {
+          visible,
+          covered,
+          navOverflow: nav ? nav.scrollWidth - nav.clientWidth : -1,
+          docOverflow: document.documentElement.scrollWidth - window.innerWidth,
+          links: links.length,
+          appbar: document.querySelector('#appbar')?.children.length || 0,
+          dock: document.querySelector('#dock')?.children.length || 0,
+          pageEl: document.querySelector('#page')?.children.length || 0,
+        };
+      });
+      const tag = `风格与类型库 ${vp.width}×${vp.height}`;
+      check(`${tag} 渲染`, info.appbar > 0 && info.dock > 0 && info.pageEl > 0,
+        JSON.stringify({ appbar: info.appbar, dock: info.dock, pageEl: info.pageEl }));
+      check(`${tag} 零运行时错误`, errs.length === 0, errs.slice(0, 3).join(' | '));
+      check(`${tag} 主导航首屏可点`, info.visible === info.links && info.covered.length === 0,
+        `可见 ${info.visible}/${info.links} · ` + (info.covered.length ? JSON.stringify(info.covered) : '全部可点'));
+      check(`${tag} 顶栏无横向溢出`, info.docOverflow <= 0,
+        `文档溢出 ${info.docOverflow}px · 导航溢出 ${info.navOverflow}px`);
+      await page.close();
+    }
   } finally {
     await browser.close();
   }

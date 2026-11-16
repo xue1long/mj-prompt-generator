@@ -25,6 +25,14 @@
       不同维度组之间是「与」（全部满足）。
       这条语义此前只存在于艺术家侧，现由引擎统一承载。
 
+      3a. **多组维度**（grouped multi，2026-11 风格与类型库）：
+           分面词天然分 10 组（风格质量 / 主题 / 技法…），而「组内任一、
+           组间全部」要求：**同一组内多值取或，跨组取与**。
+           这与「一个 multi 维度多值一律取或」不同，因此维度可声明
+           `groupOf(item, value)`：返回该取值所属的组 id。
+           引擎据此把选中值按组切分，逐组判或、跨组判与。
+           未声明 groupOf 的 multi 维度行为不变（全部取值取或）。
+
    4. **分面计数**：每个维度的每个取值给出「有多少条命中它」，
       供界面显示计数。计数在**当前其它维度的筛选下**计算（经典分面行为：
       选了 A 组后，B 组的计数反映 A 选中后的结果）。
@@ -51,6 +59,8 @@ const FILTER_ENGINE = (() => {
          valueOf?: (item) => string      —— enum 类型必填
          activeOf?: (item) => boolean    —— bool 类型必填
          matchOf?: (item, text) => boolean —— q 类型必填
+         groupOf?: (value) => string     —— multi 类型可选：取值所属组 id。
+                                          声明后按「组内任一、组间全部」匹配。
        }
      ] */
   function source(id, dims) {
@@ -104,7 +114,29 @@ const FILTER_ENGINE = (() => {
   /* ── 匹配 ────────────────────────────────────────────────────────────
      组内任一（multi / 同一 multi 维度内的多个值）：任一命中即可
      组间全部（不同维度之间）：全部满足
-     q：自由文本，任一维度的 matchOf 命中即可 */
+     q：自由文本，任一维度的 matchOf 命中即可
+
+     **多组维度**（声明了 groupOf 的 multi）：
+     分面词分 10 组，「组内任一、组间全部」指的是
+     「同组的多值取或、跨组取与」，不是「该维度所有取值取或」。
+     所以这里把选中值按组切分：每组内部任一命中即过该组，
+     所有组都过了才算命中该维度。 */
+  function multiMatches(d, item, val) {
+    const have = d.valuesOf(item) || [];
+    if (!d.groupOf) return have.some(v => val.includes(v));
+    // 按组切分选中值
+    const groups = new Map();
+    for (const v of val) {
+      const g = d.groupOf(v) || '';
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g).push(v);
+    }
+    for (const [, picked] of groups) {
+      if (!have.some(v => picked.includes(v))) return false;
+    }
+    return true;
+  }
+
   function matches(src, item, state) {
     for (const d of src.dims) {
       const val = (state.dims || {})[d.key];
@@ -118,8 +150,7 @@ const FILTER_ENGINE = (() => {
       }
       if (d.type === 'multi') {
         if (!val || !val.length) continue;
-        const have = d.valuesOf(item) || [];
-        if (!have.some(v => val.includes(v))) return false;
+        if (!multiMatches(d, item, val)) return false;
         continue;
       }
       if (d.type === 'q') {
@@ -139,7 +170,11 @@ const FILTER_ENGINE = (() => {
   /* ── 分面计数 ────────────────────────────────────────────────────────
      计数在「**其它维度**的当前筛选下」计算 —— 经典分面行为：
      选了 A 组后，B 组显示的是 A 选中后还剩多少条。
-     维度自己的那组不参与计算（否则恒等于自己）。 */
+     维度自己的那组不参与计算（否则恒等于自己）。
+
+     多组维度的计数口径与 A/B 档文档一致：
+     「选项上的数字 = 在当前条件基础上再打开该项会得到的条数」。
+     即把该值加进它所属组后，整条筛选链的结果条数。 */
   function counts(src, items, state, dimKey) {
     const dimMap = dimsOf(src);
     const target = dimMap.get(dimKey);
@@ -148,6 +183,21 @@ const FILTER_ENGINE = (() => {
     const probe = cloneState(state);
     probe.dims[dimKey] = target.type === 'multi' ? [] : (target.type === 'bool' ? false : '');
     const map = new Map();
+    if (target.type === 'multi' && target.groupOf) {
+      // 多组维度：逐个候选值试算（把值加进它所属组后，整链的结果条数）
+      const candidates = new Set();
+      for (const item of items) {
+        if (!matches(src, item, probe)) continue;
+        for (const v of target.valuesOf(item) || []) candidates.add(v);
+      }
+      for (const v of candidates) {
+        const probe2 = cloneState(state);
+        const cur = probe2.dims[dimKey] || [];
+        probe2.dims[dimKey] = cur.includes(v) ? cur : [...cur, v];
+        map.set(v, items.filter(item => matches(src, item, probe2)).length);
+      }
+      return map;
+    }
     for (const item of items) {
       if (!matches(src, item, probe)) continue;
       if (target.type === 'multi') {
@@ -256,6 +306,7 @@ const FILTER_ENGINE = (() => {
     cloneState,
     sameState,
     matches,
+    multiMatches,
     filter,
     counts,
     parseHash,

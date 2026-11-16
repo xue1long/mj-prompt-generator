@@ -465,6 +465,7 @@ const NAV = [
   { href: 'index.html', label: '工作台' },
   { href: 'gallery.html', label: '画廊' },
   { href: 'style-library.html', label: '风格库' },
+  { href: 'style-types.html', label: '风格与类型库' },
 ];
 
 const isMac = () => /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);

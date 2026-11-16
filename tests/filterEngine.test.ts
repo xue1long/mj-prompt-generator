@@ -24,6 +24,7 @@ interface Dim {
   valueOf?: (item: any) => string;
   valuesOf?: (item: any) => string[];
   activeOf?: (item: any) => boolean;
+  groupOf?: (value: string) => string;
 }
 
 interface State {
@@ -39,6 +40,7 @@ interface Engine {
   cloneState(st: State): State;
   sameState(a: State, b: State): boolean;
   matches(src: any, item: any, st: State): boolean;
+  multiMatches(d: Dim, item: any, val: string[]): boolean;
   filter(src: any, items: any[], st: State): any[];
   counts(src: any, items: any[], st: State, dimKey: string): Map<string, number>;
   parseHash(src: any, hash: string): { tab: string | null; state: State; ignored: string[] };
@@ -421,6 +423,127 @@ describe('统一筛选引擎（报告 3.4）', () => {
       const text = fs.readFileSync(ENGINE_FILE, 'utf8');
       expect(text).not.toMatch(/\bdocument\s*\./);
       expect(text).not.toMatch(/\blocation\s*\./);
+    });
+  });
+
+  /* ── 多组维度（grouped multi，2026-11 风格与类型库）──────────────────
+     分面词天然分多组（风格质量 / 主题 / 视觉效果…），而「组内任一、组间全部」
+     要求：**同组多值取或，跨组取与**。
+     这与「一个 multi 维度多值一律取或」是**两种不同语义** ——
+     上游 Midlibrary 把 10 个组压平成一个 AND 池，实测三词只剩 37 条，
+     本项目的分组语义是 160 条。
+
+     维度可以声明 groupOf(value) → 组 id；未声明则退回原行为（全部取值取或），
+     即**向后兼容**：艺术家侧的 terms 维度没有 groupOf，行为不变。 */
+  describe('多组维度（groupOf 声明的 multi）', () => {
+    /* 样例数据：3 个组，A 组有 a1/a2，B 组有 b1，C 组有 c1
+       条目刻意覆盖「同组多值」「跨组组合」「只含一值」几种情形 */
+    const GROUP_OF: Record<string, string> = { a1: 'A', a2: 'A', b1: 'B', c1: 'C' };
+    const items = [
+      { id: 'e1', terms: ['a1', 'b1'] },
+      { id: 'e2', terms: ['a2', 'b1', 'c1'] },
+      { id: 'e3', terms: ['a1'] },
+      { id: 'e4', terms: ['c1'] },
+      { id: 'e5', terms: [] },
+    ];
+    const src = FE.source('grouped', [
+      { key: 'terms', type: 'multi', valuesOf: (x: any) => x.terms || [], groupOf: (v: string) => GROUP_OF[v] || '' },
+    ]);
+    const gst = (vals: string[]): State => ({ q: '', dims: { terms: vals } });
+
+    it('未声明 groupOf 的维度行为不变（全部取值取或）—— 向后兼容', () => {
+      // LIB.terms 没有 groupOf
+      const hits = FE.filter(LIB, ARTISTS, st({ dims: { terms: ['风景', '街拍'] } }));
+      expect(hits.map(a => a.name).sort()).toEqual(['川濑', '荒木']);
+    });
+
+    it('同组多值取或', () => {
+      // a1 ∨ a2 → e1, e2, e3
+      const hits = FE.filter(src, items, gst(['a1', 'a2']));
+      expect(hits.map(x => x.id).sort()).toEqual(['e1', 'e2', 'e3']);
+    });
+
+    it('跨组多值取与', () => {
+      // a1 ∧ b1 → 只有 e1
+      const hits = FE.filter(src, items, gst(['a1', 'b1']));
+      expect(hits.map(x => x.id)).toEqual(['e1']);
+    });
+
+    it('三词 = (同组并集) ∧ 跨组', () => {
+      // (a1 ∨ a2) ∧ b1 → e1, e2
+      const hits = FE.filter(src, items, gst(['a1', 'a2', 'b1']));
+      expect(hits.map(x => x.id).sort()).toEqual(['e1', 'e2']);
+    });
+
+    it('分组语义 ≠ 平铺 AND（本项目更宽）', () => {
+      const grouped = FE.filter(src, items, gst(['a1', 'a2', 'b1'])).length;
+      const flat = items.filter(x => {
+        const t = x.terms || [];
+        return t.includes('a1') && t.includes('a2') && t.includes('b1');
+      }).length;
+      expect(grouped).toBeGreaterThan(flat);
+    });
+
+    it('同一组内三值仍是并集（不因组数变而收紧）', () => {
+      const hits = FE.filter(src, items, gst(['a1', 'a2', 'b1', 'c1']));
+      // (a1 ∨ a2) ∧ b1 ∧ c1 → e2
+      expect(hits.map(x => x.id)).toEqual(['e2']);
+    });
+
+    it('空选中值不过滤', () => {
+      expect(FE.filter(src, items, gst([]))).toHaveLength(items.length);
+    });
+
+    it('multiMatches 直接调用与 filter 结果一致', () => {
+      const dim = FE.dimsOf(src).get('terms')!;
+      expect(FE.multiMatches(dim, items[0], ['a1', 'a2'])).toBe(true);
+      expect(FE.multiMatches(dim, items[0], ['a1', 'b1'])).toBe(true);
+      expect(FE.multiMatches(dim, items[0], ['a1', 'c1'])).toBe(false);
+    });
+
+    it('未声明 groupOf 时 multiMatches 退回归或', () => {
+      const dim = FE.dimsOf(LIB).get('terms')!;
+      expect(FE.multiMatches(dim, ARTISTS[2], ['风景', '人像'])).toBe(true);
+      expect(FE.multiMatches(dim, ARTISTS[3], ['风景', '人像'])).toBe(false);
+    });
+
+    /* 分组维度的计数口径：「把候选值加进它所属组后，整条筛选链的结果条数」 */
+    it('分组维度 counts 用整链试算口径（不是简单计数）', () => {
+      const c = FE.counts(src, items, gst([]), 'terms');
+      // a1：加上 a1 后链上命中 e1, e3 → 2
+      expect(c.get('a1')).toBe(2);
+      // b1：加上 b1 后命中 e1, e2 → 2
+      expect(c.get('b1')).toBe(2);
+      // c1：加上 c1 后命中 e2, e4 → 2
+      expect(c.get('c1')).toBe(2);
+    });
+
+    it('分组维度 counts 在已有跨组选中时反映整链结果', () => {
+      // 已选 b1（B 组），再把候选值 a1 加进 A 组 → 整链 = A 组{a1} ∧ B 组{b1}
+      // e1 有 a1+b1 → 命中；e2 有 a2+b1+c1，A 组要的是 a1（不是 a2）→ 不命中
+      // 所以计数是 1。这条断言守的是「加进去的是**该候选值**，不是它整组的所有兄弟值」。
+      const c = FE.counts(src, items, gst(['b1']), 'terms');
+      expect(c.get('a1')).toBe(1);
+      // 反证：若把 a2 也加进 A 组，e2 才命中 → 2
+      const c2 = FE.counts(src, items, gst(['b1', 'a2']), 'terms');
+      expect(c2.get('a1')).toBe(2);
+    });
+
+    it('分组维度 counts 不修改传入的状态', () => {
+      const s = gst(['b1']);
+      FE.counts(src, items, s, 'terms');
+      expect(s.dims.terms).toEqual(['b1']);
+    });
+
+    it('URL 往返：多组维度的选中值能原样复现', () => {
+      const s = gst(['a1', 'a2', 'b1']);
+      const hash = FE.buildHash(src, 'style-types', s);
+      expect(hash).toContain('terms=a1');
+      expect(hash).toContain('terms=a2');
+      expect(hash).toContain('terms=b1');
+      const back = FE.parseHash(src, hash);
+      expect(back.state.dims.terms).toEqual(['a1', 'a2', 'b1']);
+      expect(FE.sameState(back.state, s)).toBe(true);
     });
   });
 });

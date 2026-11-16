@@ -5,12 +5,14 @@
  *   config/explore.yaml              957 条作业 / 7 批次 + source / batches / aspects
  *   config/explore-decomposed.yaml   942 条七段拆解（文件扩展名是 .yaml，内容是 JSON）；缺的走灯箱空态
  *   config/styles-top.yaml           200 个官方风格码 × 8 题材
+ *   config/types.yaml                风格与类型库快照：1,180 条类型条目（2026-11 新增）
  *   public/explore/thumbs             探索榜缩略图（配图源，路径写进产物）
  *   public/preview-images/…          官方榜配图（配图源，路径写进产物）
  *
  * 输出（覆盖生成）：
  *   webui/js/data-explore.js
  *   webui/js/data-stylestop.js
+ *   webui/js/data-types.js
  *
  * 用法：
  *   npm run build:webui-data                      两域全量配图（唯一模式）
@@ -56,7 +58,8 @@ function must(cond, msg) {
 const exploreYamlPath = path.join(CFG, 'explore.yaml');
 const decomposedPath = path.join(CFG, 'explore-decomposed.yaml');
 const stylesTopPath = path.join(CFG, 'styles-top.yaml');
-for (const p of [exploreYamlPath, decomposedPath, stylesTopPath]) {
+const typesPath = path.join(CFG, 'types.yaml');
+for (const p of [exploreYamlPath, decomposedPath, stylesTopPath, typesPath]) {
   must(fs.existsSync(p), `缺少输入文件：${p}`);
 }
 
@@ -82,10 +85,12 @@ try {
   }
 }
 const stylesTop = yaml.load(fs.readFileSync(stylesTopPath, 'utf8'));
+const types = yaml.load(fs.readFileSync(typesPath, 'utf8'));
 
 must(Array.isArray(explore.jobs) && explore.jobs.length > 0, 'explore.yaml 里没有 jobs');
 must(Array.isArray(decomposed.jobs), 'explore-decomposed.yaml 里没有 jobs');
 must(Array.isArray(stylesTop.entries), 'styles-top.yaml 里没有 entries');
+must(Array.isArray(types.entries) && types.entries.length > 0, 'types.yaml 里没有 entries');
 
 const decById = new Map(decomposed.jobs.map((j) => [j.jobId, j]));
 const unmatched = explore.jobs.filter((j) => !decById.has(j.id)).length;
@@ -191,6 +196,59 @@ const STYLES_TOP_IMAGE_STATS = {
   sourceFiles: stylesTop.entries.reduce((s, e) => s + Object.keys(e.images || {}).length, 0),
 };
 
+/* ── 风格与类型库 ───────────────────────────────────────────────────────
+   上游 4 个条目类型类（流派与艺术运动 / 通用修饰 / 技法 / 标题）的 1,180 条。
+
+   与 artists / codes 两条老链不同，这条链**没有现成的生成脚本**
+   （README 第三节记着这个缺口）：data-artists.js 与 data-stylecodes.js
+   至今是手工产物。这里补上生成链，让类型库与风格库同源同法。
+
+   字段一律如实透传：tested / publicDomain 从 manifest 来，
+   terms / colours 从 details.json 来，intro / observation 从 details 的
+   a / o 来。缺失即空，不杜撰。 */
+const typeEntries = types.entries.map((e) => ({
+  id: e.id,
+  name: e.name,
+  cat: e.category,
+  kind: e.kind,
+  en: e.promptEn,
+  preview: e.preview ? pickImage(e.preview, 'styles-top') : null,
+  url: e.sourceUrl,
+  tested: !!e.testedMark,
+  publicDomain: !!e.isPublicDomain,
+  terms: e.terms || [],
+  colours: e.colours || [],
+  intro: e.intro || '',
+  observation: e.observation || '',
+  // 条目创建时间（毫秒，来自 ULID 前 10 位）。
+  // 上游的 "Newly tested" 排的是实测时间，那个量在快照里不存在；
+  // 这里只能给「收录时间」，页面上的排序项也据此命名，不冒充实测时间。
+  createdAt: Number(e.createdAt) || 0,
+}));
+
+const TYPE_IMAGE_STATS = {
+  mode,
+  withImages: typeEntries.filter((e) => !!e.preview).length,
+  total: typeEntries.length,
+  imageFiles: typeEntries.filter((e) => !!e.preview).length,
+  sourceFiles: types.entries.filter((e) => !!e.preview).length,
+};
+
+/* 类型库的分面词表与色表：按上游分组顺序落，组内按中文名排。
+   词 → 组的映射表（TYPE_TERM_GROUP）由页面侧按 slug 反查，
+   这里只把「词在哪个组」这一事实烘焙进产物，避免页面侧再抄一份词表。 */
+const typeTermGroups = (types.termGroups || []).map((g) => ({
+  id: g.id,
+  name: g.name,
+  terms: g.terms.map((t) => ({ slug: t.slug, label: t.label })),
+}));
+
+const typeColours = (types.colours || []).map((c) => ({
+  slug: c.slug,
+  name: c.name,
+  hex: c.hex,
+}));
+
 /* ── 产物 ─────────────────────────────────────────────────────────── */
 function safeJson(v) {
   return JSON.stringify(v).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
@@ -228,6 +286,18 @@ const outputs = [
     ]),
     probe: '({entries:STYLES_TOP_ENTRIES.length,kinds:STYLES_TOP_KINDS.length,stats:STYLES_TOP_IMAGE_STATS,imgs:STYLES_TOP_ENTRIES.flatMap(e=>Object.values(e.images))})',
   },
+  {
+    file: 'data-types.js',
+    text: render([
+      ['TYPE_CATEGORIES', types.categories],
+      ['TYPE_TERM_GROUPS', typeTermGroups],
+      ['TYPE_COLOURS', typeColours],
+      ['TYPE_ENTRIES', typeEntries],
+      ['TYPE_IMAGE_STATS', TYPE_IMAGE_STATS],
+      ['TYPE_SOURCE', types.source],
+    ]),
+    probe: '({entries:TYPE_ENTRIES.length,cats:TYPE_CATEGORIES.length,groups:TYPE_TERM_GROUPS.length,colours:TYPE_COLOURS.length,stats:TYPE_IMAGE_STATS,imgs:TYPE_ENTRIES.map(e=>e.preview).filter(Boolean),terms:TYPE_ENTRIES.flatMap(e=>e.terms),coloursUsed:TYPE_ENTRIES.flatMap(e=>e.colours),tested:TYPE_ENTRIES.filter(e=>e.tested).length,publicDomain:TYPE_ENTRIES.filter(e=>e.publicDomain).length,withTime:TYPE_ENTRIES.filter(e=>e.createdAt>0).length})',
+  },
 ];
 
 /* 两阶段：先把全部产物校验完，再统一落盘。
@@ -253,6 +323,29 @@ for (const out of outputs) {
     // 缺失或重复都会让「结论挂到证据上」这件事失效（报告 2.1）。
     // 引用键零碰撞已由上面的 exploreJobKeys 断言保证（构建期跑的是浏览器端同一份算法）。
     // 这里只钉住条数：键不是采集来的事实，不烘焙进产物，由浏览器端运行时算。
+  } else if (r.terms !== undefined) {
+    /* 类型库：条数、分类数、分面词表、主色表都要与源快照一致。
+       分面覆盖是这套数据的命门（历史上 artists 侧踩过「产物截断分面」的坑），
+       所以这里把「条目里出现的每个 term / colour 都必须在词表里」钉死。 */
+    must(r.entries === types.entries.length, `${out.file} 类型条目数不符：${r.entries} != ${types.entries.length}`);
+    must(r.cats === types.categories.length, `${out.file} 分类数不符`);
+    must(r.groups === (types.termGroups || []).length, `${out.file} 分面词组数不符`);
+    must(r.colours === (types.colours || []).length, `${out.file} 主色数不符`);
+    const knownTerms = new Set();
+    for (const g of types.termGroups || []) for (const t of g.terms) knownTerms.add(t.slug);
+    const unknownTerms = [...new Set(r.terms)].filter((s) => !knownTerms.has(s));
+    must(unknownTerms.length === 0, `${out.file} 有 ${unknownTerms.length} 个分面词不在词表里，例如 ${unknownTerms.slice(0, 3).join(', ')}`);
+    const knownColours = new Set((types.colours || []).map((c) => c.slug));
+    const unknownColours = [...new Set(r.coloursUsed)].filter((s) => !knownColours.has(s));
+    must(unknownColours.length === 0, `${out.file} 有 ${unknownColours.length} 个主色不在色表里，例如 ${unknownColours.slice(0, 3).join(', ')}`);
+    // 开关如实透传：条数必须与源快照一致，不能在构建期被悄悄丢掉
+    const srcTested = types.entries.filter((e) => e.testedMark).length;
+    const srcPublicDomain = types.entries.filter((e) => e.isPublicDomain).length;
+    must(r.tested === srcTested, `${out.file} 实测条数与源快照不符：产物 ${r.tested} != 源 ${srcTested}`);
+    must(r.publicDomain === srcPublicDomain, `${out.file} 公有领域条数与源快照不符：产物 ${r.publicDomain} != 源 ${srcPublicDomain}`);
+    // 创建时间也要如实透传：有时间的条数必须与源快照一致（排序依赖它）
+    const srcWithTime = types.entries.filter((e) => Number(e.createdAt) > 0).length;
+    must(r.withTime === srcWithTime, `${out.file} 有创建时间的条数与源快照不符：产物 ${r.withTime} != 源 ${srcWithTime}`);
   } else {
     must(r.entries === stylesTop.entries.length, `${out.file} 风格码数不符`);
   }
@@ -285,6 +378,7 @@ console.log(`  配图来源：探索榜 ../public/explore/ / 风格榜 ../public
 console.log(`  探索榜 ${line('', EXPLORE_IMAGE_STATS)}`);
 console.log(`  批次 ${explore.batches.length} / 比例 ${explore.aspects.length} / 拆解匹配 ${explore.jobs.length - unmatched}（未匹配 ${unmatched}）`);
 console.log(`  风格榜 ${line('', STYLES_TOP_IMAGE_STATS)}`);
+console.log(`  类型库 ${line('', TYPE_IMAGE_STATS)} · 分类 ${types.categories.length} 个 · 分面词 ${typeTermGroups.reduce((n, g) => n + g.terms.length, 0)} 个 / 主色 ${typeColours.length} 个`);
 console.log(`  sref：源数据 ${jobs.filter((j) => j.sref).length} 条带真实风格参考码（透传，不杜撰）`);
 console.log('  注意：../public/ 相对路径只在项目根内有效，单独分发 dist/ 会丢图。');
 if (!dryRun) {

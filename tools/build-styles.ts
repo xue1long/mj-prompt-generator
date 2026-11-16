@@ -36,6 +36,10 @@ export interface MidlibraryRow {
   testedMark?: boolean
   /** 是否编辑精选 */
   isPick?: boolean
+  /** 是否属公有领域（可商用） */
+  isPublicDomain?: boolean
+  /** 上游真实 ULID（items.json 里才有；前 10 位可解出创建时间） */
+  ulid?: string
 }
 
 /**
@@ -150,6 +154,100 @@ export interface StylesConfig {
   colours: StyleColour[]
   artists: StyleArtist[]
   codes: StyleCode[]
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   风格与类型库（2026-11 新增）
+
+   上游 midlibrary.io/library 的 16 个分类里有 5 个是「条目类型类」：
+   流派与艺术运动 / 通用修饰 / 技法 / 标题 / 风格参考码。
+   前 4 类（不含风格参考码，后者已在风格库页）是一批**通用提示词片段**——
+   它们不指认具体作者，而是描述画面本身的属性（"Cyberpunk"、"Sashiko"、
+   "Studio Ghibli"）。本项目把它们收进一张独立页「风格与类型库」。
+
+   与风格库的分工（详见 CONTEXT.md）：
+   - 风格库：谁画的（艺术家 4,322 + 风格参考码 4,638）——**单选**进提示词。
+   - 类型库：画成什么样（类型 / 修饰 / 技法 / 标题 1,180）——**多选**进提示词。
+
+   数据仍然来自同一个 manifest + details，只是另出一份快照
+   （config/types.yaml），理由与 styles.yaml 同源：
+   手写 1,180 条不现实、手改更危险，所以生成一份静态快照。
+   ══════════════════════════════════════════════════════════════════════ */
+
+/** 目标 5 个 kind（其中 style_code 已由风格库覆盖，此处不重复收） */
+export const TYPE_KINDS = ['genre', 'movement', 'style_quality', 'technique', 'title'] as const
+
+/** kind → 上游分类 id → 中文名 */
+export const TYPE_CATEGORY_NAMES: Record<string, string> = {
+  'genres-art-movements': '流派与艺术运动',
+  'general-modifiers': '通用修饰',
+  techniques: '技法',
+  titles: '标题',
+}
+
+/** kind → 卡片上显示的类别标签（比分类名更细，区分同分类下的两种 kind） */
+export const TYPE_KIND_LABELS: Record<string, string> = {
+  genre: '流派',
+  movement: '艺术运动',
+  style_quality: '风格修饰',
+  technique: '技法',
+  title: '标题',
+}
+
+/** 一个类型条目 */
+export interface TypeEntry {
+  id: string
+  /** 原文名 */
+  name: string
+  /** 上游分类 id（genres-art-movements / general-modifiers / techniques / titles） */
+  category: string
+  /** 上游条目类型（genre / movement / style_quality / technique / title） */
+  kind: string
+  /** 进入提示词的英文写法（已剥掉 "--v 8.2" 之类版本参数） */
+  promptEn: string
+  /** 上游原始提示词行（只作展示，不参与组装） */
+  sourcePrompt: string
+  /** 预览图路径（相对于 public/preview-images/） */
+  preview?: string
+  /** 原站页面（署名与回链用） */
+  sourceUrl: string
+  /** 是否已被上游实测 */
+  testedMark: boolean
+  /** 是否属公有领域（可商用） */
+  isPublicDomain: boolean
+  /** 分面词 slug（组内任一、组间全部） */
+  terms: string[]
+  /** 主色 slug，按占比降序 */
+  colours: string[]
+  /** 简介（上游详情层 a 字段） */
+  intro?: string
+  /** 风格描述（上游详情层 o 字段） */
+  observation?: string
+  /** 条目创建时间（毫秒，来自 ULID；0 = 解不出） */
+  createdAt: number
+}
+
+/** 类型库的分类（比 artists 的分类少，且每类对应一个上游分类） */
+export interface TypeCategory {
+  id: string
+  name: string
+  count: number
+}
+
+export interface TypesConfig {
+  source: {
+    name: string
+    url: string
+    license: string
+    generatedAt: string
+    facetCoverage: number
+    /** 快照对应的条数（用于对账，不写死） */
+    total: number
+  }
+  categories: TypeCategory[]
+  termGroups: StyleTermGroup[]
+  colours: StyleColour[]
+  entries: TypeEntry[]
 }
 
 /**
@@ -376,6 +474,35 @@ export function previewPath(id: string): string {
   return `${STYLE_PREVIEW_DIR}/${id}.webp`
 }
 
+/* ── ULID 时间戳 ────────────────────────────────────────────────────────
+   上游 items.json 里每条有一个真实 ULID（如 01HAQT5PE0JH9ZJQVH2CT9VX4X），
+   前 10 位是 Crockford Base32 编码的 48 位毫秒时间戳 —— 条目**创建时间**。
+
+   为什么需要它：上游有「Newly tested」排序（按实测时间排），但源快照
+   （manifest.json / details.json）与上游 RSC payload 里都没有任何时间戳字段，
+   实测排序是服务端行为，本地快照复刻不了。
+   唯一可溯源的时间事实就是 ULID 里的创建时间 —— 所以本项目的排序项
+   叫「最新收录」，并明确标注这是收录时间、不是实测时间。
+
+   口径边界（不要越界）：
+   - 这是**创建**时间，不是实测时间。上游 "Newly tested" 排的是后者。
+   - 解不出来就置 0（排最后），不猜、不用采集日期顶替。 */
+const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
+
+/** 解 ULID 前 10 位 → 毫秒时间戳；解不出返回 0 */
+export function ulidTimestamp(id: string): number {
+  const head = String(id || '').slice(0, 10).toUpperCase()
+  if (head.length < 10) return 0
+  let ts = 0
+  for (const ch of head) {
+    const v = CROCKFORD.indexOf(ch)
+    if (v < 0) return 0
+    ts = ts * 32 + v
+  }
+  // 合理性下限：2020-01-01。上游 id 若是别的编码体系，解出来的数会离谱。
+  return ts > 1577836800000 ? ts : 0
+}
+
 /** 从详情层记录里取分面词 slug（组内去看，本文件只要 slug） */
 export function termSlugsOf(detail: MidlibraryDetail | undefined): string[] {
   if (!detail?.t) return []
@@ -544,6 +671,144 @@ export function renderStylesYaml(config: StylesConfig): string {
   return header + body
 }
 
+/* ── 风格与类型库 ────────────────────────────────────────────────────────
+   与 buildStyles 同源同法：读同一份 manifest + details，另出一份快照。
+   两者分开的原因不是数据隔离（同一批源文件），而是**语义隔离**：
+   风格库是「谁画的」，类型库是「画成什么样」，两者的组装语义不同
+   （前者单选互斥，后者多选累加），放进同一份快照会让下拉里的
+   「选谁」与「选什么」互相干扰。 */
+
+/**
+ * 把 manifest 记录 + 详情层转成类型库配置。
+ * 只取 4 类通用片段：genre / movement / style_quality / technique / title。
+ * style_code 不在此（风格参考码在风格库页）。
+ *
+ * ulidsBySlug 来自隔壁仓的 data/items.json —— manifest 里没有 ULID，
+ * 只有 items.json 才带真实 id（排序要用的创建时间从它的前 10 位解）。
+ */
+export function buildTypes(
+  rows: MidlibraryRow[],
+  details: Record<string, MidlibraryDetail>,
+  generatedAt: string,
+  ulidsBySlug: Record<string, string> = {}
+): TypesConfig {
+  const entries: TypeEntry[] = []
+  const termSeen = new Map<string, Map<string, string>>()
+  const colourHex = new Map<string, Map<string, number>>()
+  const colourName = new Map<string, string>()
+  const wanted = new Set<string>(TYPE_KINDS)
+  let withFacets = 0
+
+  for (const row of rows) {
+    if (!wanted.has(row.kind)) continue
+    const detail = details[row.id]
+    const terms = termSlugsOf(detail)
+    const colours = colourSlugsOf(detail)
+    if (terms.length > 0) withFacets += 1
+
+    // 词表：组名 → (slug → 显示名)
+    for (const [groupLabel, options] of detail?.t ?? []) {
+      const group = termSeen.get(groupLabel) ?? new Map<string, string>()
+      for (const [label, , slug] of options) {
+        if (slug && !group.has(slug)) group.set(slug, label)
+      }
+      termSeen.set(groupLabel, group)
+    }
+    // 主色：slug → (hex → 出现次数)，以及 slug → 上游色名
+    for (const [hex, name, , slug] of detail?.c ?? []) {
+      if (!slug) continue
+      const counter = colourHex.get(slug) ?? new Map<string, number>()
+      counter.set(hex, (counter.get(hex) ?? 0) + 1)
+      colourHex.set(slug, counter)
+      if (!colourName.has(slug)) colourName.set(slug, name)
+    }
+
+    entries.push({
+      id: row.id,
+      name: row.name,
+      category: row.category,
+      kind: row.kind,
+      promptEn: stripParams(row.prompt),
+      sourcePrompt: row.prompt,
+      preview: previewPath(row.id),
+      sourceUrl: row.sourceUrl,
+      testedMark: Boolean(row.testedMark),
+      isPublicDomain: Boolean(row.isPublicDomain),
+      terms,
+      colours,
+      intro: detail?.a?.trim() || undefined,
+      observation: detail?.o?.trim() || undefined,
+      createdAt: ulidTimestamp(ulidsBySlug[row.slug] || ''),
+    })
+  }
+
+  const counts = new Map<string, number>()
+  for (const e of entries) {
+    counts.set(e.category, (counts.get(e.category) ?? 0) + 1)
+  }
+  const categories: TypeCategory[] = [...counts.entries()]
+    .map(([id, count]) => ({
+      id,
+      name: TYPE_CATEGORY_NAMES[id] ?? id,
+      count,
+    }))
+    .sort((a, b) => b.count - a.count || a.id.localeCompare(b.id))
+
+  const groupOrder = Object.keys(TERM_GROUP_IDS)
+  const termGroups: StyleTermGroup[] = groupOrder
+    .filter(label => (termSeen.get(label)?.size ?? 0) > 0)
+    .map(label => ({
+      id: TERM_GROUP_IDS[label],
+      name: TERM_GROUP_NAMES[label] ?? label,
+      terms: [...(termSeen.get(label) ?? new Map()).entries()]
+        .map(([slug, label]) => ({ slug, label: TERM_LABELS[slug] ?? label }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'zh')),
+    }))
+
+  const colours: StyleColour[] = [...colourHex.entries()]
+    .map(([slug, counter]) => {
+      const hex = [...counter.entries()].sort((a, b) => b[1] - a[1])[0][0]
+      return { slug, name: colourLabel(slug, colourName.get(slug) ?? ''), hex }
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, 'zh'))
+
+  return {
+    source: {
+      name: 'midlibrary',
+      url: 'https://midlibrary.io/library',
+      license: '有条件：站方书面许可（个人学习用途，署名 + 回链）',
+      generatedAt,
+      facetCoverage:
+        entries.length === 0 ? 0 : Math.round((withFacets / entries.length) * 1000) / 10,
+      total: entries.length,
+    },
+    categories,
+    termGroups,
+    colours,
+    entries,
+  }
+}
+
+/** 生成类型库 YAML 文本 */
+export function renderTypesYaml(config: TypesConfig): string {
+  const header = [
+    '# 生成物 —— 请勿手改。',
+    '# 由 tools/build-styles.ts 从 ai-video-imge-prompts 仓的',
+    '# sites/midlibrary/manifest.json + data/details.json 生成（npm run build:styles）。',
+    '# 收录上游 4 个条目类型类：流派与艺术运动 / 通用修饰 / 技法 / 标题。',
+    '# 单一来源：midlibrary.io/library —— 站方书面许可：个人学习用途，署名 + 回链。',
+    '',
+  ].join('\n')
+
+  const body = yaml.dump(config, {
+    noRefs: true,
+    lineWidth: 200,
+    sortKeys: false,
+  })
+
+  return header + body
+}
+
 /** 读取 manifest */
 export function loadManifest(file: string): MidlibraryRow[] {
   if (!fs.existsSync(file)) {
@@ -565,6 +830,29 @@ export function loadDetails(file: string): Record<string, MidlibraryDetail> {
   return parsed && typeof parsed === 'object' ? parsed : {}
 }
 
+/**
+ * 读取 items.json，产出 slug → ULID 的映射。
+ *
+ * 为什么单独要这个文件：manifest.json 里没有 ULID，只有 items.json 有真实 id。
+ * ULID 前 10 位编码了条目创建时间，是本地唯一可溯源的时间事实
+ * （上游的 "Newly tested" 排的是实测时间，那个量在快照里根本不存在）。
+ *
+ * 缺失时返回空对象 —— 类型库照常生成，只是没有时间排序。
+ */
+export function loadUlids(file: string): Record<string, string> {
+  if (!fs.existsSync(file)) {
+    return {}
+  }
+  const parsed = JSON.parse(fs.readFileSync(file, 'utf-8')) as {
+    items?: Array<{ slug?: string; id?: string }>
+  }
+  const out: Record<string, string> = {}
+  for (const it of parsed?.items ?? []) {
+    if (it?.slug && it?.id && !out[it.slug]) out[it.slug] = it.id
+  }
+  return out
+}
+
 /** 默认的 manifest 路径：隔壁仓 */
 export function defaultManifestPath(root: string): string {
   return path.resolve(root, '..', 'ai-video-imge-prompts', 'sites', 'midlibrary', 'manifest.json')
@@ -583,6 +871,11 @@ export function defaultDetailsPath(root: string): string {
   )
 }
 
+/** 默认的 items.json 路径（带真实 ULID，供创建时间排序用） */
+export function defaultItemsPath(root: string): string {
+  return path.resolve(root, '..', 'ai-video-imge-prompts', 'sites', 'midlibrary', 'data', 'items.json')
+}
+
 /**
  * 把风格库快照写到 config/styles.yaml，返回输出路径。
  */
@@ -596,6 +889,25 @@ export function renderStylesFile(root: string, manifestPath: string, detailsPath
   return outFile
 }
 
+/**
+ * 把类型库快照写到 config/types.yaml，返回输出路径。
+ */
+export function renderTypesFile(
+  root: string,
+  manifestPath: string,
+  detailsPath: string,
+  itemsPath?: string
+): string {
+  const rows = loadManifest(manifestPath)
+  const details = loadDetails(detailsPath)
+  const ulids = itemsPath ? loadUlids(itemsPath) : {}
+  const config = buildTypes(rows, details, localISODate(), ulids)
+  const outFile = path.join(root, 'config', 'types.yaml')
+  fs.mkdirSync(path.dirname(outFile), { recursive: true })
+  fs.writeFileSync(outFile, renderTypesYaml(config), 'utf-8')
+  return outFile
+}
+
 const invokedDirectly =
   process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href
 
@@ -603,15 +915,29 @@ if (invokedDirectly) {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
   const manifestPath = process.env.MIDLIBRARY_MANIFEST ?? defaultManifestPath(root)
   const detailsPath = process.env.MIDLIBRARY_DETAILS ?? defaultDetailsPath(root)
+  const itemsPath = process.env.MIDLIBRARY_ITEMS ?? defaultItemsPath(root)
   const out = renderStylesFile(root, manifestPath, detailsPath)
+  const outTypes = renderTypesFile(root, manifestPath, detailsPath, itemsPath)
   const config = buildStyles(
     loadManifest(manifestPath),
     loadDetails(detailsPath),
     localISODate()
   )
+  const types = buildTypes(
+    loadManifest(manifestPath),
+    loadDetails(detailsPath),
+    localISODate(),
+    loadUlids(itemsPath)
+  )
+  const withTime = types.entries.filter((e) => e.createdAt > 0).length
   console.log(
     `[build-styles] 已生成 ${out}（艺术家 ${config.artists.length} 条 / 风格参考码 ${config.codes.length} 条 / ` +
       `分面词 ${config.termGroups.reduce((n, g) => n + g.terms.length, 0)} 个 / 主色 ${config.colours.length} 个 / ` +
       `分面覆盖 ${config.source.facetCoverage}%）`
+  )
+  console.log(
+    `[build-styles] 已生成 ${outTypes}（类型条目 ${types.entries.length} 条 / ` +
+      `分类 ${types.categories.length} 个 / 分面词 ${types.termGroups.reduce((n, g) => n + g.terms.length, 0)} 个 / ` +
+      `主色 ${types.colours.length} 个 / 分面覆盖 ${types.source.facetCoverage}% / 有创建时间 ${withTime} 条）`
   )
 }
